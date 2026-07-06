@@ -1,11 +1,12 @@
 import type { OptionColumn } from '../lib/types'
 import type { OptionType } from '../lib/salla'
+import { useI18n } from '../lib/i18n'
 import { Select, TextInput, Label, Button } from './ui'
 
-const TYPE_LABELS: { value: OptionType; label: string }[] = [
-  { value: 'text', label: 'نص' },
-  { value: 'color', label: 'لون' },
-  { value: 'image', label: 'صورة' },
+const TYPE_KEYS: { value: OptionType; key: string }[] = [
+  { value: 'text', key: 'opt.type.text' },
+  { value: 'color', key: 'opt.type.color' },
+  { value: 'image', key: 'opt.type.image' },
 ]
 
 /**
@@ -21,6 +22,7 @@ export default function OptionsEditor({
   options: OptionColumn[]
   onChange: (next: OptionColumn[]) => void
 }) {
+  const { t } = useI18n()
   function update(i: number, patch: Partial<OptionColumn>) {
     onChange(options.map((o, idx) => (idx === i ? { ...o, ...patch } : o)))
   }
@@ -34,9 +36,7 @@ export default function OptionsEditor({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        كل عمود خيار يتوسّع إلى صفوف «خيار» أسفل المنتج الأب. القيم المتعددة داخل الخلية تُفصل بفاصلة أو «|» أو سطر جديد.
-      </p>
+      <p className="text-sm text-slate-500">{t('opt.note')}</p>
 
       {options.map((opt, i) => (
         <div
@@ -44,14 +44,14 @@ export default function OptionsEditor({
           className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
         >
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">خيار [{i + 1}]</span>
+            <span className="text-sm font-bold text-slate-700">{t('opt.group', { n: i + 1 })}</span>
             <Button variant="danger" onClick={() => remove(i)}>
-              حذف
+              {t('btn.delete')}
             </Button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <Label>العمود المصدر</Label>
+              <Label>{t('opt.sourceCol')}</Label>
               <Select
                 value={opt.column}
                 onChange={(e) => update(i, { column: e.target.value })}
@@ -64,36 +64,36 @@ export default function OptionsEditor({
               </Select>
             </div>
             <div>
-              <Label>اسم الخيار</Label>
+              <Label>{t('opt.name')}</Label>
               <TextInput
                 value={opt.name}
-                placeholder="مثال: المقاس / اللون"
+                placeholder={t('opt.namePlaceholder')}
                 onChange={(e) => update(i, { name: e.target.value })}
               />
             </div>
             <div>
-              <Label>النوع</Label>
+              <Label>{t('opt.typeLabel')}</Label>
               <Select
                 value={opt.type}
                 onChange={(e) => update(i, { type: e.target.value as OptionType })}
               >
-                {TYPE_LABELS.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {TYPE_KEYS.map((tk) => (
+                  <option key={tk.value} value={tk.value}>
+                    {t(tk.key)}
                   </option>
                 ))}
               </Select>
             </div>
             {opt.type === 'color' && (
               <div>
-                <Label>عمود اللون (Hex) — اختياري</Label>
+                <Label>{t('opt.swatchLabel')}</Label>
                 <Select
                   value={opt.swatchColumn ?? ''}
                   onChange={(e) =>
                     update(i, { swatchColumn: e.target.value || undefined })
                   }
                 >
-                  <option value="">— (استنتاج من القيمة) —</option>
+                  <option value="">{t('opt.swatchInfer')}</option>
                   {columns.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -108,7 +108,7 @@ export default function OptionsEditor({
 
       {options.length < 3 && (
         <Button variant="ghost" onClick={add}>
-          + إضافة عمود خيار
+          {t('btn.addOption')}
         </Button>
       )}
     </div>

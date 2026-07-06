@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { F, optionGroupCols, ROW_PRODUCT, type SallaRow } from '../lib/salla'
 import type { RowMeta } from '../lib/build'
+import { useI18n } from '../lib/i18n'
 import { Select, TextInput, Button } from './ui'
 
 /** Product-level text fields the user can edit inline in the preview. */
@@ -8,19 +9,19 @@ const EDITABLE_TEXT_FIELDS = new Set<string>([F.name, F.price])
 
 const COLLAPSED_ROWS = 12
 
-/** A curated subset of the 40 columns worth showing in the live preview. */
-const PREVIEW_COLS: { header: string; label: string }[] = [
-  { header: F.type, label: 'النوع' },
-  { header: F.name, label: 'أسم المنتج' },
-  { header: F.price, label: 'السعر' },
-  { header: F.sku, label: 'SKU' },
-  { header: F.category, label: 'التصنيف' }, // editable (see below)
-  { header: F.brand, label: 'الماركة' },
-  { header: F.weight, label: 'الوزن' },
-  { header: optionGroupCols(1).value, label: '[1] القيمة' },
-  { header: optionGroupCols(2).value, label: '[2] القيمة' },
-  { header: optionGroupCols(3).value, label: '[3] القيمة' },
-  { header: F.image, label: 'الصور' },
+/** A curated subset of the 40 columns worth showing, with i18n label keys. */
+const PREVIEW_COLS: { header: string; labelKey: string }[] = [
+  { header: F.type, labelKey: 'col.type' },
+  { header: F.name, labelKey: 'col.name' },
+  { header: F.price, labelKey: 'col.price' },
+  { header: F.sku, labelKey: 'col.sku' },
+  { header: F.category, labelKey: 'col.category' }, // editable (see below)
+  { header: F.brand, labelKey: 'col.brand' },
+  { header: F.weight, labelKey: 'col.weight' },
+  { header: optionGroupCols(1).value, labelKey: 'col.opt1' },
+  { header: optionGroupCols(2).value, labelKey: 'col.opt2' },
+  { header: optionGroupCols(3).value, labelKey: 'col.opt3' },
+  { header: F.image, labelKey: 'col.images' },
 ]
 
 /**
@@ -50,6 +51,7 @@ export default function OutputPreview({
   onDeleteItem: (sourceIndex: number) => void
   onRestoreAll: () => void
 }) {
+  const { t } = useI18n()
   const [showAll, setShowAll] = useState(false)
   const [bulkCategory, setBulkCategory] = useState('')
   const limit = showAll ? rows.length : COLLAPSED_ROWS
@@ -58,21 +60,26 @@ export default function OutputPreview({
   return (
     <div>
       <p className="mb-2 text-sm text-slate-500">
-        {productCount} منتج · {optionCount} خيار · {rows.length} صف إجمالًا — يظهر {shown.length}.
-        أعمدة «الاسم» و«السعر» و«التصنيف» قابلة للتعديل على المنتجات، وزر «حذف» يزيل البند بكل خياراته.
+        {t('preview.stats', {
+          products: productCount,
+          options: optionCount,
+          total: rows.length,
+          shown: shown.length,
+        })}{' '}
+        {t('preview.editNote')}
       </p>
 
       {productCount > 0 && (
         <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
           <div className="w-56">
             <label className="mb-1 block text-xs font-medium text-slate-500">
-              تطبيق تصنيف على كل المنتجات
+              {t('preview.applyAllLabel')}
             </label>
             <Select
               value={bulkCategory}
               onChange={(e) => setBulkCategory(e.target.value)}
             >
-              <option value="">— بدون —</option>
+              <option value="">{t('preview.catNone')}</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -81,16 +88,16 @@ export default function OutputPreview({
             </Select>
           </div>
           <Button onClick={() => onApplyCategoryToAll(bulkCategory)}>
-            تطبيق على الكل
+            {t('preview.applyAllBtn')}
           </Button>
         </div>
       )}
 
       {excludedCount > 0 && (
         <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          <span>تم حذف {excludedCount} بند من التصدير.</span>
+          <span>{t('preview.deletedInfo', { n: excludedCount })}</span>
           <Button variant="ghost" onClick={onRestoreAll}>
-            استرجاع الكل
+            {t('preview.restoreAll')}
           </Button>
         </div>
       )}
@@ -98,15 +105,15 @@ export default function OutputPreview({
         <table className="min-w-full border-collapse text-sm">
           <thead className="bg-slate-50">
             <tr>
-              <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold text-slate-700">
-                إجراء
+              <th className="border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700">
+                {t('preview.action')}
               </th>
               {PREVIEW_COLS.map((c) => (
                 <th
                   key={c.header}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-right font-semibold text-slate-700"
+                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700"
                 >
-                  {c.label}
+                  {t(c.labelKey)}
                 </th>
               ))}
             </tr>
@@ -121,10 +128,10 @@ export default function OutputPreview({
                     {isProduct && rowMeta ? (
                       <button
                         onClick={() => onDeleteItem(rowMeta.sourceIndex)}
-                        title="حذف هذا البند بكل خياراته"
+                        title={t('preview.deleteTitle')}
                         className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
                       >
-                        حذف
+                        {t('btn.delete')}
                       </button>
                     ) : (
                       <span className="text-xs text-slate-300">—</span>
@@ -145,14 +152,14 @@ export default function OutputPreview({
                               onEditField(rowMeta.sourceIndex, F.category, e.target.value)
                             }
                           >
-                            <option value="">— بدون —</option>
+                            <option value="">{t('preview.catNone')}</option>
                             {categories.map((cat) => (
                               <option key={cat} value={cat}>
                                 {cat}
                               </option>
                             ))}
                             {extra && (
-                              <option value={extra}>{extra} (غير مُدرج)</option>
+                              <option value={extra}>{t('preview.catNotListed', { name: extra })}</option>
                             )}
                           </Select>
                         </td>
@@ -165,7 +172,7 @@ export default function OutputPreview({
                           <TextInput
                             value={row[c.header] ?? ''}
                             inputMode={c.header === F.price ? 'decimal' : undefined}
-                            placeholder={c.label}
+                            placeholder={t(c.labelKey)}
                             className="min-w-28 px-2 py-1 text-xs"
                             onChange={(e) =>
                               onEditField(rowMeta.sourceIndex, c.header, e.target.value)
@@ -201,7 +208,7 @@ export default function OutputPreview({
       {rows.length > COLLAPSED_ROWS && (
         <div className="mt-3">
           <Button variant="ghost" onClick={() => setShowAll((s) => !s)}>
-            {showAll ? 'عرض أقل' : `عرض كل الصفوف (${rows.length}) لتعديل كل التصنيفات`}
+            {showAll ? t('preview.showLess') : t('preview.showAll', { n: rows.length })}
           </Button>
         </div>
       )}

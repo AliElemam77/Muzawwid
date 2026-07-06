@@ -1,10 +1,12 @@
-const STEPS = ['رفع الملف', 'مطابقة الأعمدة', 'تصدير'] as const
+import { useI18n } from '../lib/i18n'
 
 /** Visual 3-step progress indicator. `current` is 1-based. */
 export default function Stepper({ current }: { current: 1 | 2 | 3 }) {
+  const { t } = useI18n()
+  const steps = [t('step.upload'), t('step.map'), t('step.export')]
   return (
     <ol className="flex items-center justify-center gap-2 sm:gap-4">
-      {STEPS.map((label, i) => {
+      {steps.map((label, i) => {
         const n = i + 1
         const done = n < current
         const active = n === current
@@ -32,7 +34,7 @@ export default function Stepper({ current }: { current: 1 | 2 | 3 }) {
                 {label}
               </span>
             </div>
-            {n < STEPS.length && (
+            {n < steps.length && (
               <span className="hidden h-px w-8 bg-slate-300 sm:block" />
             )}
           </li>

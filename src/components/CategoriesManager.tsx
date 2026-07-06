@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { splitCategoryInput, normalizeCategories } from '../lib/categories'
+import { useI18n } from '../lib/i18n'
 import { TextInput, Button } from './ui'
 
 /**
@@ -13,6 +14,7 @@ export default function CategoriesManager({
   categories: string[]
   onChange: (next: string[]) => void
 }) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState('')
 
   function addFromDraft() {
@@ -27,15 +29,13 @@ export default function CategoriesManager({
 
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">
-        أضف تصنيفات متجرك مرة واحدة لتختار منها لكل منتج في خطوة المعاينة. يمكنك لصق عدة تصنيفات مفصولة بفاصلة أو سطر جديد.
-      </p>
+      <p className="mb-3 text-sm text-slate-500">{t('categories.note')}</p>
 
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <TextInput
             value={draft}
-            placeholder="مثال: قمصان، بناطيل، أحذية"
+            placeholder={t('categories.placeholder')}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -46,7 +46,7 @@ export default function CategoriesManager({
           />
         </div>
         <Button onClick={addFromDraft} disabled={!draft.trim()}>
-          إضافة
+          {t('btn.add')}
         </Button>
       </div>
 
@@ -60,7 +60,7 @@ export default function CategoriesManager({
               {c}
               <button
                 onClick={() => remove(c)}
-                title="حذف التصنيف"
+                title={t('categories.removeTitle')}
                 className="text-indigo-400 transition hover:text-red-600"
               >
                 ✕
@@ -69,7 +69,7 @@ export default function CategoriesManager({
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-sm text-slate-400">لا توجد تصنيفات بعد — أضف تصنيفات متجرك للبدء.</p>
+        <p className="mt-4 text-sm text-slate-400">{t('categories.empty')}</p>
       )}
     </div>
   )

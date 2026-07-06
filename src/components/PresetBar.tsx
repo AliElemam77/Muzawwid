@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { MappingConfig, Preset } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Select, TextInput, Button } from './ui'
 
 /** Save the current mapping to localStorage, or load/delete a saved preset. */
@@ -14,6 +15,7 @@ export default function PresetBar({
   onLoad: (config: MappingConfig) => void
   onDelete: (name: string) => void
 }) {
+  const { t } = useI18n()
   const [name, setName] = useState('')
   const [selected, setSelected] = useState('')
 
@@ -22,11 +24,11 @@ export default function PresetBar({
       <div className="flex items-end gap-2">
         <div className="w-48">
           <label className="mb-1 block text-xs font-medium text-slate-500">
-            حفظ الإعدادات باسم
+            {t('presets.saveAs')}
           </label>
           <TextInput
             value={name}
-            placeholder="اسم القالب"
+            placeholder={t('presets.namePlaceholder')}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
@@ -39,7 +41,7 @@ export default function PresetBar({
           }}
           disabled={!name.trim()}
         >
-          حفظ القالب
+          {t('presets.saveBtn')}
         </Button>
       </div>
 
@@ -47,7 +49,7 @@ export default function PresetBar({
         <div className="flex items-end gap-2">
           <div className="w-48">
             <label className="mb-1 block text-xs font-medium text-slate-500">
-              تحميل قالب محفوظ
+              {t('presets.loadLabel')}
             </label>
             <Select
               value={selected}
@@ -57,7 +59,7 @@ export default function PresetBar({
                 if (p) onLoad(p.config)
               }}
             >
-              <option value="">— اختر —</option>
+              <option value="">{t('presets.choose')}</option>
               {presets.map((p) => (
                 <option key={p.name} value={p.name}>
                   {p.name}
@@ -74,7 +76,7 @@ export default function PresetBar({
               setSelected('')
             }}
           >
-            حذف
+            {t('btn.delete')}
           </Button>
         </div>
       )}

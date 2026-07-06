@@ -1,3 +1,5 @@
+import { useI18n } from '../lib/i18n'
+
 /** Multi-select of source columns to merge (dedup, comma-joined) into صورة المنتج. */
 export default function ImageMerge({
   columns,
@@ -8,6 +10,7 @@ export default function ImageMerge({
   selected: string[]
   onChange: (next: string[]) => void
 }) {
+  const { t } = useI18n()
   function toggle(col: string) {
     onChange(
       selected.includes(col)
@@ -18,9 +21,7 @@ export default function ImageMerge({
 
   return (
     <div>
-      <p className="mb-2 text-sm text-slate-500">
-        اختر أعمدة الصور — تُدمج الروابط غير الفارغة (بدون تكرار) في عمود «صورة المنتج».
-      </p>
+      <p className="mb-2 text-sm text-slate-500">{t('images.note')}</p>
       <div className="flex flex-wrap gap-2">
         {columns.map((col) => {
           const on = selected.includes(col)

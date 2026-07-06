@@ -1,17 +1,14 @@
 import type { Defaults } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { TextInput, Label } from './ui'
 
-const FIELDS: { key: keyof Defaults; label: string; hint?: string }[] = [
-  { key: 'productType', label: 'نوع المنتج' },
-  { key: 'requiresShipping', label: 'هل يتطلب شحن؟' },
-  { key: 'taxable', label: 'خاضع للضريبة ؟' },
-  { key: 'weight', label: 'الوزن', hint: 'مطلوب من سلة — يُطبّق على كل صف فارغ' },
-  { key: 'weightUnit', label: 'وحدة الوزن' },
-  {
-    key: 'maxQtyPerCustomer',
-    label: 'اقصي كمية لكل عميل',
-    hint: 'سلة ترفض الفارغ/الصفر — لازم ≥ 1. القيمة العالية = بلا حد عملي',
-  },
+const FIELDS: { key: keyof Defaults; labelKey: string; hintKey?: string }[] = [
+  { key: 'productType', labelKey: 'f.productType' },
+  { key: 'requiresShipping', labelKey: 'f.requiresShipping' },
+  { key: 'taxable', labelKey: 'f.taxable' },
+  { key: 'weight', labelKey: 'f.weight', hintKey: 'defaults.weightHint' },
+  { key: 'weightUnit', labelKey: 'f.weightUnit' },
+  { key: 'maxQtyPerCustomer', labelKey: 'f.maxQty', hintKey: 'defaults.maxQtyHint' },
 ]
 
 /** Editable constant defaults applied to every row when the target cell is empty. */
@@ -22,20 +19,19 @@ export default function DefaultsEditor({
   defaults: Defaults
   onChange: (next: Defaults) => void
 }) {
+  const { t } = useI18n()
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">
-        قيم ثابتة تُملأ في كل صف (منتج وخيار) عندما تكون الخلية فارغة. الوزن مطلوب دائمًا من سلة.
-      </p>
+      <p className="mb-3 text-sm text-slate-500">{t('defaults.note')}</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {FIELDS.map(({ key, label, hint }) => (
+        {FIELDS.map(({ key, labelKey, hintKey }) => (
           <div key={key}>
-            <Label>{label}</Label>
+            <Label>{t(labelKey)}</Label>
             <TextInput
               value={defaults[key]}
               onChange={(e) => onChange({ ...defaults, [key]: e.target.value })}
             />
-            {hint && <p className="mt-1 text-xs text-amber-600">{hint}</p>}
+            {hintKey && <p className="mt-1 text-xs text-amber-600">{t(hintKey)}</p>}
           </div>
         ))}
       </div>

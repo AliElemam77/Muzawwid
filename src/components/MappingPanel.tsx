@@ -1,5 +1,6 @@
 import { F } from '../lib/salla'
 import type { FieldSource, MappingConfig } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Card } from './ui'
 import FieldMapper from './FieldMapper'
 import ImageMerge from './ImageMerge'
@@ -8,28 +9,28 @@ import OptionsEditor from './OptionsEditor'
 import DefaultsEditor from './DefaultsEditor'
 
 /**
- * Simple (one-cell) Salla fields the user maps directly.
+ * Simple (one-cell) Salla fields the user maps directly, keyed to i18n labels.
  * Image, SKU, options, and the default-driven fields are handled by dedicated
  * sections below, so they are intentionally excluded here.
  */
-const SIMPLE_FIELDS: { header: string; label: string; required?: boolean }[] = [
-  { header: F.name, label: 'أسم المنتج', required: true },
-  { header: F.price, label: 'سعر المنتج', required: true },
-  { header: F.category, label: 'تصنيف المنتج' },
-  { header: F.brand, label: 'الماركة' },
-  { header: F.description, label: 'الوصف' },
-  { header: F.imageAlt, label: 'وصف صورة المنتج' },
-  { header: F.cost, label: 'سعر التكلفة' },
-  { header: F.discountPrice, label: 'السعر المخفض' },
-  { header: F.discountStart, label: 'تاريخ بداية التخفيض' },
-  { header: F.discountEnd, label: 'تاريخ نهاية التخفيض' },
-  { header: F.maxQty, label: 'اقصي كمية لكل عميل' },
-  { header: F.barcode, label: 'الباركود' },
-  { header: F.promoTitle, label: 'العنوان الترويجي' },
-  { header: F.calories, label: 'السعرات الحرارية' },
-  { header: F.mpn, label: 'MPN' },
-  { header: F.gtin, label: 'GTIN' },
-  { header: F.taxExemptReason, label: 'سبب عدم الخضوع للضريبة' },
+const SIMPLE_FIELDS: { header: string; labelKey: string; required?: boolean }[] = [
+  { header: F.name, labelKey: 'f.name', required: true },
+  { header: F.price, labelKey: 'f.price', required: true },
+  { header: F.category, labelKey: 'f.category' },
+  { header: F.brand, labelKey: 'f.brand' },
+  { header: F.description, labelKey: 'f.description' },
+  { header: F.imageAlt, labelKey: 'f.imageAlt' },
+  { header: F.cost, labelKey: 'f.cost' },
+  { header: F.discountPrice, labelKey: 'f.discountPrice' },
+  { header: F.discountStart, labelKey: 'f.discountStart' },
+  { header: F.discountEnd, labelKey: 'f.discountEnd' },
+  { header: F.maxQty, labelKey: 'f.maxQty' },
+  { header: F.barcode, labelKey: 'f.barcode' },
+  { header: F.promoTitle, labelKey: 'f.promoTitle' },
+  { header: F.calories, labelKey: 'f.calories' },
+  { header: F.mpn, labelKey: 'f.mpn' },
+  { header: F.gtin, labelKey: 'f.gtin' },
+  { header: F.taxExemptReason, labelKey: 'f.taxExemptReason' },
 ]
 
 /** Full column-mapping surface: fields, images, SKU, options, and defaults. */
@@ -42,17 +43,18 @@ export default function MappingPanel({
   config: MappingConfig
   onChange: (next: MappingConfig) => void
 }) {
+  const { t } = useI18n()
   const setField = (header: string, source: FieldSource) =>
     onChange({ ...config, fields: { ...config.fields, [header]: source } })
 
   return (
     <div className="space-y-5">
-      <Card title="الحقول الأساسية" subtitle="اربط كل حقل في سلة بعمود من ملفك، أو اضبط قيمة ثابتة، أو اتركه فارغًا.">
+      <Card title={t('map.fields.title')} subtitle={t('map.fields.subtitle')}>
         <div className="space-y-2.5">
           {SIMPLE_FIELDS.map((f) => (
             <FieldMapper
               key={f.header}
-              label={f.label}
+              label={t(f.labelKey)}
               columns={columns}
               required={f.required}
               source={config.fields[f.header] ?? { kind: 'none' }}
@@ -62,7 +64,7 @@ export default function MappingPanel({
         </div>
       </Card>
 
-      <Card title="دمج الصور" subtitle="اختر عمودًا واحدًا أو أكثر لدمجها في «صورة المنتج».">
+      <Card title={t('map.images.title')} subtitle={t('map.images.subtitle')}>
         <ImageMerge
           columns={columns}
           selected={config.imageColumns}
@@ -70,7 +72,7 @@ export default function MappingPanel({
         />
       </Card>
 
-      <Card title="توليد رمز المنتج (SKU)">
+      <Card title={t('map.sku.title')}>
         <SkuGenerator
           columns={columns}
           sku={config.sku}
@@ -78,7 +80,7 @@ export default function MappingPanel({
         />
       </Card>
 
-      <Card title="الخيارات (المتغيرات)" subtitle="حتى ٣ خيارات — كل خيار يتوسّع إلى صفوف «خيار» أسفل المنتج.">
+      <Card title={t('map.options.title')} subtitle={t('map.options.subtitle')}>
         <OptionsEditor
           columns={columns}
           options={config.options}
@@ -86,7 +88,7 @@ export default function MappingPanel({
         />
       </Card>
 
-      <Card title="القيم الافتراضية">
+      <Card title={t('map.defaults.title')}>
         <DefaultsEditor
           defaults={config.defaults}
           onChange={(defaults) => onChange({ ...config, defaults })}

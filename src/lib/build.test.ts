@@ -204,7 +204,7 @@ describe('validate', () => {
     const priceIssue = v.errors.find((e) => e.message.includes('سعر'))
     expect(priceIssue?.count).toBe(1)
     // second data row => spreadsheet row 4 (label + header + 2 data rows)
-    expect(priceIssue?.examples).toEqual(['«بنطال» (صف 4)'])
+    expect(priceIssue?.examples).toEqual(['«بنطال» (#4)'])
   })
 
   it('flags an orphan خيار row with no preceding منتج', () => {

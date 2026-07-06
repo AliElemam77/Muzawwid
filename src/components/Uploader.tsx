@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { readWorkbook, type SourceWorkbook } from '../lib/reader'
+import { useI18n } from '../lib/i18n'
 
 /** Drag & drop / file-picker for .xlsx/.xls/.csv → parsed SourceWorkbook. */
 export default function Uploader({
@@ -7,6 +8,7 @@ export default function Uploader({
 }: {
   onLoaded: (wb: SourceWorkbook) => void
 }) {
+  const { t } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
@@ -19,12 +21,12 @@ export default function Uploader({
     try {
       const wb = await readWorkbook(file)
       if (wb.sheets.length === 0) {
-        setError('لم يتم العثور على أي بيانات في الملف.')
+        setError(t('uploader.errNoData'))
         return
       }
       onLoaded(wb)
     } catch {
-      setError('تعذّر قراءة الملف. تأكد أنه بصيغة xlsx أو xls أو csv.')
+      setError(t('uploader.errRead'))
     } finally {
       setBusy(false)
     }
@@ -53,9 +55,9 @@ export default function Uploader({
       >
         <div className="text-4xl">📄</div>
         <p className="text-base font-semibold text-slate-800">
-          {busy ? 'جارٍ القراءة…' : 'اسحب ملف الشيت هنا أو اضغط للاختيار'}
+          {busy ? t('uploader.busy') : t('uploader.cta')}
         </p>
-        <p className="text-sm text-slate-500">يدعم صيغ .xlsx و .xls و .csv — تتم المعالجة داخل متصفحك فقط</p>
+        <p className="text-sm text-slate-500">{t('uploader.formats')}</p>
         <input
           ref={inputRef}
           type="file"

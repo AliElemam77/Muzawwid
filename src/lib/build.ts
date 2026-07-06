@@ -275,9 +275,12 @@ export function buildRows(
 /* ------------------------------ validation ------------------------------- */
 
 export interface Issue {
+  /** Stable code for i18n lookup (e.g. 'missingPrice'). */
+  code: string
+  /** Arabic fallback text (used if a translation is missing). */
   message: string
   count: number
-  /** Human-readable pointers to the first few offending rows (name + sheet row). */
+  /** Language-neutral pointers to the first few offending rows, e.g. «قميص» (#5). */
   examples?: string[]
 }
 
@@ -298,11 +301,11 @@ function sheetRowNumber(dataIndex: number): number {
   return dataIndex + 3
 }
 
-/** e.g. «قميص» (صف ٥) — falls back to the row number alone when unnamed. */
+/** Language-neutral row pointer, e.g. «قميص» (#5) or just #5 when unnamed. */
 function locate(row: SallaRow, index: number): string {
   const name = row[F.name]?.trim()
   const rowNo = sheetRowNumber(index)
-  return name ? `«${name}» (صف ${rowNo})` : `صف ${rowNo}`
+  return name ? `«${name}» (#${rowNo})` : `#${rowNo}`
 }
 
 /** A running tally: total count + a capped sample of row pointers. */
@@ -320,9 +323,9 @@ function hit(bucket: Bucket, label: string) {
   if (bucket.examples.length < MAX_EXAMPLES) bucket.examples.push(label)
 }
 
-function issue(message: string, bucket: Bucket): Issue | null {
+function issue(code: string, message: string, bucket: Bucket): Issue | null {
   return bucket.count
-    ? { message, count: bucket.count, examples: bucket.examples }
+    ? { code, message, count: bucket.count, examples: bucket.examples }
     : null
 }
 
@@ -342,13 +345,13 @@ export function validate(rows: SallaRow[]): Validation {
     const kind = row[F.type]
     if (kind === ROW_PRODUCT) {
       lastWasProductOrHasParent = true
-      if (!row[F.name]?.trim()) hit(missingName, `صف ${sheetRowNumber(index)}`)
+      if (!row[F.name]?.trim()) hit(missingName, `#${sheetRowNumber(index)}`)
       if (!cleanPrice(row[F.price] ?? '')) hit(missingPrice, locate(row, index))
       if (!row[F.image]?.trim()) hit(missingImage, locate(row, index))
       if (!row[F.category]?.trim()) hit(missingCategory, locate(row, index))
       if (!row[F.brand]?.trim()) hit(missingBrand, locate(row, index))
     } else if (kind === ROW_OPTION) {
-      if (!lastWasProductOrHasParent) hit(orphanOptions, `صف ${sheetRowNumber(index)}`)
+      if (!lastWasProductOrHasParent) hit(orphanOptions, `#${sheetRowNumber(index)}`)
     }
 
     // Weight is required on BOTH product and option rows.
@@ -362,17 +365,17 @@ export function validate(rows: SallaRow[]): Validation {
   const dupSkus = [...skuSeen.values()].filter((c) => c > 1).length
 
   const errors = [
-    issue('صفوف بدون اسم منتج (أسم المنتج مطلوب)', missingName),
-    issue('منتجات بدون سعر (سعر المنتج مطلوب)', missingPrice),
-    issue('صفوف بدون وزن (حقل الوزن مطلوب)', missingWeight),
-    dupSkus ? { message: 'أرقام SKU مكررة', count: dupSkus } : null,
-    issue('صفوف خيار بدون منتج أب', orphanOptions),
+    issue('missingName', 'صفوف بدون اسم منتج (أسم المنتج مطلوب)', missingName),
+    issue('missingPrice', 'منتجات بدون سعر (سعر المنتج مطلوب)', missingPrice),
+    issue('missingWeight', 'صفوف بدون وزن (حقل الوزن مطلوب)', missingWeight),
+    dupSkus ? { code: 'dupSku', message: 'أرقام SKU مكررة', count: dupSkus } : null,
+    issue('orphan', 'صفوف خيار بدون منتج أب', orphanOptions),
   ].filter((i): i is Issue => i !== null)
 
   const warnings = [
-    issue('منتجات بدون صورة', missingImage),
-    issue('منتجات بدون تصنيف', missingCategory),
-    issue('منتجات بدون ماركة', missingBrand),
+    issue('missingImage', 'منتجات بدون صورة', missingImage),
+    issue('missingCategory', 'منتجات بدون تصنيف', missingCategory),
+    issue('missingBrand', 'منتجات بدون ماركة', missingBrand),
   ].filter((i): i is Issue => i !== null)
 
   return { errors, warnings, ok: errors.length === 0 }
