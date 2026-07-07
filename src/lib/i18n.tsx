@@ -18,6 +18,10 @@ const MESSAGES: Record<Lang, Dict> = {
   ar: {
     'lang.other': 'English',
 
+    'hint.scraper.title': '💡 نصيحة: استخدم Easy Scraper',
+    'hint.scraper.body':
+      'لسحب المنتجات من المتاجر يُفضَّل استخدام إضافة «Easy Scraper» — تصدّر ملفًا نظيفًا بالأعمدة الجاهزة للمطابقة هنا.',
+
     'platform.choose': 'اختر منصة التصدير',
     'platform.ready': 'متاح',
     'platform.soonBadge': 'قريبًا',
@@ -158,6 +162,7 @@ const MESSAGES: Record<Lang, Dict> = {
     'col.sku': 'SKU',
     'col.category': 'التصنيف',
     'col.brand': 'الماركة',
+    'col.promoTitle': 'العنوان الترويجي',
     'col.weight': 'الوزن',
     'col.opt1': '[1] القيمة',
     'col.opt2': '[2] القيمة',
@@ -186,13 +191,31 @@ const MESSAGES: Record<Lang, Dict> = {
     'val.missingWeight': 'صفوف بدون وزن (حقل الوزن مطلوب)',
     'val.dupSku': 'أرقام SKU مكررة',
     'val.orphan': 'صفوف خيار بدون منتج أب',
+    'val.promoTitleTooLong': 'العنوان الترويجي يتجاوز 25 حرفًا',
     'val.missingImage': 'منتجات بدون صورة',
     'val.missingCategory': 'منتجات بدون تصنيف',
     'val.missingBrand': 'منتجات بدون ماركة',
+
+    'val.zidSku': 'منتجات بدون SKU',
+    'val.zidName': 'منتجات بدون اسم عربي (name_ar مطلوب)',
+    'val.zidPrice': 'منتجات بدون سعر (price مطلوب)',
+    'val.zidWeight': 'منتجات بدون وزن (weight مطلوب)',
+    'val.zidUnnamedOption': 'منتجات لها خيارات بدون اسم (تم تجاهلها)',
+    'val.zidMissingEn': 'حقول عربية بدون مقابل إنجليزي',
+
+    'zid.subtitle': 'المنتجات ذات الخيارات تُصدَّر كصف أب + صف لكل تركيبة (مثل سلة).',
+    'zid.stats': '{count} منتج.',
+    'col.variants': 'خيارات؟',
+    'col.options': 'الخيارات',
   },
 
   en: {
     'lang.other': 'العربية',
+
+    'hint.scraper.title': '💡 Tip: use Easy Scraper',
+    'hint.scraper.body':
+      'To pull products from stores, we recommend the “Easy Scraper” extension — it exports a clean file with columns ready to map here.',
+
 
     'platform.choose': 'Choose export platform',
     'platform.ready': 'Available',
@@ -332,6 +355,7 @@ const MESSAGES: Record<Lang, Dict> = {
     'col.sku': 'SKU',
     'col.category': 'Category',
     'col.brand': 'Brand',
+    'col.promoTitle': 'Promo title',
     'col.weight': 'Weight',
     'col.opt1': '[1] Value',
     'col.opt2': '[2] Value',
@@ -359,10 +383,23 @@ const MESSAGES: Record<Lang, Dict> = {
     'val.missingPrice': 'Products without a price (price required)',
     'val.missingWeight': 'Rows without a weight (weight required)',
     'val.dupSku': 'Duplicate SKUs',
+    'val.promoTitleTooLong': 'Promo title exceeds 25 characters',
     'val.orphan': 'Option rows without a parent product',
     'val.missingImage': 'Products without an image',
     'val.missingCategory': 'Products without a category',
     'val.missingBrand': 'Products without a brand',
+
+    'val.zidSku': 'Products without an SKU',
+    'val.zidName': 'Products without an Arabic name (name_ar required)',
+    'val.zidPrice': 'Products without a price (price required)',
+    'val.zidWeight': 'Products without a weight (weight required)',
+    'val.zidUnnamedOption': 'Products with unnamed options (skipped)',
+    'val.zidMissingEn': 'Arabic fields lacking an English counterpart',
+
+    'zid.subtitle': 'Products with options export as a parent row + one row per combination (like Salla).',
+    'zid.stats': '{count} products.',
+    'col.variants': 'Variants?',
+    'col.options': 'Options',
   },
 }
 

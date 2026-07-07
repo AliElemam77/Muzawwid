@@ -83,6 +83,24 @@ describe('buildRows', () => {
     expect(variants[0][F.weight]).toBe('1')
   })
 
+  it('never auto-generates العنوان الترويجي — stays empty unless the user maps/edits it', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    const { rows } = buildRows(sheet(['title'], [{ title: 'عباية سوداء كلوش' }]), config)
+    expect(rows[0][F.promoTitle]).toBeUndefined()
+  })
+
+  it('passes a mapped العنوان الترويجي straight through, untouched', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.promoTitle] = { kind: 'column', column: 'promo' }
+    const { rows } = buildRows(
+      sheet(['title', 'promo'], [{ title: 'x', promo: 'عرض الشتاء' }]),
+      config,
+    )
+    expect(rows[0][F.promoTitle]).toBe('عرض الشتاء')
+  })
+
   it('replaces a mapped max-qty of 0 with the >= 1 default (Salla rule)', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
@@ -166,6 +184,50 @@ describe('buildRows', () => {
     expect(rows[0][F.name]).toBe('ب')
   })
 
+  it('leaves نوع المنتج / يتطلب شحن EMPTY on خيار rows, filled on the منتج row', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [{ column: 'size', name: 'المقاس', type: 'text' }]
+
+    const { rows } = buildRows(
+      sheet(['title', 'size'], [{ title: 'قميص', size: 'S,M' }]),
+      config,
+    )
+    const [parent, ...variants] = rows
+    expect(parent[F.productType]).toBe('منتج جاهز')
+    expect(parent[F.requiresShipping]).toBe('نعم')
+    for (const v of variants) {
+      expect(v[F.productType]).toBeUndefined()
+      expect(v[F.requiresShipping]).toBeUndefined()
+      // weight is still required on every row
+      expect(v[F.weight]).toBe('1')
+    }
+  })
+
+  it('drops URL/garbage option values and dedupes; all-empty option → simple product', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [{ column: 'opt', name: 'المقاس', type: 'text' }]
+
+    // Only S and M survive (URL dropped, duplicate S deduped)
+    const mixed = buildRows(
+      sheet(['title', 'opt'], [{ title: 'أ', opt: 'S, https://x/y, S, M' }]),
+      config,
+    )
+    expect(mixed.optionCount).toBe(2)
+    const g1 = optionGroupCols(1)
+    expect(mixed.rows.slice(1).map((r) => r[g1.value])).toEqual(['S', 'M'])
+
+    // A row whose only option value is a URL → no variants, no option group declared
+    const junk = buildRows(
+      sheet(['title', 'opt'], [{ title: 'ب', opt: 'https://x/z' }]),
+      config,
+    )
+    expect(junk.productCount).toBe(1)
+    expect(junk.optionCount).toBe(0)
+    expect(junk.rows[0][g1.name]).toBeUndefined()
+  })
+
   it('reads a color swatch as hex onto the variant row', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
@@ -211,6 +273,41 @@ describe('validate', () => {
     const rows = [{ [F.type]: ROW_OPTION, [F.weight]: '1' }]
     const v = validate(rows)
     expect(v.errors.some((e) => e.message.includes('أب'))).toBe(true)
+  })
+
+  it('blocks a العنوان الترويجي over 25 chars; passes a short one / absent one', () => {
+    const long = { [F.type]: ROW_PRODUCT, [F.name]: 'أ', [F.price]: '10', [F.weight]: '1', [F.promoTitle]: 'عرض خاص لفترة محدودة جدًا على هذا المنتج' }
+    const short = { [F.type]: ROW_PRODUCT, [F.name]: 'ب', [F.price]: '10', [F.weight]: '1', [F.promoTitle]: 'عرض الشتاء' }
+    const none = { [F.type]: ROW_PRODUCT, [F.name]: 'ج', [F.price]: '10', [F.weight]: '1' }
+
+    expect(validate([long]).errors.some((e) => e.code === 'promoTitleTooLong')).toBe(true)
+    expect(validate([short]).errors.some((e) => e.code === 'promoTitleTooLong')).toBe(false)
+    expect(validate([none]).errors.some((e) => e.code === 'promoTitleTooLong')).toBe(false)
+  })
+
+  it('flags a خيار row that carries no option value', () => {
+    const g1 = optionGroupCols(1)
+    const rows = [
+      { [F.type]: ROW_PRODUCT, [F.name]: 'قميص', [F.price]: '10', [F.weight]: '1', [g1.name]: 'المقاس' },
+      { [F.type]: ROW_OPTION, [F.weight]: '1' }, // no value cell filled
+    ]
+    const v = validate(rows)
+    expect(v.errors.some((e) => e.code === 'emptyOptionValue')).toBe(true)
+  })
+
+  it('flags an option name that still looks like a scrape selector', () => {
+    const g1 = optionGroupCols(1)
+    const rows = [
+      {
+        [F.type]: ROW_PRODUCT,
+        [F.name]: 'قميص',
+        [F.price]: '10',
+        [F.weight]: '1',
+        [g1.name]: '_buttonOptionsCtr_14os5_1',
+      },
+    ]
+    const v = validate(rows)
+    expect(v.errors.some((e) => e.code === 'selectorName')).toBe(true)
   })
 
   it('passes a well-formed product row and only warns on missing image/category', () => {

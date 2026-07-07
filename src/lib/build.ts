@@ -10,6 +10,9 @@ import {
 import type { SourceSheet, SourceRow } from './reader'
 import type { MappingConfig, OptionColumn } from './types'
 
+/** Salla's العنوان الترويجي (promo title) hard limit — enforced in `validate`. */
+const SALLA_PROMO_TITLE_MAX = 25
+
 /* ----------------------------- value helpers ----------------------------- */
 
 /** Strip currency symbols / thousands separators; '-' or '' → ''. */
@@ -45,6 +48,26 @@ export function splitValues(cell: string): string[] {
     .split(/[,،|\n]/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
+}
+
+const OPTION_URL_RE = /^https?:\/\//i
+
+/**
+ * Split a cell into clean option values: trim, drop URLs (a scraped link is
+ * never a real option value) and empties, and dedupe while preserving order.
+ * Shared by both the Salla and Zid variant expanders so garbage never becomes
+ * a خيار / sub-product row.
+ */
+export function cleanOptionValues(cell: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const v of splitValues(cell)) {
+    if (OPTION_URL_RE.test(v)) continue
+    if (seen.has(v)) continue
+    seen.add(v)
+    out.push(v)
+  }
+  return out
 }
 
 /** Merge several image cells → dedup, non-empty, comma-joined. */
@@ -130,11 +153,18 @@ export interface BuildResult {
   optionCount: number
 }
 
-/** Apply editable defaults to a target cell only when it is empty. */
-function applyDefaults(target: SallaRow, config: MappingConfig) {
+/**
+ * Apply editable defaults to a target cell only when it is empty. `نوع المنتج`
+ * and `هل يتطلب شحن؟` are PRODUCT-row fields — Salla rejects them on خيار rows
+ * ("... مطلوب في صف المنتج"), so they're filled only when `isProduct`. Weight,
+ * unit, taxable and max-qty are required on every row.
+ */
+function applyDefaults(target: SallaRow, config: MappingConfig, isProduct: boolean) {
   const d = config.defaults
-  if (!target[F.productType]) target[F.productType] = d.productType
-  if (!target[F.requiresShipping]) target[F.requiresShipping] = d.requiresShipping
+  if (isProduct) {
+    if (!target[F.productType]) target[F.productType] = d.productType
+    if (!target[F.requiresShipping]) target[F.requiresShipping] = d.requiresShipping
+  }
   if (!target[F.taxable]) target[F.taxable] = d.taxable
   if (!target[F.weight]) target[F.weight] = d.weight
   if (!target[F.weightUnit]) target[F.weightUnit] = d.weightUnit
@@ -142,14 +172,30 @@ function applyDefaults(target: SallaRow, config: MappingConfig) {
   if (!target[F.maxQty]) target[F.maxQty] = d.maxQtyPerCustomer
 }
 
-/** Cartesian product of each option column's split values for a source row. */
+/** A per-row option axis: the configured column plus its cleaned values. */
+interface RowAxis {
+  opt: OptionColumn
+  values: string[]
+}
+
+/**
+ * Options that actually have (cleaned) values for this row — capped at 3.
+ * A product whose option columns are all empty yields none → simple product.
+ */
+function rowAxes(row: SourceRow, options: OptionColumn[]): RowAxis[] {
+  return options
+    .map((opt) => ({ opt, values: cleanOptionValues(row[opt.column] ?? '') }))
+    .filter((a) => a.values.length > 0)
+    .slice(0, 3)
+}
+
+/** Cartesian product across the row's populated axes (+ hex swatch for colors). */
 function optionCombos(
   row: SourceRow,
-  options: OptionColumn[],
+  axes: RowAxis[],
 ): { opt: OptionColumn; value: string; swatch: string }[][] {
-  const axes = options.map((opt) => {
-    const values = splitValues(row[opt.column] ?? '')
-    return values.map((value) => {
+  const expanded = axes.map(({ opt, values }) =>
+    values.map((value) => {
       let swatch = ''
       if (opt.type === 'color') {
         const fromCol = opt.swatchColumn ? (row[opt.swatchColumn] ?? '') : ''
@@ -157,13 +203,11 @@ function optionCombos(
         else if (isHex(value)) swatch = value.startsWith('#') ? value : `#${value}`
       }
       return { opt, value, swatch }
-    })
-  })
+    }),
+  )
 
-  // Cartesian product across non-empty axes.
-  return axes.reduce<{ opt: OptionColumn; value: string; swatch: string }[][]>(
+  return expanded.reduce<{ opt: OptionColumn; value: string; swatch: string }[][]>(
     (acc, axis) => {
-      if (axis.length === 0) return acc
       const next: { opt: OptionColumn; value: string; swatch: string }[][] = []
       for (const combo of acc) for (const item of axis) next.push([...combo, item])
       return next
@@ -222,24 +266,25 @@ export function buildRows(
     const sku = parentSku(row, config, index)
     if (sku) parent[F.sku] = sku
 
-    // Declare option groups on the parent row.
-    const activeOptions = config.options.filter((o) => o.column)
-    activeOptions.forEach((opt, i) => {
-      if (i > 2) return
+    // Only options that actually have values for THIS row become groups —
+    // re-indexed sequentially (1..3) so the parent never declares an option
+    // group that has no خيار values (which Salla rejects).
+    const axes = rowAxes(row, config.options.filter((o) => o.column))
+    axes.forEach(({ opt }, i) => {
       const cols = optionGroupCols((i + 1) as 1 | 2 | 3)
       parent[cols.name] = opt.name
       parent[cols.type] = OPTION_TYPES[opt.type]
       parent[cols.value] = OPTION_VALUE_PLACEHOLDER
     })
 
-    applyDefaults(parent, config)
+    applyDefaults(parent, config, true)
     out.push(parent)
     meta.push({ sourceIndex: index, isProduct: true })
     productCount++
 
-    // Expand variants.
-    if (activeOptions.length) {
-      const combos = optionCombos(row, activeOptions)
+    // Expand variants (cartesian product of the populated axes).
+    if (axes.length) {
+      const combos = optionCombos(row, axes)
       for (const combo of combos) {
         if (combo.length === 0) continue
         const variant: SallaRow = { [F.type]: ROW_OPTION }
@@ -252,16 +297,16 @@ export function buildRows(
         const comboValues = combo.map((c) => c.value).join('-')
         if (sku) variant[F.sku] = `${sku}-${comboValues}`
 
-        // Fill each option group's actual value (+ swatch for colors).
-        // Each combo item maps back to its option group by original order.
+        // Fill each option group's actual value (+ swatch for colors), keyed
+        // by the axis position so it matches the parent's declared group.
         for (const c of combo) {
-          const groupIndex = activeOptions.indexOf(c.opt)
+          const groupIndex = axes.findIndex((a) => a.opt === c.opt)
           const gcols = optionGroupCols((groupIndex + 1) as 1 | 2 | 3)
           variant[gcols.value] = c.value
           if (c.swatch) variant[gcols.swatch] = c.swatch
         }
 
-        applyDefaults(variant, config)
+        applyDefaults(variant, config, false)
         out.push(variant)
         meta.push({ sourceIndex: index, isProduct: false })
         optionCount++
@@ -329,6 +374,23 @@ function issue(code: string, message: string, bucket: Bucket): Issue | null {
     : null
 }
 
+/**
+ * Safety-net check that an option NAME didn't leak a scrape selector into the
+ * output (mirrors `isSelectorLike` in product.ts — kept local to avoid a
+ * build↔product import cycle). Names are sanitized upstream, so a hit here is
+ * a hard bug.
+ */
+const SELECTOR_WORDS = ['span', 'grid', 'mode', 'product-options', 'ctr', 'button']
+function looksLikeSelectorName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  if (!n) return false
+  if (/^_.*_[a-z0-9]{4,}_?\d*$/i.test(n)) return true
+  return n.includes('-') && SELECTOR_WORDS.some((w) => n.includes(w))
+}
+
+/** The three option-group column keys for name / value lookups. */
+const OPTION_GROUPS = [optionGroupCols(1), optionGroupCols(2), optionGroupCols(3)]
+
 export function validate(rows: SallaRow[]): Validation {
   const missingName = newBucket()
   const missingPrice = newBucket()
@@ -337,6 +399,9 @@ export function validate(rows: SallaRow[]): Validation {
   const missingCategory = newBucket()
   const missingBrand = newBucket()
   const orphanOptions = newBucket()
+  const emptyOptionValue = newBucket()
+  const selectorName = newBucket()
+  const promoTitleTooLong = newBucket()
 
   const skuSeen = new Map<string, number>()
   let lastWasProductOrHasParent = false
@@ -350,8 +415,17 @@ export function validate(rows: SallaRow[]): Validation {
       if (!row[F.image]?.trim()) hit(missingImage, locate(row, index))
       if (!row[F.category]?.trim()) hit(missingCategory, locate(row, index))
       if (!row[F.brand]?.trim()) hit(missingBrand, locate(row, index))
+      // Any declared option group whose name looks like a scrape selector.
+      if (OPTION_GROUPS.some((g) => looksLikeSelectorName(row[g.name] ?? '')))
+        hit(selectorName, locate(row, index))
+      // العنوان الترويجي: Salla rejects import over 25 chars.
+      if ((row[F.promoTitle] ?? '').trim().length > SALLA_PROMO_TITLE_MAX)
+        hit(promoTitleTooLong, locate(row, index))
     } else if (kind === ROW_OPTION) {
       if (!lastWasProductOrHasParent) hit(orphanOptions, `#${sheetRowNumber(index)}`)
+      // A خيار row must carry at least one real option value.
+      if (!OPTION_GROUPS.some((g) => (row[g.value] ?? '').trim()))
+        hit(emptyOptionValue, `#${sheetRowNumber(index)}`)
     }
 
     // Weight is required on BOTH product and option rows.
@@ -370,6 +444,13 @@ export function validate(rows: SallaRow[]): Validation {
     issue('missingWeight', 'صفوف بدون وزن (حقل الوزن مطلوب)', missingWeight),
     dupSkus ? { code: 'dupSku', message: 'أرقام SKU مكررة', count: dupSkus } : null,
     issue('orphan', 'صفوف خيار بدون منتج أب', orphanOptions),
+    issue('emptyOptionValue', 'صفوف خيار بدون قيمة', emptyOptionValue),
+    issue('selectorName', 'أسماء خيارات تبدو كمُحدِّد برمجي', selectorName),
+    issue(
+      'promoTitleTooLong',
+      `العنوان الترويجي يتجاوز ${SALLA_PROMO_TITLE_MAX} حرفًا`,
+      promoTitleTooLong,
+    ),
   ].filter((i): i is Issue => i !== null)
 
   const warnings = [

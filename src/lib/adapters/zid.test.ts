@@ -1,0 +1,306 @@
+import { describe, it, expect } from 'vitest'
+import * as XLSX from 'xlsx'
+import {
+  serialize,
+  validate,
+  toSlug,
+  ZID_HEADERS,
+  ZID_SHEET_NAME,
+  ZID_COLUMN_COUNT,
+} from './zid'
+import type { Product } from '../product'
+
+function product(overrides: Partial<Product> = {}): Product {
+  return {
+    sku: 'SKU-1',
+    nameAr: 'قميص',
+    nameEn: '',
+    brand: '',
+    weight: '',
+    weightUnit: '',
+    price: '100',
+    salePrice: '',
+    cost: '',
+    quantity: '',
+    categoriesAr: 'ملابس>رجالي',
+    categoriesEn: '',
+    images: ['a.jpg', 'b.jpg'],
+    imagesAlt: '',
+    productPageUrl: '',
+    descriptionAr: '',
+    descriptionEn: '',
+    shortDescAr: '',
+    shortDescEn: '',
+    seoTitleAr: '',
+    seoTitleEn: '',
+    metaDescAr: '',
+    metaDescEn: '',
+    keywords: '',
+    barcode: '',
+    options: [],
+    ...overrides,
+  }
+}
+
+/** Read the serialized workbook back as an array-of-arrays. */
+function aoaOf(products: Product[]): string[][] {
+  const wb = serialize(products)
+  const ws = wb.Sheets[ZID_SHEET_NAME]
+  return XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '' })
+}
+
+const col = (key: string) => ZID_HEADERS.indexOf(key)
+
+describe('Zid adapter — structural invariants', () => {
+  it('has exactly 111 machine keys in row 2', () => {
+    expect(ZID_HEADERS).toHaveLength(ZID_COLUMN_COUNT)
+    expect(ZID_HEADERS[0]).toBe('sku')
+    expect(ZID_HEADERS[ZID_HEADERS.length - 1]).toBe('filtration_type_2')
+  })
+
+  it('produces a single sheet named Sheet1', () => {
+    const wb = serialize([product()])
+    expect(wb.SheetNames).toEqual([ZID_SHEET_NAME])
+    expect(Object.keys(wb.Sheets)).toEqual([ZID_SHEET_NAME])
+  })
+
+  it('places the 6 group labels at the right 1-based columns in row 1', () => {
+    const aoa = aoaOf([product()])
+    const row1 = aoa[0]
+    expect(row1[1]).toBe('المعلومات الأساسية - General Details') // col 2
+    expect(row1[22]).toBe('وصف المنتج - Product Description') // col 23
+    expect(row1[27]).toBe('تحسينات محركات البحث  - SEO Enhanamcent') // col 28
+    expect(row1[32]).toBe('خيارات المنتج (غير أساسية) - Products Options') // col 33
+    expect(row1[45]).toBe('إضافات المنتج (غير أساسية) - Product Additions') // col 46
+    expect(row1[97]).toBe('Product Filtration - (غير أساسية) معايير التصفية') // col 98
+    // every other column in row 1 is blank
+    const labelled = new Set([1, 22, 27, 32, 45, 97])
+    row1.forEach((v, i) => {
+      if (!labelled.has(i)) expect(v).toBe('')
+    })
+  })
+
+  it('row 2 equals the 111 headers exactly', () => {
+    const aoa = aoaOf([product()])
+    expect(aoa[1]).toEqual([...ZID_HEADERS])
+    expect(aoa[1]).toHaveLength(ZID_COLUMN_COUNT)
+  })
+
+  it('writes one data row per product, none with an empty weight', () => {
+    const products = [product({ sku: 'A' }), product({ sku: 'B' }), product({ sku: 'C' })]
+    const aoa = aoaOf(products)
+    expect(aoa.length).toBe(2 + products.length) // 2 header rows + data
+    const w = col('weight')
+    for (let r = 2; r < aoa.length; r++) {
+      expect(aoa[r][w]).not.toBe('') // defaulted to 1
+      expect(aoa[r][w]).toBe('1')
+    }
+  })
+})
+
+describe('Zid adapter — field encoding', () => {
+  it('applies defaults and Yes/No booleans', () => {
+    const aoa = aoaOf([product()])
+    const row = aoa[2]
+    expect(row[col('weight')]).toBe('1')
+    expect(row[col('weight_unit')]).toBe('kg')
+    expect(row[col('published')]).toBe('Yes')
+    expect(row[col('vat_free')]).toBe('No')
+    expect(row[col('shipping_required')]).toBe('Yes')
+    expect(row[col('has_variants')]).toBe('No')
+  })
+
+  it('joins images and mirrors Arabic categories into the English column', () => {
+    const aoa = aoaOf([product()])
+    const row = aoa[2]
+    expect(row[col('images')]).toBe('a.jpg,b.jpg')
+    expect(row[col('categories_ar')]).toBe('ملابس>رجالي')
+    expect(row[col('categories_en')]).toBe('ملابس>رجالي')
+  })
+
+  it('maps SEO fields into the product_page_* columns', () => {
+    const aoa = aoaOf([
+      product({ seoTitleAr: 'عباية سوداء', metaDescAr: 'اشترِ عباية سوداء', keywords: 'عباية, سوداء' }),
+    ])
+    const row = aoa[2]
+    expect(row[col('product_page_title_ar')]).toBe('عباية سوداء')
+    expect(row[col('product_page_description_ar')]).toBe('اشترِ عباية سوداء')
+    expect(row[col('keywords')]).toBe('عباية, سوداء')
+  })
+
+  it('writes the product page URL as a slug (letters/numbers/dashes), not into images', () => {
+    const aoa = aoaOf([
+      product({ productPageUrl: 'https://shop.example/ar/shoe-red/p123?x=1', images: ['a.jpg'] }),
+    ])
+    const row = aoa[2]
+    // full URL is reduced to a valid Zid slug — no scheme/host/query/punctuation
+    expect(row[col('product_page_url')]).toBe('ar-shoe-red-p123')
+    expect(row[col('images')]).toBe('a.jpg')
+  })
+
+  it('does NOT set has_variants for an option that has values but no name', () => {
+    const p = product({
+      options: [{ nameAr: '', nameEn: '', values: ['S', 'M'] }],
+    })
+    const row = aoaOf([p])[2]
+    expect(row[col('has_variants')]).toBe('No')
+    expect(row[col('option1_name_ar')]).toBe('')
+    expect(row[col('option1_value_ar')]).toBe('')
+    // and it is surfaced as a non-blocking warning
+    const v = validate([p])
+    expect(v.ok).toBe(true)
+    expect(v.warnings.map((w) => w.code)).toContain('zidUnnamedOption')
+  })
+
+  it('expands variants into a parent row + one child row per combination', () => {
+    const p = product({
+      sku: 'SH',
+      options: [
+        { nameAr: 'المقاس', nameEn: 'Size', values: ['S', 'M', 'L'] },
+        { nameAr: 'اللون', nameEn: '', values: ['أحمر', 'أزرق'] },
+      ],
+    })
+    const aoa = aoaOf([p])
+    // 2 header rows + 1 parent + (3 × 2) children = 9
+    expect(aoa.length).toBe(2 + 1 + 6)
+
+    const parent = aoa[2]
+    expect(parent[col('has_variants')]).toBe('Yes')
+    expect(parent[col('name_ar')]).toBe('قميص')
+    expect(parent[col('option1_name_ar')]).toBe('المقاس')
+    expect(parent[col('option1_name_en')]).toBe('Size')
+    expect(parent[col('option2_name_ar')]).toBe('اللون')
+    // parent option VALUES are empty
+    expect(parent[col('option1_value_ar')]).toBe('')
+    expect(parent[col('option2_value_ar')]).toBe('')
+
+    // first child: values only, everything else empty
+    const child = aoa[3]
+    expect(child[col('name_ar')]).toBe('')
+    expect(child[col('sku')]).toBe('')
+    expect(child[col('has_variants')]).toBe('')
+    expect(child[col('option1_name_ar')]).toBe('')
+    expect(child[col('option1_value_ar')]).toBe('S')
+    expect(child[col('option2_value_ar')]).toBe('أحمر')
+
+    // the 6 children cover every S/M/L × أحمر/أزرق combination
+    const combos = aoa
+      .slice(3)
+      .map((r) => `${r[col('option1_value_ar')]}-${r[col('option2_value_ar')]}`)
+      .sort()
+    expect(combos).toEqual(
+      ['S-أحمر', 'S-أزرق', 'M-أحمر', 'M-أزرق', 'L-أحمر', 'L-أزرق'].sort(),
+    )
+  })
+
+  it('a variant parent is the only row carrying weight; children are blank', () => {
+    const p = product({ options: [{ nameAr: 'المقاس', nameEn: '', values: ['S', 'M'] }] })
+    const aoa = aoaOf([p])
+    const w = col('weight')
+    expect(aoa[2][w]).toBe('1') // parent
+    expect(aoa[3][w]).toBe('') // child
+    expect(aoa[4][w]).toBe('') // child
+  })
+})
+
+describe('toSlug — Zid product_page_url', () => {
+  it('reduces a full URL to a dash slug', () => {
+    expect(toSlug('https://shop.example/ar/shoe-red/p123?ref=x#top')).toBe('ar-shoe-red-p123')
+  })
+  it('decodes percent-encoded (Arabic) path segments', () => {
+    // /منتج-حذاء
+    expect(toSlug('https://shop.example/%D9%85%D9%86%D8%AC-%D8%AD%D8%B0%D8%A7%D8%A1')).toBe(
+      'منج-حذاء',
+    )
+  })
+  it('keeps an already-valid slug and empties blank input', () => {
+    expect(toSlug('classic-shoe-42')).toBe('classic-shoe-42')
+    expect(toSlug('')).toBe('')
+    expect(toSlug('   ')).toBe('')
+  })
+})
+
+describe('Zid adapter — end-to-end sample (sizes + plain product)', () => {
+  it('expands one sized product + one plain product exactly as Zid expects', () => {
+    const sized = product({
+      sku: '',
+      nameAr: 'حذاء',
+      price: '200',
+      options: [{ nameAr: 'المقاس', nameEn: 'Size', values: ['52', '54', '58'] }],
+    })
+    const plain = product({ sku: '', nameAr: 'حزام', price: '80', options: [] })
+    const aoa = aoaOf([sized, plain])
+
+    // 2 header rows + (1 parent + 3 children) + 1 plain = 7 rows, 111 cols each
+    expect(aoa.length).toBe(2 + 4 + 1)
+    aoa.forEach((r) => expect(r).toHaveLength(ZID_COLUMN_COUNT))
+
+    // sized parent
+    const parent = aoa[2]
+    expect(parent[col('has_variants')]).toBe('Yes')
+    expect(parent[col('sku')]).toBe('') // left for Zid to assign
+    expect(parent[col('option1_name_ar')]).toBe('المقاس')
+    expect(parent[col('option1_value_ar')]).toBe('') // no value on parent
+    expect(parent[col('option2_name_ar')]).toBe('') // one dimension only
+
+    // three children: one per size, only the value cell filled
+    const sizes = ['52', '54', '58']
+    sizes.forEach((size, k) => {
+      const child = aoa[3 + k]
+      expect(child[col('option1_value_ar')]).toBe(size)
+      expect(child[col('sku')]).toBe('')
+      expect(child[col('name_ar')]).toBe('')
+      expect(child[col('has_variants')]).toBe('')
+      expect(child[col('option1_name_ar')]).toBe('')
+      expect(child[col('weight')]).toBe('')
+    })
+
+    // plain product → single row, has_variants=No, SKU left empty
+    const plainRow = aoa[6]
+    expect(plainRow[col('has_variants')]).toBe('No')
+    expect(plainRow[col('name_ar')]).toBe('حزام')
+    expect(plainRow[col('sku')]).toBe('')
+
+    // validation passes on this sample (empty SKU is fine — Zid assigns it)
+    expect(validate([sized, plain]).ok).toBe(true)
+  })
+})
+
+describe('Zid adapter — validate', () => {
+  it('blocks on missing name_ar / price; never on weight (defaulted)', () => {
+    const v = validate([product({ sku: '', nameAr: '', price: '' })])
+    expect(v.ok).toBe(false)
+    const codes = v.errors.map((e) => e.code)
+    expect(codes).toContain('zidName')
+    expect(codes).toContain('zidPrice')
+    expect(codes).not.toContain('zidWeight')
+  })
+
+  it('leaves the SKU empty and never flags it — Zid assigns it on import', () => {
+    const p = product({ sku: '', nameAr: 'قميص', price: '100' })
+    const v = validate([p])
+    expect(v.ok).toBe(true)
+    expect(v.errors.map((e) => e.code)).not.toContain('zidSku')
+    expect(v.warnings.map((w) => w.code)).not.toContain('zidSku')
+    // the emitted row keeps the SKU empty (not fabricated)
+    const row = aoaOf([p])[2]
+    expect(row[col('sku')]).toBe('')
+  })
+
+  it('blocks on a selector-like option name', () => {
+    const p = product({
+      options: [
+        { nameAr: 's-product-options-grid-mode-span', nameEn: '', values: ['52', '54'] },
+      ],
+    })
+    const v = validate([p])
+    expect(v.ok).toBe(false)
+    expect(v.errors.map((e) => e.code)).toContain('zidSelectorOption')
+  })
+
+  it('warns (does not block) on an Arabic field lacking its English pair', () => {
+    const v = validate([product()]) // nameAr set, nameEn empty
+    expect(v.ok).toBe(true)
+    expect(v.warnings.some((w) => w.code === 'zidMissingEn')).toBe(true)
+  })
+})

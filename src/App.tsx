@@ -5,6 +5,8 @@ import { autoMap } from './lib/automap'
 import { buildRows, validate, type RowOverrides } from './lib/build'
 import { F } from './lib/salla'
 import { buildSallaWorkbook, downloadWorkbook } from './lib/salla'
+import { buildProducts } from './lib/product'
+import { getAdapter } from './lib/adapters'
 import { loadPresets, savePreset, deletePreset } from './lib/presets'
 import { loadCategories, saveCategories } from './lib/categories'
 import { loadPlatform, savePlatform, PLATFORMS, type PlatformId } from './lib/platforms'
@@ -19,6 +21,7 @@ import SourcePreview from './components/SourcePreview'
 import MappingPanel from './components/MappingPanel'
 import CategoriesManager from './components/CategoriesManager'
 import OutputPreview from './components/OutputPreview'
+import ZidPreview from './components/ZidPreview'
 import ValidationSummary from './components/ValidationSummary'
 import PresetBar from './components/PresetBar'
 import { Card, Button } from './components/ui'
@@ -43,18 +46,30 @@ export default function App() {
     [workbook, sheetName],
   )
 
-  // Rebuild output + validation whenever the sheet, mapping, or edits change.
+  const adapter = getAdapter(platform)
+
+  // Salla keeps its dedicated (sheet + config) pipeline.
   const build = useMemo(
     () =>
-      sheet && config
+      platform === 'salla' && sheet && config
         ? buildRows(sheet, config, rowOverrides, excludedRows)
         : null,
-    [sheet, config, rowOverrides, excludedRows],
+    [platform, sheet, config, rowOverrides, excludedRows],
   )
-  const validation = useMemo(
-    () => (build ? validate(build.rows) : null),
-    [build],
+
+  // Canonical products power every adapter platform (Zid, …).
+  const products = useMemo(
+    () =>
+      adapter && sheet && config
+        ? buildProducts(sheet, config, rowOverrides, excludedRows)
+        : null,
+    [adapter, sheet, config, rowOverrides, excludedRows],
   )
+
+  const validation = useMemo(() => {
+    if (platform === 'salla') return build ? validate(build.rows) : null
+    return adapter && products ? adapter.validate(products) : null
+  }, [platform, build, adapter, products])
 
   const step: 1 | 2 | 3 = !workbook ? 1 : validation?.ok ? 3 : 2
 
@@ -62,7 +77,7 @@ export default function App() {
     const first = wb.sheets[0]
     setWorkbook(wb)
     setSheetName(first.name)
-    setConfig(autoMap(first.headers))
+    setConfig(autoMap(first))
     setRowOverrides({})
     setExcludedRows(new Set())
   }
@@ -71,8 +86,8 @@ export default function App() {
     const s = workbook?.sheets.find((x) => x.name === name)
     if (!s) return
     setSheetName(name)
-    // Re-run auto-mapping for the newly selected sheet's headers.
-    setConfig(autoMap(s.headers))
+    // Re-run auto-mapping for the newly selected sheet.
+    setConfig(autoMap(s))
     // Row indices no longer correspond to the previous sheet — clear edits.
     setRowOverrides({})
     setExcludedRows(new Set())
@@ -94,13 +109,14 @@ export default function App() {
   }
 
   function handleApplyCategoryToAll(value: string) {
-    if (!build) return
+    // Product source indices come from whichever pipeline is active.
+    const indices = build
+      ? build.meta.filter((m) => m.isProduct).map((m) => m.sourceIndex)
+      : (products?.map((p) => p.sourceIndex) ?? [])
     setRowOverrides((prev) => {
       const next = { ...prev }
-      for (const m of build.meta) {
-        if (m.isProduct) {
-          next[m.sourceIndex] = { ...next[m.sourceIndex], [F.category]: value }
-        }
+      for (const idx of indices) {
+        next[idx] = { ...next[idx], [F.category]: value }
       }
       return next
     })
@@ -125,9 +141,13 @@ export default function App() {
   const activePlatform = PLATFORMS.find((p) => p.id === platform)!
 
   function handleExport() {
-    if (!build || !validation?.ok) return
-    const wb = buildSallaWorkbook(build.rows)
-    downloadWorkbook(wb, 'salla-import.xlsx')
+    if (!validation?.ok) return
+    if (platform === 'salla') {
+      if (!build) return
+      downloadWorkbook(buildSallaWorkbook(build.rows), 'salla-import.xlsx')
+    } else if (adapter && products) {
+      downloadWorkbook(adapter.serialize(products), adapter.fileName)
+    }
   }
 
   return (
@@ -148,11 +168,16 @@ export default function App() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+          <p className="text-sm font-semibold text-indigo-800">{t('hint.scraper.title')}</p>
+          <p className="mt-1 text-sm text-indigo-700">{t('hint.scraper.body')}</p>
+        </div>
+
         <div className="mb-8">
           <PlatformSwitcher value={platform} onChange={handlePlatformChange} />
         </div>
 
-        {platform !== 'salla' ? (
+        {platform !== 'salla' && !adapter ? (
           <PlatformComingSoon
             platform={activePlatform}
             onBackToSalla={() => handlePlatformChange('salla')}
@@ -215,23 +240,37 @@ export default function App() {
           )}
 
           {/* Step 3: Preview + validate + export */}
-          {build && validation && (
+          {workbook && sheet && config && validation && (
             <>
               <h2 className="pt-2 text-xl font-bold text-slate-900">{t('step3.title')}</h2>
-              <Card title={t('preview.title')} subtitle={t('preview.subtitle')}>
-                <OutputPreview
-                  rows={build.rows}
-                  meta={build.meta}
-                  categories={storeCategories}
-                  productCount={build.productCount}
-                  optionCount={build.optionCount}
-                  excludedCount={excludedRows.size}
-                  onEditField={handleEditField}
-                  onApplyCategoryToAll={handleApplyCategoryToAll}
-                  onDeleteItem={handleDeleteItem}
-                  onRestoreAll={handleRestoreAll}
-                />
-              </Card>
+              {platform === 'salla' && build ? (
+                <Card title={t('preview.title')} subtitle={t('preview.subtitle')}>
+                  <OutputPreview
+                    rows={build.rows}
+                    meta={build.meta}
+                    categories={storeCategories}
+                    productCount={build.productCount}
+                    optionCount={build.optionCount}
+                    excludedCount={excludedRows.size}
+                    onEditField={handleEditField}
+                    onApplyCategoryToAll={handleApplyCategoryToAll}
+                    onDeleteItem={handleDeleteItem}
+                    onRestoreAll={handleRestoreAll}
+                  />
+                </Card>
+              ) : products ? (
+                <Card title={t('preview.title')} subtitle={t('zid.subtitle')}>
+                  <ZidPreview
+                    products={products}
+                    categories={storeCategories}
+                    excludedCount={excludedRows.size}
+                    onEditField={handleEditField}
+                    onApplyCategoryToAll={handleApplyCategoryToAll}
+                    onDeleteItem={handleDeleteItem}
+                    onRestoreAll={handleRestoreAll}
+                  />
+                </Card>
+              ) : null}
 
               <Card title={t('validate.title')}>
                 <ValidationSummary validation={validation} />

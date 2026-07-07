@@ -7,6 +7,9 @@ import { Select, TextInput, Button } from './ui'
 /** Product-level text fields the user can edit inline in the preview. */
 const EDITABLE_TEXT_FIELDS = new Set<string>([F.name, F.price])
 
+/** Salla's العنوان الترويجي hard length limit (import rejects longer values). */
+const PROMO_TITLE_MAX = 25
+
 const COLLAPSED_ROWS = 12
 
 /** A curated subset of the 40 columns worth showing, with i18n label keys. */
@@ -17,6 +20,7 @@ const PREVIEW_COLS: { header: string; labelKey: string }[] = [
   { header: F.sku, labelKey: 'col.sku' },
   { header: F.category, labelKey: 'col.category' }, // editable (see below)
   { header: F.brand, labelKey: 'col.brand' },
+  { header: F.promoTitle, labelKey: 'col.promoTitle' }, // editable (see below)
   { header: F.weight, labelKey: 'col.weight' },
   { header: optionGroupCols(1).value, labelKey: 'col.opt1' },
   { header: optionGroupCols(2).value, labelKey: 'col.opt2' },
@@ -162,6 +166,32 @@ export default function OutputPreview({
                               <option value={extra}>{t('preview.catNotListed', { name: extra })}</option>
                             )}
                           </Select>
+                        </td>
+                      )
+                    }
+                    // العنوان الترويجي → free-text input with a live char counter
+                    // (Salla rejects import over 25 chars; export also clamps).
+                    if (c.header === F.promoTitle && isProduct && rowMeta) {
+                      const value = row[c.header] ?? ''
+                      const over = value.length > PROMO_TITLE_MAX
+                      return (
+                        <td key={c.header} className="border-b border-slate-100 px-2 py-1">
+                          <TextInput
+                            value={value}
+                            placeholder={t(c.labelKey)}
+                            className="min-w-32 px-2 py-1 text-xs"
+                            onChange={(e) =>
+                              onEditField(rowMeta.sourceIndex, F.promoTitle, e.target.value)
+                            }
+                          />
+                          <span
+                            className={
+                              'mt-0.5 block text-[10px] ' +
+                              (over ? 'font-semibold text-red-600' : 'text-slate-400')
+                            }
+                          >
+                            {value.length}/{PROMO_TITLE_MAX}
+                          </span>
                         </td>
                       )
                     }
