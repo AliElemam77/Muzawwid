@@ -172,19 +172,68 @@ function applyDefaults(target: SallaRow, config: MappingConfig, isProduct: boole
   if (!target[F.maxQty]) target[F.maxQty] = d.maxQtyPerCustomer
 }
 
-/** A per-row option axis: the configured column plus its cleaned values. */
+/** Normalize an option's display name for merge comparison. */
+function normOptionName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Group option columns that share the same display name into one logical
+ * axis. A scraped sheet often splits ONE attribute (e.g. size) across several
+ * columns — one per available value, from a variant-selector grid — each
+ * mapped as its own OptionColumn but given the SAME name ("المقاس"). Those
+ * must combine into ONE group with the union of values (→ one خيار row per
+ * value), never separate option groups each holding a single value (which
+ * produced "المقاس: 52" and "المقاس: 54" as two different groups instead of
+ * one "المقاس" group with two variants). Unnamed options stay separate — each
+ * is its own already-flagged issue, not something to merge blindly.
+ */
+export function groupOptionColumnsByName(options: OptionColumn[]): OptionColumn[][] {
+  const groups = new Map<string, OptionColumn[]>()
+  const order: string[] = []
+  options.forEach((opt, i) => {
+    const key = normOptionName(opt.name) || `__unnamed:${i}`
+    if (!groups.has(key)) {
+      groups.set(key, [])
+      order.push(key)
+    }
+    groups.get(key)!.push(opt)
+  })
+  return order.map((k) => groups.get(k)!)
+}
+
+/** One option value plus the source column it came from (for swatch lookup). */
+interface AxisValue {
+  value: string
+  swatchColumn?: string
+}
+
+/** A per-row option axis: its representative column (name/type) + merged values. */
 interface RowAxis {
   opt: OptionColumn
-  values: string[]
+  values: AxisValue[]
 }
 
 /**
  * Options that actually have (cleaned) values for this row — capped at 3.
- * A product whose option columns are all empty yields none → simple product.
+ * Columns sharing a display name are merged into one axis first (see
+ * `groupOptionColumnsByName`). A product whose option columns are all empty
+ * yields none → simple product.
  */
 function rowAxes(row: SourceRow, options: OptionColumn[]): RowAxis[] {
-  return options
-    .map((opt) => ({ opt, values: cleanOptionValues(row[opt.column] ?? '') }))
+  return groupOptionColumnsByName(options)
+    .map((group) => {
+      const seen = new Set<string>()
+      const values: AxisValue[] = []
+      for (const opt of group) {
+        for (const v of cleanOptionValues(row[opt.column] ?? '')) {
+          if (seen.has(v)) continue
+          seen.add(v)
+          values.push({ value: v, swatchColumn: opt.swatchColumn })
+        }
+      }
+      return { opt: group[0], values }
+    })
     .filter((a) => a.values.length > 0)
     .slice(0, 3)
 }
@@ -195,10 +244,10 @@ function optionCombos(
   axes: RowAxis[],
 ): { opt: OptionColumn; value: string; swatch: string }[][] {
   const expanded = axes.map(({ opt, values }) =>
-    values.map((value) => {
+    values.map(({ value, swatchColumn }) => {
       let swatch = ''
       if (opt.type === 'color') {
-        const fromCol = opt.swatchColumn ? (row[opt.swatchColumn] ?? '') : ''
+        const fromCol = swatchColumn ? (row[swatchColumn] ?? '') : ''
         if (fromCol && isHex(fromCol)) swatch = fromCol.startsWith('#') ? fromCol : `#${fromCol}`
         else if (isHex(value)) swatch = value.startsWith('#') ? value : `#${value}`
       }

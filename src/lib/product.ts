@@ -1,5 +1,11 @@
 import { F } from './salla'
-import { cleanPrice, splitValues, cleanOptionValues, type RowOverrides } from './build'
+import {
+  cleanPrice,
+  splitValues,
+  cleanOptionValues,
+  groupOptionColumnsByName,
+  type RowOverrides,
+} from './build'
 import { seoTitle, metaDescription, keywords as buildKeywords } from './generate'
 import type { SourceSheet, SourceRow } from './reader'
 import type { MappingConfig, SkuConfig } from './types'
@@ -157,14 +163,25 @@ export function buildProducts(
         : splitValues(resolve(row, config, F.image))
     const { pageUrl, images } = splitPageUrl(rawImages)
 
-    const options: ProductOption[] = config.options
-      .filter((o) => o.column)
+    // Columns sharing a display name (e.g. a scraped size grid split across
+    // several columns) merge into ONE option with the union of their values —
+    // never separate options each holding a single value.
+    const options: ProductOption[] = groupOptionColumnsByName(
+      config.options.filter((o) => o.column),
+    )
       .slice(0, 3)
-      .map((o) => ({
-        nameAr: cleanOptionName(o.name),
-        nameEn: '',
-        values: cleanOptionValues(row[o.column] ?? ''),
-      }))
+      .map((group) => {
+        const seen = new Set<string>()
+        const values: string[] = []
+        for (const opt of group) {
+          for (const v of cleanOptionValues(row[opt.column] ?? '')) {
+            if (seen.has(v)) continue
+            seen.add(v)
+            values.push(v)
+          }
+        }
+        return { nameAr: cleanOptionName(group[0].name), nameEn: '', values }
+      })
       .filter((o) => o.values.length > 0)
 
     const nameAr = pick(F.name)

@@ -48,4 +48,19 @@ describe('buildProducts — option name sanitization', () => {
     expect(p.options[0].nameAr).toBe('الخيار') // never the raw selector
     expect(p.options[0].values).toEqual(['52', '54', '58'])
   })
+
+  it('merges two columns mapped with the SAME option name into ONE option (52, 54)', () => {
+    const s = sheet(['size1', 'size2'], [{ size1: '52', size2: '54' }])
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'constant', value: 'حذاء' }
+    config.options = [
+      { column: 'size1', name: 'المقاس', type: 'text' },
+      { column: 'size2', name: 'المقاس', type: 'text' },
+    ]
+
+    const [p] = buildProducts(s, config)
+    expect(p.options).toHaveLength(1) // NOT two separate single-value options
+    expect(p.options[0].nameAr).toBe('المقاس')
+    expect(p.options[0].values).toEqual(['52', '54'])
+  })
 })

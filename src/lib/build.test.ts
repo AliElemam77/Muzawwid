@@ -83,6 +83,39 @@ describe('buildRows', () => {
     expect(variants[0][F.weight]).toBe('1')
   })
 
+  it('merges two columns mapped with the SAME option name into ONE group (52, 54), not two groups', () => {
+    // Reproduces a scraped size grid where each value lands in its own column
+    // (size1='52', size2='54') but both are named المقاس — must become one
+    // "المقاس" group with 2 خيار rows, never two separate single-value groups.
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [
+      { column: 'size1', name: 'المقاس', type: 'text' },
+      { column: 'size2', name: 'المقاس', type: 'text' },
+    ]
+
+    const { rows, productCount, optionCount } = buildRows(
+      sheet(['title', 'size1', 'size2'], [{ title: 'حذاء', size1: '52', size2: '54' }]),
+      config,
+    )
+
+    expect(productCount).toBe(1)
+    expect(optionCount).toBe(2) // one خيار row per value, not a 1x1 cartesian combo
+
+    const g1 = optionGroupCols(1)
+    const g2 = optionGroupCols(2)
+    const parent = rows[0]
+    // Only ONE group declared (المقاس) — group 2 must stay empty.
+    expect(parent[g1.name]).toBe('المقاس')
+    expect(parent[g2.name]).toBeUndefined()
+
+    const variants = rows.slice(1)
+    expect(variants).toHaveLength(2)
+    expect(variants.map((r) => r[g1.value]).sort()).toEqual(['52', '54'])
+    // No variant should carry a value in group 2 (there is no second group).
+    expect(variants.every((r) => r[g2.value] === undefined)).toBe(true)
+  })
+
   it('never auto-generates العنوان الترويجي — stays empty unless the user maps/edits it', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
