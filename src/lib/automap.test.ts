@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { autoMap } from './automap'
+import { buildProducts } from './product'
 import { F } from './salla'
 import type { SourceSheet } from './reader'
 
@@ -49,14 +50,35 @@ describe('autoMap — option column guardrails', () => {
     expect(config.options[0].type).toBe('color')
   })
 
-  it('collapses same-named option columns into one (no option1/2/3 blow-up)', () => {
+  it('keeps same-named option columns so their values MERGE into one axis', () => {
     const s = sheet(
       ['size', 'size (2)', 'size (3)'],
       [{ size: 'S', 'size (2)': 'M', 'size (3)': 'L' }],
     )
     const config = autoMap(s)
-    expect(config.options).toHaveLength(1)
-    expect(config.options[0].name).toBe('المقاس')
+    // all three columns are kept, sharing the ONE axis name المقاس
+    expect(config.options).toHaveLength(3)
+    expect(config.options.every((o) => o.name === 'المقاس')).toBe(true)
+    // and the builder merges them into a single option carrying S/M/L
+    // (previously only 'S' survived — M and L were dropped)
+    const [p] = buildProducts(s, config)
+    expect(p.options).toHaveLength(1)
+    expect(p.options[0].values).toEqual(['S', 'M', 'L'])
+  })
+
+  it('caps DISTINCT option axes at 3 (a 4th distinct axis is skipped)', () => {
+    const s = sheet(
+      ['color', 'size', 'option style', 'option shape'],
+      [
+        { color: '#FF0000', size: 'S', 'option style': 'A', 'option shape': 'round' },
+        { color: '#00FF00', size: 'M', 'option style': 'B', 'option shape': 'square' },
+        { color: '#0000FF', size: 'L', 'option style': 'C', 'option shape': 'oval' },
+      ],
+    )
+    const config = autoMap(s)
+    const names = new Set(config.options.map((o) => o.name))
+    expect(names.size).toBe(3) // only the first 3 distinct axes are kept
+    expect(config.options.some((o) => o.column === 'option shape')).toBe(false)
   })
 
   it('drops an all-identical column (no real variance)', () => {

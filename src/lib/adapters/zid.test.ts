@@ -13,7 +13,6 @@ import {
   normalizeBoolean,
   dedupeImages,
   formatDescription,
-  slugify,
   ZID_HEADERS,
   ZID_SHEET_NAME,
   ZID_COLUMN_COUNT,
@@ -195,8 +194,8 @@ describe('Zid adapter — field encoding', () => {
     expect(child[col('option1_value_en')]).toBe('S')
     expect(child[col('option2_value_ar')]).toBe('أحمر')
     expect(child[col('option2_value_en')]).toBe('Red')
-    // variant SKU = {parent}-{option1 value}; inherits parent price
-    expect(child[col('sku')]).toBe('SH-S')
+    // child SKU is left empty (Zid assigns it); price inherited from parent
+    expect(child[col('sku')]).toBe('')
     expect(child[col('price')]).toBe(100)
 
     // the 6 children cover every S/M/L × أحمر/أزرق combination
@@ -219,38 +218,28 @@ describe('Zid adapter — field encoding', () => {
   })
 })
 
-describe('Zid adapter — SKU generation', () => {
-  it('generates an uppercase-slug SKU from the name when none is provided', () => {
-    const p = product({ sku: '', nameAr: 'قميص', nameEn: 'Cotton Shirt', price: '100' })
+describe('Zid adapter — SKU pass-through', () => {
+  it('passes a provided SKU through untouched (no generation from the name)', () => {
+    const row = aoaOf([product({ sku: 'ABC-1', nameAr: 'قميص' })])[2]
+    expect(row[col('sku')]).toBe('ABC-1')
+  })
+
+  it('leaves the SKU empty when none is provided — never slugs the name', () => {
+    // a long Arabic name must NOT become a giant slug (Zid rejects sku > 128 chars)
+    const p = product({ sku: '', nameAr: 'هاتف جالاكسي A16 ثنائي الشريحة رمادي 128 جيجابايت' })
     const row = aoaOf([p])[2]
-    // English name preferred, slugified to uppercase with hyphens
-    expect(row[col('sku')]).toBe('COTTON-SHIRT')
+    expect(row[col('sku')]).toBe('')
   })
 
-  it('falls back to the Arabic name when there is no English name', () => {
-    const row = aoaOf([product({ sku: '', nameAr: 'حزام', price: '80' })])[2]
-    expect(row[col('sku')]).toBe('حزام')
-  })
-
-  it('enforces uniqueness by appending -2/-3…', () => {
-    const aoa = aoaOf([
-      product({ sku: 'DUP', nameAr: 'أ' }),
-      product({ sku: 'DUP', nameAr: 'ب' }),
-      product({ sku: 'DUP', nameAr: 'ج' }),
-    ])
-    expect(aoa[2][col('sku')]).toBe('DUP')
-    expect(aoa[3][col('sku')]).toBe('DUP-2')
-    expect(aoa[4][col('sku')]).toBe('DUP-3')
-  })
-
-  it('builds variant SKUs as {parent}-{option1} and keeps them unique', () => {
+  it('leaves variant child SKUs empty for Zid to assign', () => {
     const p = product({
       sku: 'SH',
       options: [{ nameAr: 'المقاس', nameEn: 'Size', values: ['S', 'M'] }],
     })
     const aoa = aoaOf([p])
-    expect(aoa[3][col('sku')]).toBe('SH-S')
-    expect(aoa[4][col('sku')]).toBe('SH-M')
+    expect(aoa[2][col('sku')]).toBe('SH') // parent keeps the given SKU
+    expect(aoa[3][col('sku')]).toBe('') // children left empty
+    expect(aoa[4][col('sku')]).toBe('')
   })
 })
 
@@ -357,14 +346,6 @@ describe('Zid adapter — image dedup & description formatting', () => {
   })
 })
 
-describe('slugify', () => {
-  it('uppercases and hyphenates, keeping Arabic letters', () => {
-    expect(slugify('Cotton Shirt!')).toBe('COTTON-SHIRT')
-    expect(slugify('  a__b--c ')).toBe('A-B-C')
-    expect(slugify('حذاء رياضي')).toBe('حذاء-رياضي')
-  })
-})
-
 describe('toSlug — Zid product_page_url', () => {
   it('reduces a full URL to a dash slug', () => {
     expect(toSlug('https://shop.example/ar/shoe-red/p123?ref=x#top')).toBe('ar-shoe-red-p123')
@@ -397,20 +378,20 @@ describe('Zid adapter — end-to-end sample (sizes + plain product)', () => {
     expect(aoa.length).toBe(2 + 4 + 1)
     aoa.forEach((r) => expect(r).toHaveLength(ZID_COLUMN_COUNT))
 
-    // sized parent — SKU generated from the Arabic name
+    // sized parent — SKU left empty (source had none; Zid assigns it)
     const parent = aoa[2]
     expect(parent[col('has_variants')]).toBe('Yes')
-    expect(parent[col('sku')]).toBe('حذاء')
+    expect(parent[col('sku')]).toBe('')
     expect(parent[col('option1_name_ar')]).toBe('المقاس')
     expect(parent[col('option1_value_ar')]).toBe('') // no value on parent
     expect(parent[col('option2_name_ar')]).toBe('') // one dimension only
 
-    // three children: value cell + variant SKU + inherited price
+    // three children: value cell + inherited price; SKU stays empty
     const sizes = ['52', '54', '58']
     sizes.forEach((size, k) => {
       const child = aoa[3 + k]
       expect(child[col('option1_value_ar')]).toBe(size)
-      expect(child[col('sku')]).toBe(`حذاء-${size}`)
+      expect(child[col('sku')]).toBe('')
       expect(child[col('price')]).toBe(200)
       expect(child[col('name_ar')]).toBe('')
       expect(child[col('has_variants')]).toBe('')
@@ -418,11 +399,11 @@ describe('Zid adapter — end-to-end sample (sizes + plain product)', () => {
       expect(child[col('weight')]).toBe('')
     })
 
-    // plain product → single row, has_variants=No, SKU from the name
+    // plain product → single row, has_variants=No, SKU left empty
     const plainRow = aoa[6]
     expect(plainRow[col('has_variants')]).toBe('No')
     expect(plainRow[col('name_ar')]).toBe('حزام')
-    expect(plainRow[col('sku')]).toBe('حزام')
+    expect(plainRow[col('sku')]).toBe('')
 
     // validation passes on this sample
     expect(validate([sized, plain]).ok).toBe(true)
@@ -439,14 +420,14 @@ describe('Zid adapter — validate', () => {
     expect(codes).not.toContain('zidWeight')
   })
 
-  it('generates a unique SKU from the name and never flags it as an error', () => {
+  it('leaves the SKU empty and never flags it — Zid assigns it on import', () => {
     const p = product({ sku: '', nameAr: 'قميص', nameEn: 'Shirt', price: '100' })
     const v = validate([p])
     expect(v.ok).toBe(true)
     expect(v.errors.map((e) => e.code)).not.toContain('zidSku')
-    // the emitted row now carries a generated SKU (slug of the English name)
+    // the emitted row keeps the SKU empty (not fabricated from the name)
     const row = aoaOf([p])[2]
-    expect(row[col('sku')]).toBe('SHIRT')
+    expect(row[col('sku')]).toBe('')
   })
 
   it('blocks on a selector-like option name', () => {

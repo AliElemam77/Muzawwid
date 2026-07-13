@@ -168,19 +168,23 @@ export function autoMap(sheet: SourceSheet): MappingConfig {
   const imageCols = headers.filter(looksLikeImage)
   config.imageColumns = imageCols
 
-  // Options (up to 3), value-aware. Columns sharing an option name (e.g.
-  // size / size (2)) collapse to ONE option instead of option1/2/3.
+  // Options, value-aware. Columns that share an option name (e.g. several
+  // scraped "color" columns, or size / size (2)) are ALL kept with that same
+  // name — the builder then merges their values into ONE axis. Only the number
+  // of DISTINCT axis names is capped at 3, matching the Salla/Zid templates
+  // (which provide exactly three option groups).
   const optionCols: string[] = []
-  const seenOptionNames = new Set<string>()
+  const axisNames = new Set<string>()
   for (const header of headers) {
     if (imageCols.includes(header)) continue
-    if (config.options.length >= 3) break
     const { total, values } = columnValues(rows, header)
     const det = detectOption(header, total, values)
     if (!det) continue
     const key = norm(det.name)
-    if (seenOptionNames.has(key)) continue // collapse duplicate-named option columns
-    seenOptionNames.add(key)
+    // A NEW distinct axis beyond the third can't be exported — skip it. Columns
+    // reusing an existing axis name are always kept (they merge into that axis).
+    if (!axisNames.has(key) && axisNames.size >= 3) continue
+    axisNames.add(key)
     config.options.push({ column: header, name: det.name, type: det.type })
     optionCols.push(header)
   }

@@ -78,9 +78,9 @@ function withDefaults(p: Product) {
 
 const yn = (b: boolean) => (b ? 'Yes' : 'No')
 
-// SKU generation: an empty SKU is filled from an uppercase slug of the name;
-// each variant becomes `{PARENT_SKU}-{OPTION1_VALUE}`. Uniqueness is enforced
-// across the whole export via `SkuAllocator` (see below).
+// SKU is NOT generated — whatever the source mapping provides (often empty) is
+// passed through untouched, and Zid assigns product/sub-product SKUs itself.
+// (Auto-slugging the name produced SKUs over Zid's 128-char limit.)
 
 /**
  * Zid's `product_page_url` is a SEO *slug*, not a full URL — it must be
@@ -267,34 +267,6 @@ export function formatDescription(text: string): string {
   return s.replace(/\\r\\n|\\n|\\r/g, '\n')
 }
 
-/** Uppercase hyphen slug: keep letters/numbers (Latin + Arabic), rest → '-'. */
-export function slugify(s: string): string {
-  return s
-    .trim()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
-    .replace(/^-+|-+$/g, '')
-    .toUpperCase()
-}
-
-/** Hands out globally-unique SKUs, appending -2/-3/… on collision. */
-class SkuAllocator {
-  private readonly seen = new Set<string>()
-  take(base: string): string {
-    if (!base) return ''
-    let candidate = base
-    let n = 2
-    while (this.seen.has(candidate)) candidate = `${base}-${n++}`
-    this.seen.add(candidate)
-    return candidate
-  }
-}
-
-/** Parent SKU: the given value, else an uppercase slug of the English/Arabic name. */
-function productSku(p: Product, alloc: SkuAllocator): string {
-  const base = p.sku.trim() || slugify(p.nameEn.trim() || p.nameAr.trim())
-  return alloc.take(base)
-}
-
 /**
  * A usable variant axis needs BOTH a name and at least one value. An axis with
  * values but no name can't produce named sub-products in Zid — including it
@@ -384,15 +356,11 @@ export function serialize(products: Product[]): XLSX.WorkBook {
   aoa.push(zidGroupRow()) // row 1
   aoa.push([...ZID_HEADERS]) // row 2
 
-  const alloc = new SkuAllocator()
-
   for (const p of products) {
     const axes = validAxes(p)
-    const sku = productSku(p, alloc)
 
     if (axes.length === 0) {
       const rec = baseRecord(p)
-      rec.sku = sku
       rec.has_variants = 'No'
       aoa.push(toRow(rec))
       continue
@@ -400,7 +368,6 @@ export function serialize(products: Product[]): XLSX.WorkBook {
 
     // Parent: names only, values empty.
     const parent = baseRecord(p)
-    parent.sku = sku
     parent.has_variants = 'Yes'
     axes.forEach((a, i) => {
       parent[`option${i + 1}_name_ar`] = a.nameAr
@@ -408,18 +375,16 @@ export function serialize(products: Product[]): XLSX.WorkBook {
     })
     aoa.push(toRow(parent))
 
-    // One child per combination. Variants carry their option values (+ English),
-    // a `{parent}-{option1}` SKU, and inherit price/quantity from the parent
-    // (every variant row must have both); other fields stay empty for Zid to
-    // inherit from the parent.
+    // One child per combination. Variants carry their option values (+ English)
+    // and inherit price/quantity from the parent (every variant row must have
+    // both); SKU is left for Zid to assign, and other fields stay empty for Zid
+    // to inherit from the parent.
     for (const combo of combinations(axes)) {
       const child: Record<string, string> = {}
       combo.forEach((v, i) => {
         child[`option${i + 1}_value_ar`] = v
         child[`option${i + 1}_value_en`] = toEnglishValue(v)
       })
-      // Variant SKU uses OPTION1's value, per spec; uniqueness handles collisions.
-      child.sku = sku ? alloc.take(`${sku}-${slugify(combo[0])}`) : ''
       child.price = p.price // inherit parent price
       child.quantity = p.quantity // inherit parent quantity
       aoa.push(toRow(child))

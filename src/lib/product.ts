@@ -8,6 +8,7 @@ import {
 } from './build'
 import { seoTitle, metaDescription, keywords as buildKeywords } from './generate'
 import { applyPriceRules, resolveQuantity } from './pricing'
+import { normalizeCategoryField } from './categories'
 import type { SourceSheet, SourceRow } from './reader'
 import type { MappingConfig, SkuConfig } from './types'
 
@@ -103,7 +104,12 @@ function mergeImages(row: SourceRow, columns: string[]): string[] {
 
 /** A URL pointing at an actual image file (by extension). */
 const IMAGE_URL_RE =
-  /\.(jpe?g|jfif|pjpeg|pjp|png|apng|webp|gif)(\?|#|$)/i
+  /\.(jpe?g|jfif|pjpeg|pjp|png|apng|webp|gif|avif|svg)(\?|#|$)/i
+
+/** True when a string is an image-file URL (used to keep image links visible). */
+export function isImageUrl(url: string): boolean {
+  return IMAGE_URL_RE.test(url)
+}
 
 /**
  * Some scrapes put the product's page URL as the FIRST "image" cell, followed
@@ -175,7 +181,7 @@ export function buildProducts(
         const seen = new Set<string>()
         const values: string[] = []
         for (const opt of group) {
-          for (const v of cleanOptionValues(row[opt.column] ?? '')) {
+          for (const v of cleanOptionValues(row[opt.column] ?? '', opt.type)) {
             if (seen.has(v)) continue
             seen.add(v)
             values.push(v)
@@ -186,7 +192,7 @@ export function buildProducts(
       .filter((o) => o.values.length > 0)
 
     const nameAr = pick(F.name)
-    const categoriesAr = pick(F.category)
+    const categoriesAr = normalizeCategoryField(pick(F.category))
     const brand = resolve(row, config, F.brand)
 
     // Base prices from the source, then any configured derivations

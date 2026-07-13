@@ -275,6 +275,33 @@ describe('buildRows', () => {
     expect(variants[0][g1.value]).toBe('#FF0000')
     expect(variants[0][g1.swatch]).toBe('#FF0000')
   })
+
+  it('keeps an IMAGE option whose values are URLs (does not drop it)', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [{ column: 'img', name: 'الصورة', type: 'image' }]
+
+    const { rows, productCount, optionCount } = buildRows(
+      sheet(
+        ['title', 'img'],
+        [{ title: 'حذاء', img: 'https://cdn.x/a.jpg, https://cdn.x/b.jpg' }],
+      ),
+      config,
+    )
+    const g1 = optionGroupCols(1)
+    const parent = rows[0]
+    const variants = rows.slice(1)
+
+    // one product + two خيار rows (previously ZERO — the URLs were dropped)
+    expect(productCount).toBe(1)
+    expect(optionCount).toBe(2)
+    // parent declares the group; children carry the URL as value AND image
+    expect(parent[g1.name]).toBe('الصورة')
+    expect(parent[g1.value]).toBe(OPTION_VALUE_PLACEHOLDER)
+    expect(variants[0][g1.value]).toBe('https://cdn.x/a.jpg')
+    expect(variants[0][g1.swatch]).toBe('https://cdn.x/a.jpg')
+    expect(variants[1][g1.value]).toBe('https://cdn.x/b.jpg')
+  })
 })
 
 describe('validate', () => {

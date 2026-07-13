@@ -6,7 +6,9 @@ import {
   OPTION_VALUE_PLACEHOLDER,
   optionGroupCols,
   type SallaRow,
+  type OptionType,
 } from './salla'
+import { normalizeCategoryField } from './categories'
 import type { SourceSheet, SourceRow } from './reader'
 import type { MappingConfig, OptionColumn } from './types'
 
@@ -53,16 +55,17 @@ export function splitValues(cell: string): string[] {
 const OPTION_URL_RE = /^https?:\/\//i
 
 /**
- * Split a cell into clean option values: trim, drop URLs (a scraped link is
- * never a real option value) and empties, and dedupe while preserving order.
- * Shared by both the Salla and Zid variant expanders so garbage never becomes
- * a خيار / sub-product row.
+ * Split a cell into clean option values: trim, empties out, dedupe (order kept).
+ * For text/color options a URL is scrape garbage and is dropped — but an IMAGE
+ * option's values ARE URLs, so those are kept. Shared by the Salla and Zid
+ * variant expanders so garbage never becomes a خيار / sub-product row.
  */
-export function cleanOptionValues(cell: string): string[] {
+export function cleanOptionValues(cell: string, type: OptionType = 'text'): string[] {
+  const keepUrls = type === 'image'
   const out: string[] = []
   const seen = new Set<string>()
   for (const v of splitValues(cell)) {
-    if (OPTION_URL_RE.test(v)) continue
+    if (!keepUrls && OPTION_URL_RE.test(v)) continue
     if (seen.has(v)) continue
     seen.add(v)
     out.push(v)
@@ -105,6 +108,7 @@ function transformFieldValue(field: string, raw: string): string {
     return cleanPrice(raw)
   }
   if (field === F.maxQty) return cleanMaxQty(raw)
+  if (field === F.category) return normalizeCategoryField(raw)
   return raw
 }
 
@@ -226,7 +230,7 @@ function rowAxes(row: SourceRow, options: OptionColumn[]): RowAxis[] {
       const seen = new Set<string>()
       const values: AxisValue[] = []
       for (const opt of group) {
-        for (const v of cleanOptionValues(row[opt.column] ?? '')) {
+        for (const v of cleanOptionValues(row[opt.column] ?? '', opt.type)) {
           if (seen.has(v)) continue
           seen.add(v)
           values.push({ value: v, swatchColumn: opt.swatchColumn })
@@ -250,6 +254,10 @@ function optionCombos(
         const fromCol = swatchColumn ? (row[swatchColumn] ?? '') : ''
         if (fromCol && isHex(fromCol)) swatch = fromCol.startsWith('#') ? fromCol : `#${fromCol}`
         else if (isHex(value)) swatch = value.startsWith('#') ? value : `#${value}`
+      } else if (opt.type === 'image' && OPTION_URL_RE.test(value)) {
+        // Image option: the value is an image URL → also place it in the
+        // [n] الصورة / اللون column so Salla renders it as an image swatch.
+        swatch = value
       }
       return { opt, value, swatch }
     }),

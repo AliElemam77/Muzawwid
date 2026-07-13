@@ -80,6 +80,7 @@ const MESSAGES: Record<Lang, Dict> = {
 
     'source.pick': 'اختر الورقة:',
     'source.stats': '{cols} عمود · {rows} صف — يظهر أول {shown} صف',
+    'source.hiddenLink': '🔗 رابط',
 
     'field.none': 'بدون',
     'field.column': 'عمود مصدر',
@@ -92,7 +93,8 @@ const MESSAGES: Record<Lang, Dict> = {
     'map.images.subtitle': 'اختر عمودًا واحدًا أو أكثر لدمجها في «صورة المنتج».',
     'map.sku.title': 'توليد رمز المنتج (SKU)',
     'map.options.title': 'الخيارات (المتغيرات)',
-    'map.options.subtitle': 'حتى ٣ خيارات — كل خيار يتوسّع إلى صفوف «خيار» أسفل المنتج.',
+    'map.options.subtitle':
+      'أضِف أي عدد من أعمدة الخيارات — الأعمدة بنفس الاسم تُدمَج في خيار واحد. يُصدَّر حتى ٣ خيارات مختلفة (حد منصّتَي سلة وزد).',
     'map.defaults.title': 'القيم الافتراضية',
 
     'images.note': 'اختر أعمدة الصور — تُدمج الروابط غير الفارغة (بدون تكرار) في عمود «صورة المنتج».',
@@ -113,8 +115,9 @@ const MESSAGES: Record<Lang, Dict> = {
     'opt.type.color': 'لون',
     'opt.type.image': 'صورة',
     'opt.note':
-      'كل عمود خيار يتوسّع إلى صفوف «خيار» أسفل المنتج الأب. القيم المتعددة داخل الخلية تُفصل بفاصلة أو «|» أو سطر جديد.',
-    'opt.group': 'خيار [{n}]',
+      'كل عمود خيار يتوسّع إلى صفوف «خيار» أسفل المنتج الأب. الأعمدة التي تحمل نفس الاسم (مثل عدة أعمدة «اللون») تُدمَج تلقائيًا في خيار واحد. القيم المتعددة داخل الخلية تُفصل بفاصلة أو «|» أو سطر جديد.',
+    'opt.tooMany': 'لديك {count} خيارات مختلفة — المنصّة تدعم {max} فقط، وسيُصدَّر أول {max}.',
+    'opt.group': 'عمود خيار [{n}]',
     'opt.sourceCol': 'العمود المصدر',
     'opt.name': 'اسم الخيار',
     'opt.namePlaceholder': 'مثال: المقاس / اللون',
@@ -290,6 +293,7 @@ const MESSAGES: Record<Lang, Dict> = {
 
     'source.pick': 'Choose sheet:',
     'source.stats': '{cols} columns · {rows} rows — showing first {shown}',
+    'source.hiddenLink': '🔗 link',
 
     'field.none': 'None',
     'field.column': 'Source column',
@@ -302,7 +306,8 @@ const MESSAGES: Record<Lang, Dict> = {
     'map.images.subtitle': 'Pick one or more columns to merge into the product image field.',
     'map.sku.title': 'SKU generation',
     'map.options.title': 'Options (variants)',
-    'map.options.subtitle': 'Up to 3 options — each expands into option rows under the product.',
+    'map.options.subtitle':
+      'Add as many option columns as you need — columns with the same name merge into one option. Up to 3 distinct options export (the Salla/Zid ceiling).',
     'map.defaults.title': 'Default values',
 
     'images.note': 'Pick image columns — non-empty URLs are merged (de-duplicated) into the product image field.',
@@ -323,8 +328,9 @@ const MESSAGES: Record<Lang, Dict> = {
     'opt.type.color': 'Color',
     'opt.type.image': 'Image',
     'opt.note':
-      'Each option column expands into option rows under the parent product. Multiple values in a cell are split by comma, “|”, or newline.',
-    'opt.group': 'Option [{n}]',
+      'Each option column expands into option rows under the parent product. Columns with the same name (e.g. several “Color” columns) merge automatically into one option. Multiple values in a cell are split by comma, “|”, or newline.',
+    'opt.tooMany': 'You have {count} distinct options — the platform supports only {max}; the first {max} will be exported.',
+    'opt.group': 'Option column [{n}]',
     'opt.sourceCol': 'Source column',
     'opt.name': 'Option name',
     'opt.namePlaceholder': 'e.g. Size / Color',

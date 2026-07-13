@@ -1,7 +1,21 @@
 import type { SourceWorkbook, SourceSheet } from '../lib/reader'
+import { isImageUrl } from '../lib/product'
 import { useI18n } from '../lib/i18n'
 
 const PREVIEW_ROWS = 10
+
+/** Any http(s) URL token (stops at whitespace / comma / pipe). */
+const URL_RE = /https?:\/\/[^\s,،|]+/gi
+
+/**
+ * Preview-only cleanup: replace non-image links with a small placeholder so the
+ * source table stays readable. Image URLs are kept (the user maps them), and
+ * text without links is returned untouched. Does NOT alter the actual data.
+ */
+function displayCell(value: string, placeholder: string): string {
+  if (!value || !/https?:\/\//i.test(value)) return value
+  return value.replace(URL_RE, (u) => (isImageUrl(u) ? u : placeholder))
+}
 
 /** Sheet picker (if multiple) + a preview table of the first ~10 source rows. */
 export default function SourcePreview({
@@ -15,6 +29,7 @@ export default function SourcePreview({
 }) {
   const { t } = useI18n()
   const rows = sheet.rows.slice(0, PREVIEW_ROWS)
+  const linkPlaceholder = t('source.hiddenLink')
 
   return (
     <div>
@@ -63,15 +78,18 @@ export default function SourcePreview({
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} className="odd:bg-white even:bg-slate-50/50">
-                {sheet.headers.map((h) => (
-                  <td
-                    key={h}
-                    className="max-w-[16rem] truncate whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600"
-                    title={r[h]}
-                  >
-                    {r[h]}
-                  </td>
-                ))}
+                {sheet.headers.map((h) => {
+                  const shown = displayCell(r[h] ?? '', linkPlaceholder)
+                  return (
+                    <td
+                      key={h}
+                      className="max-w-[16rem] truncate whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600"
+                      title={shown}
+                    >
+                      {shown}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
