@@ -33,6 +33,32 @@ describe('buildProducts — product page URL split', () => {
   })
 })
 
+describe('buildProducts — quantity & price rules', () => {
+  it('applies infinite quantity and a sale_price = price − 10% rule to every product', () => {
+    const s = sheet(['name', 'price'], [{ name: 'قميص', price: '100' }])
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'name' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    config.quantity = { mode: 'infinite', value: '' }
+    config.priceRules = [{ target: 'salePrice', source: 'price', op: 'percentOff', value: '10' }]
+
+    const [p] = buildProducts(s, config)
+    expect(p.quantity).toBe('infinite')
+    expect(p.price).toBe('100')
+    expect(p.salePrice).toBe('90')
+  })
+
+  it('writes a fixed quantity to every product', () => {
+    const s = sheet(['name'], [{ name: 'أ' }, { name: 'ب' }])
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'name' }
+    config.quantity = { mode: 'fixed', value: '250' }
+
+    const products = buildProducts(s, config)
+    expect(products.map((p) => p.quantity)).toEqual(['250', '250'])
+  })
+})
+
 describe('buildProducts — option name sanitization', () => {
   it('rewrites a selector-like option column name to a human name', () => {
     const s = sheet(

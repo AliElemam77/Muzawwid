@@ -78,9 +78,9 @@ function withDefaults(p: Product) {
 
 const yn = (b: boolean) => (b ? 'Yes' : 'No')
 
-// SKU is intentionally NOT generated here — Zid assigns product/sub-product
-// SKUs itself. Whatever the source mapping provides (often empty) is passed
-// through untouched.
+// SKU generation: an empty SKU is filled from an uppercase slug of the name;
+// each variant becomes `{PARENT_SKU}-{OPTION1_VALUE}`. Uniqueness is enforced
+// across the whole export via `SkuAllocator` (see below).
 
 /**
  * Zid's `product_page_url` is a SEO *slug*, not a full URL — it must be
@@ -106,6 +106,195 @@ export function toSlug(url: string): string {
     .toLowerCase()
 }
 
+/* ------------------------- spec normalizations --------------------------- */
+
+/** Lower-cased, whitespace-collapsed key for map lookups (Arabic is untouched). */
+function normKey(s: string): string {
+  return s.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+const hasLatin = (s: string) => /[A-Za-z]/.test(s)
+
+/** Common size labels → Salla/Zid English tokens (XXS–XXL). */
+const SIZE_EN: Record<string, string> = {
+  xxs: 'XXS', xs: 'XS', s: 'S', m: 'M', l: 'L', xl: 'XL', xxl: 'XXL',
+  'صغير جدا جدا': 'XXS', 'صغير جدا': 'XS', صغير: 'S',
+  متوسط: 'M', وسط: 'M', كبير: 'L', 'كبير جدا': 'XL', 'كبير جدا جدا': 'XXL',
+}
+
+/** Standard color names (Arabic, incl. hamza variants) → English. */
+const COLOR_EN: Record<string, string> = {
+  أحمر: 'Red', احمر: 'Red', أزرق: 'Blue', ازرق: 'Blue', أخضر: 'Green', اخضر: 'Green',
+  أصفر: 'Yellow', اصفر: 'Yellow', أسود: 'Black', اسود: 'Black', أبيض: 'White', ابيض: 'White',
+  رمادي: 'Gray', بني: 'Brown', برتقالي: 'Orange', وردي: 'Pink', زهري: 'Pink',
+  بنفسجي: 'Purple', موف: 'Purple', ذهبي: 'Gold', فضي: 'Silver', بيج: 'Beige', كحلي: 'Navy',
+}
+
+/** Common option-axis names → English. */
+const OPTION_NAME_EN: Record<string, string> = {
+  المقاس: 'Size', مقاس: 'Size', الحجم: 'Size', حجم: 'Size',
+  اللون: 'Color', لون: 'Color', النوع: 'Type', الموديل: 'Model',
+  الخامة: 'Material', المادة: 'Material',
+}
+
+/**
+ * English for an option VALUE: predefined size/color mapping first, then a
+ * direct copy when the source already carries Latin text, else empty.
+ */
+export function toEnglishValue(ar: string): string {
+  const raw = ar.trim()
+  if (!raw) return ''
+  const key = normKey(raw)
+  if (key in SIZE_EN) return SIZE_EN[key]
+  if (key in COLOR_EN) return COLOR_EN[key]
+  return hasLatin(raw) ? raw : ''
+}
+
+/**
+ * English for a free-text field (name, short description, page title): keep any
+ * value already provided, else copy the original only when it contains Latin
+ * text (no machine translation — that path is intentionally out of scope).
+ */
+export function toEnglishText(ar: string, existing: string): string {
+  if (existing.trim()) return existing.trim()
+  const raw = ar.trim()
+  return hasLatin(raw) ? raw : ''
+}
+
+/** English for an option NAME: provided value, then name map, then Latin copy. */
+export function toEnglishOptionName(ar: string, existing: string): string {
+  if (existing.trim()) return existing.trim()
+  const raw = ar.trim()
+  if (!raw) return ''
+  const key = normKey(raw)
+  if (key in OPTION_NAME_EN) return OPTION_NAME_EN[key]
+  return hasLatin(raw) ? raw : ''
+}
+
+/** Normalize any weight unit to exactly `Kg` or `g` (case-sensitive). */
+export function normalizeWeightUnit(u: string): string {
+  const k = normKey(u).replace(/[.\s]/g, '')
+  if (['g', 'gr', 'gram', 'grams', 'جم', 'غم', 'جرام', 'غرام'].includes(k)) return 'g'
+  return 'Kg'
+}
+
+/** Fields emitted as real numbers (not strings) in the workbook. */
+const NUMERIC_FIELDS = new Set([
+  'weight', 'price', 'sale_price', 'cost',
+  'minimum_quantity_per_order', 'maximum_quantity_per_order',
+])
+
+/** Coerce a numeric field to a Number; empty → '', non-numeric → the raw string. */
+export function toNumber(v: string): number | string {
+  const s = String(v ?? '').trim()
+  if (s === '') return ''
+  const n = Number(s.replace(/[,،\s]/g, ''))
+  return Number.isFinite(n) ? n : s
+}
+
+/** Quantity → integer, unless it is an explicit "infinite" marker (kept as-is). */
+export function toQuantity(v: string): number | string {
+  const s = String(v ?? '').trim()
+  if (s === '') return ''
+  if (/^(infinite|infinity|∞|غير\s*محدود|لا\s*نهائي)$/i.test(s)) return s
+  const n = Number(s.replace(/[,،\s]/g, ''))
+  return Number.isFinite(n) ? Math.trunc(n) : s
+}
+
+const BOOL_TRUE = new Set(['true', '1', 'yes', 'y', 'on', 'نعم', 'مفعل', 'مطلوب', 'متاح'])
+
+/** Normalize a boolean-ish value to exactly `Yes`/`No`; empty stays empty. */
+export function normalizeBoolean(v: string): string {
+  const s = normKey(v)
+  if (s === '') return ''
+  return BOOL_TRUE.has(s) ? 'Yes' : 'No'
+}
+
+/** Columns that must read exactly Yes/No: flags + every `is_*_required`. */
+function isBooleanField(key: string): boolean {
+  return (
+    key === 'published' ||
+    key === 'vat_free' ||
+    key === 'shipping_required' ||
+    key.startsWith('has_') ||
+    /^is_.*_required$/.test(key)
+  )
+}
+
+/** A URL's identity for dedup — everything before its query/hash. */
+function imageIdentity(url: string): string {
+  return url.split(/[?#]/)[0]
+}
+
+/** The `width` query value (0 when absent), used to pick the best duplicate. */
+function imageWidth(url: string): number {
+  const m = /[?&]width=(\d+)/i.exec(url)
+  return m ? Number(m[1]) : 0
+}
+
+/**
+ * Deduplicate image URLs ignoring query parameters; when several URLs share a
+ * base, keep the one with the highest `width`. First-seen order is preserved.
+ */
+export function dedupeImages(urls: string[]): string[] {
+  const best = new Map<string, string>()
+  const order: string[] = []
+  for (const raw of urls) {
+    const url = raw.trim()
+    if (!url) continue
+    const id = imageIdentity(url)
+    const prev = best.get(id)
+    if (prev === undefined) {
+      best.set(id, url)
+      order.push(id)
+    } else if (imageWidth(url) > imageWidth(prev)) {
+      best.set(id, url)
+    }
+  }
+  return order.map((id) => best.get(id)!)
+}
+
+const HTML_RE = /<[a-z!/][^>]*>/i
+
+/**
+ * Turn literal `\n` (and `\r\n`/`\r`) escape sequences into real newlines. If
+ * the text already contains HTML markup, it is left exactly as-is.
+ */
+export function formatDescription(text: string): string {
+  const s = text ?? ''
+  if (!s) return ''
+  if (HTML_RE.test(s)) return s
+  return s.replace(/\\r\\n|\\n|\\r/g, '\n')
+}
+
+/** Uppercase hyphen slug: keep letters/numbers (Latin + Arabic), rest → '-'. */
+export function slugify(s: string): string {
+  return s
+    .trim()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase()
+}
+
+/** Hands out globally-unique SKUs, appending -2/-3/… on collision. */
+class SkuAllocator {
+  private readonly seen = new Set<string>()
+  take(base: string): string {
+    if (!base) return ''
+    let candidate = base
+    let n = 2
+    while (this.seen.has(candidate)) candidate = `${base}-${n++}`
+    this.seen.add(candidate)
+    return candidate
+  }
+}
+
+/** Parent SKU: the given value, else an uppercase slug of the English/Arabic name. */
+function productSku(p: Product, alloc: SkuAllocator): string {
+  const base = p.sku.trim() || slugify(p.nameEn.trim() || p.nameAr.trim())
+  return alloc.take(base)
+}
+
 /**
  * A usable variant axis needs BOTH a name and at least one value. An axis with
  * values but no name can't produce named sub-products in Zid — including it
@@ -128,8 +317,8 @@ function baseRecord(p: Product): Record<string, string> {
   return {
     sku: p.sku,
     name_ar: p.nameAr,
-    name_en: p.nameEn,
-    weight_unit: d.weightUnit,
+    name_en: toEnglishText(p.nameAr, p.nameEn),
+    weight_unit: normalizeWeightUnit(d.weightUnit),
     weight: d.weight,
     price: p.price,
     sale_price: p.salePrice,
@@ -139,25 +328,37 @@ function baseRecord(p: Product): Record<string, string> {
     // Mirror the Arabic categories when the English side is missing.
     categories_en: p.categoriesEn || p.categoriesAr,
     published: yn(d.published),
-    images: p.images.join(','),
+    images: dedupeImages(p.images).join(','),
     images_alt_text: p.imagesAlt,
     product_page_url: toSlug(p.productPageUrl),
     vat_free: yn(d.vatFree),
     shipping_required: yn(d.shippingRequired),
     barcode: p.barcode,
     keywords: p.keywords,
-    description_ar: p.descriptionAr,
-    description_en: p.descriptionEn,
-    short_description_ar: p.shortDescAr,
-    short_description_en: p.shortDescEn,
+    description_ar: formatDescription(p.descriptionAr),
+    description_en: formatDescription(toEnglishText(p.descriptionAr, p.descriptionEn)),
+    short_description_ar: formatDescription(p.shortDescAr),
+    short_description_en: formatDescription(toEnglishText(p.shortDescAr, p.shortDescEn)),
     product_page_title_ar: p.seoTitleAr,
-    product_page_title_en: p.seoTitleEn,
+    product_page_title_en: toEnglishText(p.seoTitleAr, p.seoTitleEn),
     product_page_description_ar: p.metaDescAr,
     product_page_description_en: p.metaDescEn,
   }
 }
 
-const toRow = (rec: Record<string, string>) => ZID_HEADERS.map((k) => rec[k] ?? '')
+/** A serialized cell — a real Number for numeric fields, otherwise a string. */
+type Cell = string | number
+
+/** Apply per-column type/format coercion (numeric, quantity int, Yes/No). */
+function coerceCell(key: string, raw: string): Cell {
+  if (NUMERIC_FIELDS.has(key)) return toNumber(raw)
+  if (key === 'quantity') return toQuantity(raw)
+  if (isBooleanField(key)) return normalizeBoolean(raw)
+  return raw
+}
+
+const toRow = (rec: Record<string, string>): Cell[] =>
+  ZID_HEADERS.map((k) => coerceCell(k, rec[k] ?? ''))
 
 /** Cartesian product of each axis's values → one value-tuple per combination. */
 function combinations(axes: { values: string[] }[]): string[][] {
@@ -179,15 +380,19 @@ function combinations(axes: { values: string[] }[]): string[][] {
  *    combination (only option VALUES set; everything else empty).
  */
 export function serialize(products: Product[]): XLSX.WorkBook {
-  const aoa: string[][] = []
+  const aoa: Cell[][] = []
   aoa.push(zidGroupRow()) // row 1
   aoa.push([...ZID_HEADERS]) // row 2
 
+  const alloc = new SkuAllocator()
+
   for (const p of products) {
     const axes = validAxes(p)
+    const sku = productSku(p, alloc)
 
     if (axes.length === 0) {
       const rec = baseRecord(p)
+      rec.sku = sku
       rec.has_variants = 'No'
       aoa.push(toRow(rec))
       continue
@@ -195,20 +400,28 @@ export function serialize(products: Product[]): XLSX.WorkBook {
 
     // Parent: names only, values empty.
     const parent = baseRecord(p)
+    parent.sku = sku
     parent.has_variants = 'Yes'
     axes.forEach((a, i) => {
       parent[`option${i + 1}_name_ar`] = a.nameAr
-      parent[`option${i + 1}_name_en`] = a.nameEn
+      parent[`option${i + 1}_name_en`] = toEnglishOptionName(a.nameAr, a.nameEn)
     })
     aoa.push(toRow(parent))
 
-    // One child per combination: values only, names/main fields empty.
+    // One child per combination. Variants carry their option values (+ English),
+    // a `{parent}-{option1}` SKU, and inherit price/quantity from the parent
+    // (every variant row must have both); other fields stay empty for Zid to
+    // inherit from the parent.
     for (const combo of combinations(axes)) {
       const child: Record<string, string> = {}
       combo.forEach((v, i) => {
         child[`option${i + 1}_value_ar`] = v
-        child[`option${i + 1}_value_en`] = ''
+        child[`option${i + 1}_value_en`] = toEnglishValue(v)
       })
+      // Variant SKU uses OPTION1's value, per spec; uniqueness handles collisions.
+      child.sku = sku ? alloc.take(`${sku}-${slugify(combo[0])}`) : ''
+      child.price = p.price // inherit parent price
+      child.quantity = p.quantity // inherit parent quantity
       aoa.push(toRow(child))
     }
   }

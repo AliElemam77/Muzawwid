@@ -7,6 +7,7 @@ import {
   type RowOverrides,
 } from './build'
 import { seoTitle, metaDescription, keywords as buildKeywords } from './generate'
+import { applyPriceRules, resolveQuantity } from './pricing'
 import type { SourceSheet, SourceRow } from './reader'
 import type { MappingConfig, SkuConfig } from './types'
 
@@ -188,6 +189,17 @@ export function buildProducts(
     const categoriesAr = pick(F.category)
     const brand = resolve(row, config, F.brand)
 
+    // Base prices from the source, then any configured derivations
+    // (e.g. sale_price = price − 10%). Rules run in order.
+    const prices = applyPriceRules(
+      {
+        price: cleanPrice(pick(F.price)),
+        salePrice: cleanPrice(resolve(row, config, F.discountPrice)),
+        cost: cleanPrice(resolve(row, config, F.cost)),
+      },
+      config.priceRules,
+    )
+
     products.push({
       sourceIndex: index,
       sku: productSku(row, config, index),
@@ -196,10 +208,12 @@ export function buildProducts(
       brand,
       weight: resolve(row, config, F.weight),
       weightUnit: config.defaults.weightUnit || '',
-      price: cleanPrice(pick(F.price)),
-      salePrice: cleanPrice(resolve(row, config, F.discountPrice)),
-      cost: cleanPrice(resolve(row, config, F.cost)),
-      quantity: '',
+      price: prices.price,
+      salePrice: prices.salePrice,
+      cost: prices.cost,
+      // Fixed/infinite quantity applied to every product (and inherited by
+      // variants in the adapter). Source quantity isn't mapped today.
+      quantity: resolveQuantity('', config.quantity),
       categoriesAr,
       categoriesEn: '',
       images,

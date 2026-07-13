@@ -207,6 +207,21 @@ const MESSAGES: Record<Lang, Dict> = {
     'zid.stats': '{count} منتج.',
     'col.variants': 'خيارات؟',
     'col.options': 'الخيارات',
+
+    'export.title': 'خيارات التصدير',
+    'export.subtitle': 'إعدادات تُطبَّق على كل المنتجات عند التصدير (الكمية والأسعار).',
+    'qty.label': 'الكمية',
+    'qty.mode.source': 'كما في الملف المصدر',
+    'qty.mode.infinite': 'غير محدود (infinite)',
+    'qty.mode.fixed': 'رقم ثابت',
+    'qty.fixedValue': 'مثال: 100',
+    'qty.hint': 'تُطبَّق على كل المنتجات والمتغيّرات. «غير محدود» يكتب النص infinite.',
+    'price.label': 'معادلات الأسعار',
+    'price.hint':
+      'اشتقّ sale_price أو cost أو price من حقل آخر. القواعد تُطبَّق بالترتيب، فيمكن لقاعدة أن تبني على نتيجة قاعدة قبلها.',
+    'price.empty': 'لا توجد معادلات — الأسعار تُصدَّر كما هي.',
+    'price.add': '+ إضافة معادلة',
+    'price.remove': 'حذف',
   },
 
   en: {
@@ -400,6 +415,21 @@ const MESSAGES: Record<Lang, Dict> = {
     'zid.stats': '{count} products.',
     'col.variants': 'Variants?',
     'col.options': 'Options',
+
+    'export.title': 'Export options',
+    'export.subtitle': 'Settings applied to every product on export (quantity & prices).',
+    'qty.label': 'Quantity',
+    'qty.mode.source': 'As in the source file',
+    'qty.mode.infinite': 'Unlimited (infinite)',
+    'qty.mode.fixed': 'Fixed number',
+    'qty.fixedValue': 'e.g. 100',
+    'qty.hint': 'Applied to every product and variant. “Unlimited” writes the literal infinite.',
+    'price.label': 'Price formulas',
+    'price.hint':
+      'Derive sale_price, cost or price from another field. Rules run in order, so a rule can build on a previous result.',
+    'price.empty': 'No formulas — prices export as-is.',
+    'price.add': '+ Add formula',
+    'price.remove': 'Remove',
   },
 }
 

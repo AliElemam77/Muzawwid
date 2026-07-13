@@ -13,6 +13,35 @@ export type SkuConfig =
   | { mode: 'regex'; column: string; prefix: string } // extract /p(\d+)
   | { mode: 'auto'; prefix: string } // auto-increment
 
+/**
+ * Fixed quantity applied to EVERY product/variant row.
+ * - `source`: keep whatever the source provides (today that is empty).
+ * - `infinite`: write the literal `infinite`.
+ * - `fixed`: write `value` on every row.
+ */
+export interface QuantityConfig {
+  mode: 'source' | 'infinite' | 'fixed'
+  value: string
+}
+
+/** A price field that can be a rule's target or source. */
+export type PriceField = 'price' | 'salePrice' | 'cost'
+
+/** Arithmetic relating one price field to another. */
+export type PriceOp = 'percentOff' | 'percentOf' | 'multiply' | 'add' | 'subtract'
+
+/**
+ * One derivation, e.g. `salePrice = price − 10%` → { target:'salePrice',
+ * source:'price', op:'percentOff', value:'10' }. Rules run in order, so a later
+ * rule can read a value an earlier rule wrote.
+ */
+export interface PriceRule {
+  target: PriceField
+  source: PriceField
+  op: PriceOp
+  value: string
+}
+
 /** One source column marked as a product option (variant axis). */
 export interface OptionColumn {
   column: string // source column holding the option value(s)
@@ -40,6 +69,10 @@ export interface MappingConfig {
   sku: SkuConfig
   options: OptionColumn[] // up to 3
   defaults: Defaults
+  /** Fixed/infinite quantity applied to every row (adapter platforms). */
+  quantity: QuantityConfig
+  /** Ordered price derivations (sale_price / cost / price). */
+  priceRules: PriceRule[]
 }
 
 export const DEFAULT_DEFAULTS: Defaults = {
@@ -60,6 +93,8 @@ export function emptyConfig(): MappingConfig {
     sku: { mode: 'none' },
     options: [],
     defaults: { ...DEFAULT_DEFAULTS },
+    quantity: { mode: 'source', value: '' },
+    priceRules: [],
   }
 }
 

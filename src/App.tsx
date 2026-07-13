@@ -234,6 +234,7 @@ export default function App() {
               <MappingPanel
                 columns={sheet.headers}
                 config={config}
+                platform={platform}
                 onChange={setConfig}
               />
             </>

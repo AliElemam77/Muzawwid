@@ -1,5 +1,6 @@
 import { F } from '../lib/salla'
 import type { FieldSource, MappingConfig } from '../lib/types'
+import type { PlatformId } from '../lib/platforms'
 import { useI18n } from '../lib/i18n'
 import { Card } from './ui'
 import FieldMapper from './FieldMapper'
@@ -7,6 +8,7 @@ import ImageMerge from './ImageMerge'
 import SkuGenerator from './SkuGenerator'
 import OptionsEditor from './OptionsEditor'
 import DefaultsEditor from './DefaultsEditor'
+import ExportOptionsEditor from './ExportOptionsEditor'
 
 /**
  * Simple (one-cell) Salla fields the user maps directly, keyed to i18n labels.
@@ -37,10 +39,12 @@ const SIMPLE_FIELDS: { header: string; labelKey: string; required?: boolean }[] 
 export default function MappingPanel({
   columns,
   config,
+  platform,
   onChange,
 }: {
   columns: string[]
   config: MappingConfig
+  platform: PlatformId
   onChange: (next: MappingConfig) => void
 }) {
   const { t } = useI18n()
@@ -94,6 +98,18 @@ export default function MappingPanel({
           onChange={(defaults) => onChange({ ...config, defaults })}
         />
       </Card>
+
+      {/* Quantity + price derivations only affect the canonical adapter export. */}
+      {platform !== 'salla' && (
+        <Card title={t('export.title')} subtitle={t('export.subtitle')}>
+          <ExportOptionsEditor
+            quantity={config.quantity}
+            priceRules={config.priceRules}
+            onQuantityChange={(quantity) => onChange({ ...config, quantity })}
+            onPriceRulesChange={(priceRules) => onChange({ ...config, priceRules })}
+          />
+        </Card>
+      )}
     </div>
   )
 }

@@ -2,6 +2,15 @@ import type { MappingConfig, Preset } from './types'
 
 const STORAGE_KEY = 'sheet-to-salla:presets'
 
+/** Backfill fields added after a preset was saved, so older presets stay valid. */
+function migrate(config: MappingConfig): MappingConfig {
+  return {
+    ...config,
+    quantity: config.quantity ?? { mode: 'source', value: '' },
+    priceRules: config.priceRules ?? [],
+  }
+}
+
 /** Load all saved presets from localStorage (safe: never throws). */
 export function loadPresets(): Preset[] {
   try {
@@ -9,9 +18,9 @@ export function loadPresets(): Preset[] {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (p): p is Preset => p && typeof p.name === 'string' && p.config,
-    )
+    return parsed
+      .filter((p): p is Preset => p && typeof p.name === 'string' && p.config)
+      .map((p) => ({ ...p, config: migrate(p.config) }))
   } catch {
     return []
   }
