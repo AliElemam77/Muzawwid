@@ -16,7 +16,7 @@ export interface Platform {
 
 export const PLATFORMS: Platform[] = [
   { id: 'salla', nameKey: 'platform.salla', color: '#0e9f7e', Logo: SallaLogo, ready: true },
-  { id: 'zid', nameKey: 'platform.zid', color: '#4c2a86', Logo: ZidLogo, ready: false },
+  { id: 'zid', nameKey: 'platform.zid', color: '#4c2a86', Logo: ZidLogo, ready: true },
   { id: 'woocommerce', nameKey: 'platform.woo', color: '#7f54b3', Logo: WooLogo, ready: false },
   { id: 'shopify', nameKey: 'platform.shopify', color: '#5e8e3e', Logo: ShopifyLogo, ready: false },
 ]

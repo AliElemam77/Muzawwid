@@ -36,7 +36,7 @@ export default function PlatformSwitcher({
                   (p.ready
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-slate-100 text-slate-500') +
-                  ' end-2'
+                  ' inset-e-2'
                 }
               >
                 {p.ready ? t('platform.ready') : t('platform.soonBadge')}
