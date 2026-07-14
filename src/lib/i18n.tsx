@@ -97,6 +97,28 @@ const MESSAGES: Record<Lang, Dict> = {
       'أضِف أي عدد من أعمدة الخيارات — الأعمدة بنفس الاسم تُدمَج في خيار واحد. يُصدَّر حتى ٣ خيارات مختلفة (حد منصّتَي سلة وزد).',
     'map.defaults.title': 'القيم الافتراضية',
 
+    // Map sub-stepper (short chip labels + navigation)
+    'map.sec.fields': 'الحقول',
+    'map.sec.images': 'الصور',
+    'map.sec.sku': 'الرمز SKU',
+    'map.sec.options': 'الخيارات',
+    'map.sec.defaults': 'الافتراضيات',
+    'map.sec.export': 'التصدير',
+    'map.nav.prev': 'السابق',
+    'map.nav.next': 'التالي',
+    'map.nav.progress': 'القسم {n} من {total}',
+    // Quick-view panel
+    'qv.file': 'الملف',
+    'qv.snippet': 'المعاينة الحية',
+    'qv.firstRow': 'أول صف من ملفك',
+    'qv.rowsMore': '+{n} صف آخر',
+    'qv.none': 'غير محدّد',
+    'qv.empty': 'لا توجد بيانات لعرضها',
+    'qv.mappedCount': '{n} حقل مرتبط',
+    'qv.imagesCount': '{n} صورة',
+    'qv.optionsNote': '{combos} متغيّر من {axes} خيار',
+    'qv.skuSample': 'مثال الرمز',
+
     'images.note': 'اختر أعمدة الصور — تُدمج الروابط غير الفارغة (بدون تكرار) في عمود «صورة المنتج».',
 
     'sku.none': 'بدون',
@@ -309,6 +331,28 @@ const MESSAGES: Record<Lang, Dict> = {
     'map.options.subtitle':
       'Add as many option columns as you need — columns with the same name merge into one option. Up to 3 distinct options export (the Salla/Zid ceiling).',
     'map.defaults.title': 'Default values',
+
+    // Map sub-stepper (short chip labels + navigation)
+    'map.sec.fields': 'Fields',
+    'map.sec.images': 'Images',
+    'map.sec.sku': 'SKU',
+    'map.sec.options': 'Options',
+    'map.sec.defaults': 'Defaults',
+    'map.sec.export': 'Export',
+    'map.nav.prev': 'Back',
+    'map.nav.next': 'Next',
+    'map.nav.progress': 'Section {n} of {total}',
+    // Quick-view panel
+    'qv.file': 'File',
+    'qv.snippet': 'Live preview',
+    'qv.firstRow': 'First row of your file',
+    'qv.rowsMore': '+{n} more rows',
+    'qv.none': 'Not set',
+    'qv.empty': 'Nothing to preview yet',
+    'qv.mappedCount': '{n} fields mapped',
+    'qv.imagesCount': '{n} images',
+    'qv.optionsNote': '{combos} variants from {axes} options',
+    'qv.skuSample': 'SKU sample',
 
     'images.note': 'Pick image columns — non-empty URLs are merged (de-duplicated) into the product image field.',
 

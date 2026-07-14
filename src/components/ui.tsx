@@ -5,38 +5,62 @@ import type {
   ButtonHTMLAttributes,
 } from 'react'
 
-/** Shared Tailwind primitives so the mapping controls stay consistent + readable. */
+/** Shared Memphis / neo-brutalist primitives. All visual tokens live in
+ *  src/styles/tokens.css — these components only compose token classes.
+ *  Nothing here carries inline hex, and RTL shadow-flipping is handled
+ *  centrally by --sh-dir, so callers never think about direction. */
 
 const controlBase =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ' +
-  'shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 ' +
-  'disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400'
+  'w-full bg-white px-3 py-2 text-[color:var(--ink)] outline-none ' +
+  'hard-2 disabled:cursor-not-allowed disabled:bg-[color:var(--dead)] ' +
+  'disabled:text-[color:var(--dead-ink)] disabled:border-transparent disabled:shadow-none'
+
+const controlStyle = { borderRadius: 'var(--r-input)', fontSize: 'var(--fs-body)' }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  const { className = '', ...rest } = props
-  return <select className={`${controlBase} ${className}`} {...rest} />
+  const { className = '', style, ...rest } = props
+  return (
+    <select className={`${controlBase} ${className}`} style={{ ...controlStyle, ...style }} {...rest} />
+  )
 }
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  const { className = '', ...rest } = props
-  return <input className={`${controlBase} ${className}`} {...rest} />
+  const { className = '', style, ...rest } = props
+  return (
+    <input className={`${controlBase} ${className}`} style={{ ...controlStyle, ...style }} {...rest} />
+  )
 }
 
 export function Card({
   title,
   subtitle,
   children,
+  className = '',
 }: {
-  title: string
+  title?: string
   subtitle?: string
   children: ReactNode
+  className?: string
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <header className="mb-4">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
-      </header>
+    <section className={`card p-5 ${className}`}>
+      {(title || subtitle) && (
+        <header className="mb-4">
+          {title && (
+            <h2
+              className="font-extrabold text-[color:var(--ink)]"
+              style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-section)' }}
+            >
+              {title}
+            </h2>
+          )}
+          {subtitle && (
+            <p className="mt-1 text-[color:var(--ink)]/70" style={{ fontSize: 'var(--fs-label)' }}>
+              {subtitle}
+            </p>
+          )}
+        </header>
+      )}
       {children}
     </section>
   )
@@ -48,24 +72,40 @@ export function Button({
   className = '',
   ...rest
 }: {
-  variant?: 'primary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  const styles = {
-    primary:
-      'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-500',
-    ghost: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50',
-    danger: 'bg-white text-red-600 border border-red-200 hover:bg-red-50',
-  }[variant]
   return (
-    <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm outline-none transition focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed ${styles} ${className}`}
-      {...rest}
-    >
+    <button className={`btn btn--${variant} ${className}`} {...rest}>
       {children}
     </button>
   )
 }
 
+/** Small outlined status/label chip. `solid` adds the hard offset shadow. */
+export function Pill({
+  children,
+  tone = 'plain',
+  solid = false,
+  className = '',
+}: {
+  children: ReactNode
+  tone?: 'plain' | 'teal' | 'violet' | 'mustard' | 'coral'
+  solid?: boolean
+  className?: string
+}) {
+  const toneClass = tone === 'plain' ? '' : `pill--${tone}`
+  return (
+    <span className={`pill ${toneClass} ${solid ? 'pill--solid' : ''} ${className}`}>{children}</span>
+  )
+}
+
 export function Label({ children }: { children: ReactNode }) {
-  return <span className="mb-1 block text-sm font-medium text-slate-700">{children}</span>
+  return (
+    <span
+      className="mb-1 block font-bold text-[color:var(--ink)]"
+      style={{ fontSize: 'var(--fs-label)' }}
+    >
+      {children}
+    </span>
+  )
 }

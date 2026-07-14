@@ -1,7 +1,8 @@
 @import 'tailwindcss';
+@import './styles/tokens.css';
 
 :root {
-  font-family: 'Tajawal', system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 html,
@@ -12,8 +13,9 @@ body,
 
 body {
   margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: var(--fs-body);
 }
 
 /* thin, RTL-friendly scrollbars for preview tables */
@@ -22,6 +24,6 @@ body {
   width: 8px;
 }
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--ink);
   border-radius: 9999px;
 }

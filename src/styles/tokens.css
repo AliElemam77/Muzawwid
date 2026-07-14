@@ -1,0 +1,233 @@
+/* =============================================================================
+   Muzawwid design tokens — SINGLE SOURCE OF TRUTH.
+   Flat Memphis / neo-brutalist. No gradients, no blur, no soft shadows.
+   Zero inline hex anywhere else in the app: reference these vars only.
+   ========================================================================== */
+
+:root {
+  /* --- Palette ------------------------------------------------------------ */
+  --cream: #f5efe2; /* page ground */
+  --ink: #17140d; /* text + every outline */
+  --teal: #12b3a4; /* primary action */
+  --violet: #6b5be6; /* secondary, active/selected state */
+  --mustard: #ffc531; /* accent + warning */
+  --sky: #3aa0ff; /* info */
+  --coral: #ff5b57; /* ERROR ONLY — never a CTA, never decoration */
+  --white: #ffffff; /* cards, data surfaces */
+
+  /* Dead / disabled surface — must read as inert, not dim. */
+  --dead: #d9d3c6;
+  --dead-ink: #8a8578;
+
+  /* --- Semantic state aliases (the grid + validation speak these) -------- */
+  --error: var(--coral);
+  --warning: var(--mustard);
+  --success: var(--teal);
+  --info: var(--sky);
+
+  /* Tints for data-grid rows (12% over white). Precomputed — no rgba blur. */
+  --error-tint: #ffeceb;
+  --warning-tint: #fff6dd;
+
+  /* --- Ink-on-fill pairing (AA-safe) -------------------------------------
+     teal/mustard/sky/coral fills are LIGHT → ink text.
+     violet is dark enough → white text. Bake this in so no caller gets it
+     wrong and trips the contrast floor. */
+  --on-teal: var(--ink);
+  --on-mustard: var(--ink);
+  --on-sky: var(--ink);
+  --on-coral: var(--ink);
+  --on-violet: var(--white);
+
+  /* --- Type --------------------------------------------------------------- */
+  /* Latin-first, then an Arabic face with real glyphs. The browser uses the
+     first family that actually has the glyph, so headings auto-pair:
+     Latin → Bricolage/DM Sans, Arabic → Cairo/Tajawal. */
+  --font-display: 'Bricolage Grotesque', 'Cairo', system-ui, sans-serif;
+  --font-body: 'DM Sans', 'Tajawal', system-ui, sans-serif;
+
+  --fs-page: 40px; /* page title */
+  --fs-section: 26px; /* section title */
+  --fs-body: 15px; /* body */
+  --fs-label: 13px; /* label */
+  --fs-table: 13px; /* table */
+
+  /* --- Radii -------------------------------------------------------------- */
+  --r-card: 18px;
+  --r-drop: 22px;
+  --r-pill: 999px;
+  --r-input: 12px;
+
+  /* --- Hard-shadow system ------------------------------------------------
+     One direction variable flips EVERY shadow for RTL. In LTR the light
+     comes from the top-inline-start; RTL mirrors it. Any shadowed element
+     uses calc(<x> * var(--sh-dir)) for its horizontal offset — never a
+     hardcoded left/right offset. */
+  --sh-dir: 1;
+  --ol-3: 3px; /* outline: buttons, cards, pills, dropzone, modals */
+  --ol-2: 2px; /* outline: inputs, selects */
+}
+
+[dir='rtl'] {
+  --sh-dir: -1;
+}
+
+/* =============================================================================
+   Hard-shadow / outline utilities
+   ========================================================================== */
+
+.hard-3 {
+  border: var(--ol-3) solid var(--ink);
+  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+}
+.hard-2 {
+  border: var(--ol-2) solid var(--ink);
+  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+}
+
+/* Interactive lift: press the "key" in on hover, bottom out on active. */
+.lift {
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease;
+}
+.lift:hover:not(:disabled):not([aria-disabled='true']) {
+  transform: translate(calc(2px * var(--sh-dir)), 2px);
+  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+}
+.lift:active:not(:disabled):not([aria-disabled='true']) {
+  transform: translate(calc(6px * var(--sh-dir)), 6px);
+  box-shadow: 0 0 0 0 var(--ink);
+}
+
+/* =============================================================================
+   Button
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--r-pill);
+  padding: 0.6rem 1.15rem;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  border: var(--ol-3) solid var(--ink);
+  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease;
+  outline: none;
+}
+.btn:hover:not(:disabled) {
+  transform: translate(calc(2px * var(--sh-dir)), 2px);
+  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+}
+.btn:active:not(:disabled) {
+  transform: translate(calc(6px * var(--sh-dir)), 6px);
+  box-shadow: 0 0 0 0 var(--ink);
+}
+.btn:focus-visible {
+  outline: var(--ol-3) solid var(--violet);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: var(--teal);
+  color: var(--on-teal);
+}
+.btn--secondary {
+  background: var(--violet);
+  color: var(--on-violet);
+}
+.btn--ghost {
+  background: var(--white);
+  color: var(--ink);
+}
+/* Destructive: NOT coral (coral is reserved for error state, and a CTA is not
+   an error). Reads as a plain outlined control; intent is in the label/icon. */
+.btn--danger {
+  background: var(--white);
+  color: var(--ink);
+}
+
+/* Disabled = dead, not dim: flat gray, NO outline, NO shadow. */
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--dead);
+  color: var(--dead-ink);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+/* =============================================================================
+   Card
+   ========================================================================== */
+
+.card {
+  background: var(--white);
+  border-radius: var(--r-card);
+  border: var(--ol-3) solid var(--ink);
+  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+}
+
+/* =============================================================================
+   Pill — small outlined status/label chip
+   ========================================================================== */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--r-pill);
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  line-height: 1.4;
+  border: var(--ol-2) solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+}
+.pill--teal {
+  background: var(--teal);
+  color: var(--on-teal);
+}
+.pill--violet {
+  background: var(--violet);
+  color: var(--on-violet);
+}
+.pill--mustard {
+  background: var(--mustard);
+  color: var(--on-mustard);
+}
+.pill--coral {
+  background: var(--coral);
+  color: var(--on-coral);
+}
+.pill--solid {
+  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+}
+
+/* =============================================================================
+   Motion: freeze everything for users who ask for it.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .btn:hover,
+  .lift:hover:not(:disabled) {
+    transform: none;
+  }
+}

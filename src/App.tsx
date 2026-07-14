@@ -232,7 +232,7 @@ export default function App() {
 
               <h2 className="pt-2 text-xl font-bold text-slate-900">{t('step2.title')}</h2>
               <MappingPanel
-                columns={sheet.headers}
+                sheet={sheet}
                 config={config}
                 platform={platform}
                 onChange={setConfig}
