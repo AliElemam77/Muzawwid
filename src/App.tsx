@@ -401,9 +401,9 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-            <MadeBy />
+          <div className="flex flex-col items-center justify-center gap-4 ">
             <AuthorCredit />
+            <MadeBy />
           </div>
           <p
             className="mx-auto mt-5 max-w-2xl text-[color:var(--ink)]/50"

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { splitValues } from '../lib/build'
 import { classifyUrl, type UrlKind } from '../lib/urls'
+import { LINKS } from '../lib/links'
 import { useI18n } from '../lib/i18n'
 import { Button } from './ui'
 
@@ -10,7 +11,7 @@ import { Button } from './ui'
  * browser), so an external host is the only way to turn a local file into a
  * link Salla can fetch.
  */
-const UPLOADER_URL = 'https://wepix.omar-khaled-wk.workers.dev/'
+const UPLOADER_URL = LINKS.wepix
 
 /** Per-link status chip: image / plain link / not a link at all. */
 function KindBadge({ kind }: { kind: UrlKind }) {

@@ -1,8 +1,12 @@
+import type { ComponentType } from 'react'
 import { PLATFORMS } from '../lib/platforms'
+import { LINKS } from '../lib/links'
 import { useI18n } from '../lib/i18n'
 import { Button } from './ui'
 import Confetti from './Confetti'
 import MadeBy from './MadeBy'
+import { WepixLogo, SallaViteLogo } from './toolLogos'
+import AuthorCredit from './AuthorCredit'
 
 /**
  * Marketing landing shown only before a file is loaded (App swaps it out for the
@@ -135,6 +139,36 @@ const FEATURES: { key: string; tone: 'teal' | 'violet' | 'mustard'; glyph: strin
   { key: 'validate', tone: 'mustard', glyph: '✓' },
 ]
 
+/**
+ * The company's OTHER tools, promoted so visitors discover them. `href` present
+ * → a live tool with a "try it" button; `href` absent → a coming-soon card with
+ * no dead link. `name`/`meta` are brand strings, not translated.
+ */
+const TOOLS: {
+  key: string
+  name: string
+  meta: string
+  Logo: ComponentType<{ size?: number }>
+  href?: string
+  ready: boolean
+}[] = [
+  {
+    key: 'wepix',
+    name: 'wepix',
+    meta: 'omar-khaled-wk.workers.dev',
+    Logo: WepixLogo,
+    href: LINKS.wepix,
+    ready: true,
+  },
+  {
+    key: 'sallaVite',
+    name: 'Salla Vite Extension',
+    meta: 'VS Code',
+    Logo: SallaViteLogo,
+    ready: false,
+  },
+]
+
 export default function Landing({ onStart }: { onStart: () => void }) {
   const { t } = useI18n()
 
@@ -182,8 +216,9 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             </div>
 
             {/* Who built it — stated up front, not buried in the footer. */}
-            <div className="mt-7">
-              <MadeBy size={30} />
+            <div className="mt-7 flex items-center gap-3">
+              <AuthorCredit />
+              <MadeBy  />
             </div>
 
             {/* Proof row — the honest kind: what the tool actually guarantees,
@@ -267,9 +302,11 @@ export default function Landing({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      {/* ---- Features ------------------------------------------------------ */}
-      <section className="py-12 text-center">
-        <span className="pill pill--violet pill--solid">{t('lp.feat.eyebrow')}</span>
+    
+
+      {/* ---- Our tools ----------------------------------------------------- */}
+      <section className="py-14 text-center ">
+        <span className="pill pill--violet pill--solid">{t('lp.tools.eyebrow')}</span>
         <h2
           className="mx-auto mt-4 max-w-3xl font-extrabold text-[color:var(--ink)]"
           style={{
@@ -279,45 +316,54 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             letterSpacing: '-0.01em',
           }}
         >
-          {t('lp.feat.h2')}
+          {t('lp.tools.h2')}
         </h2>
+        <p
+          className="mx-auto mt-3 max-w-xl font-medium text-[color:var(--ink)]/70"
+          style={{ fontSize: '16px', lineHeight: 1.6 }}
+        >
+          {t('lp.tools.lead')}
+        </p>
 
-        <div className="mt-9 grid gap-6 text-start md:grid-cols-3">
-          {FEATURES.map((f) => (
-            <article key={f.key} className="card relative overflow-hidden p-5">
-              <span
-                className="hard-2 flex h-14 w-14 items-center justify-center font-extrabold"
-                style={{
-                  borderRadius: '16px',
-                  background: `var(--${f.tone})`,
-                  color: `var(--on-${f.tone})`,
-                  fontSize: '24px',
-                }}
-              >
-                {f.glyph}
-              </span>
-              <h3
-                className="mt-4 font-extrabold text-[color:var(--ink)]"
-                style={{ fontFamily: 'var(--font-display)', fontSize: '20px' }}
-              >
-                {t(`lp.feat.${f.key}.title`)}
-              </h3>
+        <div className="mx-auto mt-9 grid max-w-4xl gap-6 text-start sm:grid-cols-2">
+          {TOOLS.map((tool) => (
+            <article key={tool.key} className="card flex flex-col gap-4 p-6">
+              <div className="flex justify-between items-center gap-4">
+                <tool.Logo size={58} />
+                <div className="min-w-0">
+                  <h3
+                    dir="ltr"
+                    className="truncate text-start font-extrabold text-[color:var(--ink)]"
+                    style={{ fontFamily: 'var(--font-display)', fontSize: '21px' }}
+                  >
+                    {tool.name}
+                  </h3>
+                  <span
+                    dir="ltr"
+                    className="block truncate text-start font-bold text-[color:var(--ink)]/45"
+                    style={{ fontSize: '12px' }}
+                  >
+                    {tool.meta}
+                  </span>
+                </div>
+              </div>
+
               <p
-                className="mt-1.5 font-medium text-[color:var(--ink)]/70"
+                className="font-medium text-[color:var(--ink)]/75"
                 style={{ fontSize: '15px', lineHeight: 1.6 }}
               >
-                {t(`lp.feat.${f.key}.body`)}
+                {t(`lp.tools.${tool.key}.body`)}
               </p>
-              {/* soft corner accent bleeding off the bottom-inline-end */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -bottom-10 h-28 w-28 rounded-full"
-                style={{
-                  insetInlineEnd: '-2.5rem',
-                  background: `var(--${f.tone})`,
-                  opacity: 0.16,
-                }}
-              />
+
+              <div className="mt-auto pt-1">
+                {tool.href ? (
+                  <a href={tool.href} target="_blank" rel="noreferrer">
+                    <Button>{t('lp.tools.try')}</Button>
+                  </a>
+                ) : (
+                  <span className="pill pill--mustard pill--solid">{t('lp.tools.soon')}</span>
+                )}
+              </div>
             </article>
           ))}
         </div>

@@ -81,6 +81,16 @@ const MESSAGES: Record<Lang, Dict> = {
     'lp.feat.validate.body':
       'اسم ناقص، سعر فاضي، رابط صورة غلط — يطلعوا لك هنا بأرقام صفوفهم، قبل ما سلة ترفض الملف.',
 
+    'lp.tools.eyebrow': 'أدواتنا',
+    'lp.tools.h2': 'مش بس «مزوّد» — دي أدوات تانية من صناعتنا',
+    'lp.tools.lead': 'أدوات صغيرة بنبنيها لأصحاب المتاجر والمطوّرين — تختصر عليك وقت وشغل.',
+    'lp.tools.try': 'جرّبها الآن ←',
+    'lp.tools.soon': '🚧 قريبًا',
+    'lp.tools.wepix.body':
+      'ارفع صورك مباشرة واحصل على روابط جاهزة تحطها في منتجاتك — نفس الأداة اللي «مزوّد» بيوصّلك لها عند تعديل صور المنتج.',
+    'lp.tools.sallaVite.body':
+      'إضافة VS Code تبني قوالب سلة أسرع بأكثر من ١٠ أضعاف. قريبًا لكل مطوّري قوالب سلة.',
+
     'step1.uploadTitle': '١) رفع الملف',
     'step1.uploadSubtitle': 'ابدأ برفع ملف المنتجات بصيغة xlsx أو xls أو csv.',
     'step1.sourceTitle': '١) الملف المصدر',
@@ -403,6 +413,16 @@ const MESSAGES: Record<Lang, Dict> = {
     'lp.feat.validate.title': 'Validation before export',
     'lp.feat.validate.body':
       'A missing name, an empty price, a bad image link — all listed here with their row numbers, before Salla rejects the file.',
+
+    'lp.tools.eyebrow': 'OUR TOOLS',
+    'lp.tools.h2': 'Not just Muzawwid — more tools we build',
+    'lp.tools.lead': 'Small tools we build for store owners and developers — each one saves you time and effort.',
+    'lp.tools.try': 'Try it now →',
+    'lp.tools.soon': '🚧 Coming soon',
+    'lp.tools.wepix.body':
+      'Upload your images and get ready-to-use links for your products — the same tool Muzawwid hands you off to when editing product images.',
+    'lp.tools.sallaVite.body':
+      'A VS Code extension that builds Salla themes over 10× faster. Coming soon for every Salla theme developer.',
 
     'step1.uploadTitle': '1) Upload file',
     'step1.uploadSubtitle': 'Start by uploading a product file in xlsx, xls, or csv format.',
