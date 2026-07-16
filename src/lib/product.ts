@@ -4,13 +4,15 @@ import {
   splitValues,
   cleanOptionValues,
   groupOptionColumnsByName,
+  resolveOptionNames,
   type RowOverrides,
 } from './build'
 import { seoTitle, metaDescription, keywords as buildKeywords } from './generate'
 import { applyPriceRules, resolveQuantity } from './pricing'
 import { normalizeCategoryField } from './categories'
+import { isImageUrl } from './urls'
 import type { SourceSheet, SourceRow } from './reader'
-import type { MappingConfig, SkuConfig } from './types'
+import type { MappingConfig, OptionColumn, SkuConfig } from './types'
 
 /** One product option axis (variant), inline (not expanded into rows). */
 export interface ProductOption {
@@ -102,15 +104,6 @@ function mergeImages(row: SourceRow, columns: string[]): string[] {
   return out
 }
 
-/** A URL pointing at an actual image file (by extension). */
-const IMAGE_URL_RE =
-  /\.(jpe?g|jfif|pjpeg|pjp|png|apng|webp|gif|avif|svg)(\?|#|$)/i
-
-/** True when a string is an image-file URL (used to keep image links visible). */
-export function isImageUrl(url: string): boolean {
-  return IMAGE_URL_RE.test(url)
-}
-
 /**
  * Some scrapes put the product's page URL as the FIRST "image" cell, followed
  * by the real image URLs. Split that leading non-image link out into its own
@@ -118,7 +111,7 @@ export function isImageUrl(url: string): boolean {
  * inspected, and only when it clearly isn't an image file.
  */
 function splitPageUrl(images: string[]): { pageUrl: string; images: string[] } {
-  if (images.length > 1 && !IMAGE_URL_RE.test(images[0])) {
+  if (images.length > 1 && !isImageUrl(images[0])) {
     return { pageUrl: images[0], images: images.slice(1) }
   }
   return { pageUrl: '', images }
@@ -164,17 +157,25 @@ export function buildProducts(
     const pick = (header: string) =>
       header in override ? override[header] : resolve(row, config, header)
 
+    // A hand-edited image list (pasted links) replaces the mapped columns.
     const rawImages =
-      config.imageColumns.length > 0
-        ? mergeImages(row, config.imageColumns)
-        : splitValues(resolve(row, config, F.image))
+      F.image in override
+        ? splitValues(override[F.image])
+        : config.imageColumns.length > 0
+          ? mergeImages(row, config.imageColumns)
+          : splitValues(resolve(row, config, F.image))
     const { pageUrl, images } = splitPageUrl(rawImages)
 
     // Columns sharing a display name (e.g. a scraped size grid split across
     // several columns) merge into ONE option with the union of their values —
-    // never separate options each holding a single value.
+    // never separate options each holding a single value. Names are resolved
+    // per row first, so an option reading its name from a column groups by the
+    // name THIS row actually carries.
     const options: ProductOption[] = groupOptionColumnsByName(
-      config.options.filter((o) => o.column),
+      resolveOptionNames(
+        row,
+        config.options.filter((o: OptionColumn) => o.column),
+      ),
     )
       .slice(0, 3)
       .map((group) => {

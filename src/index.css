@@ -16,6 +16,10 @@ body {
   background: var(--cream);
   color: var(--ink);
   font-size: var(--fs-body);
+  /* Drifting confetti and the 100vw full-bleed strip must never open a
+     horizontal scrollbar. `clip`, NOT `hidden`: hidden would make body a scroll
+     container and break the `position: sticky` quick-view panel in the mapper. */
+  overflow-x: clip;
 }
 
 /* thin, RTL-friendly scrollbars for preview tables */

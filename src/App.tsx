@@ -1,8 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { SourceWorkbook } from './lib/reader'
 import type { MappingConfig, Preset } from './lib/types'
 import { autoMap } from './lib/automap'
-import { buildRows, validate, type RowOverrides } from './lib/build'
+import {
+  buildRows,
+  validate,
+  optionValueKey,
+  type RowOverrides,
+  type OptionOverrides,
+} from './lib/build'
 import { F } from './lib/salla'
 import { buildSallaWorkbook, downloadWorkbook } from './lib/salla'
 import { buildProducts } from './lib/product'
@@ -10,9 +16,13 @@ import { getAdapter } from './lib/adapters'
 import { loadPresets, savePreset, deletePreset } from './lib/presets'
 import { loadCategories, saveCategories } from './lib/categories'
 import { loadPlatform, savePlatform, PLATFORMS, type PlatformId } from './lib/platforms'
+import { LINKS } from './lib/links'
 import { useI18n } from './lib/i18n'
 
 import Logo from './components/Logo'
+import MadeBy from './components/MadeBy'
+import AuthorCredit from './components/AuthorCredit'
+import Landing from './components/Landing'
 import PlatformSwitcher from './components/PlatformSwitcher'
 import PlatformComingSoon from './components/PlatformComingSoon'
 import Stepper from './components/Stepper'
@@ -34,6 +44,8 @@ export default function App() {
   const [presets, setPresets] = useState<Preset[]>(() => loadPresets())
   // Manual per-product edits (name / price / category), keyed by source row index.
   const [rowOverrides, setRowOverrides] = useState<RowOverrides>({})
+  // Manual per-product option edits (rename an axis/value, drop a value).
+  const [optionOverrides, setOptionOverrides] = useState<OptionOverrides>({})
   // Items (source rows) the user removed from the export.
   const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set())
   // The store's category list — persisted across files, chosen from per product.
@@ -52,9 +64,9 @@ export default function App() {
   const build = useMemo(
     () =>
       platform === 'salla' && sheet && config
-        ? buildRows(sheet, config, rowOverrides, excludedRows)
+        ? buildRows(sheet, config, rowOverrides, excludedRows, optionOverrides)
         : null,
-    [platform, sheet, config, rowOverrides, excludedRows],
+    [platform, sheet, config, rowOverrides, excludedRows, optionOverrides],
   )
 
   // Canonical products power every adapter platform (Zid, …).
@@ -80,6 +92,7 @@ export default function App() {
     setConfig(autoMap(first))
     setRowOverrides({})
     setExcludedRows(new Set())
+    setOptionOverrides({})
   }
 
   function handlePickSheet(name: string) {
@@ -91,6 +104,7 @@ export default function App() {
     // Row indices no longer correspond to the previous sheet — clear edits.
     setRowOverrides({})
     setExcludedRows(new Set())
+    setOptionOverrides({})
   }
 
   function handleReset() {
@@ -99,6 +113,7 @@ export default function App() {
     setConfig(null)
     setRowOverrides({})
     setExcludedRows(new Set())
+    setOptionOverrides({})
   }
 
   function handleEditField(sourceIndex: number, field: string, value: string) {
@@ -106,6 +121,45 @@ export default function App() {
       ...prev,
       [sourceIndex]: { ...prev[sourceIndex], [field]: value },
     }))
+  }
+
+  function handleRenameAxis(sourceIndex: number, axisIndex: number, name: string) {
+    setOptionOverrides((prev) => {
+      const edits = prev[sourceIndex] ?? {}
+      return {
+        ...prev,
+        [sourceIndex]: { ...edits, names: { ...edits.names, [axisIndex]: name } },
+      }
+    })
+  }
+
+  function handleEditOptionValue(
+    sourceIndex: number,
+    axisIndex: number,
+    original: string,
+    value: string,
+  ) {
+    setOptionOverrides((prev) => {
+      const edits = prev[sourceIndex] ?? {}
+      return {
+        ...prev,
+        [sourceIndex]: {
+          ...edits,
+          values: { ...edits.values, [optionValueKey(axisIndex, original)]: value },
+        },
+      }
+    })
+  }
+
+  function handleRemoveOptionValue(sourceIndex: number, axisIndex: number, original: string) {
+    setOptionOverrides((prev) => {
+      const edits = prev[sourceIndex] ?? {}
+      const key = optionValueKey(axisIndex, original)
+      return {
+        ...prev,
+        [sourceIndex]: { ...edits, removed: [...new Set([...(edits.removed ?? []), key])] },
+      }
+    })
   }
 
   function handleApplyCategoryToAll(value: string) {
@@ -130,15 +184,33 @@ export default function App() {
     setStoreCategories(saveCategories(next))
   }
 
+  /** Undo both kinds of removal: deleted items and dropped option values. */
   function handleRestoreAll() {
     setExcludedRows(new Set())
+    setOptionOverrides((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).map(([idx, edits]) => [idx, { ...edits, removed: [] }]),
+      ),
+    )
   }
+
+  const removedOptionCount = useMemo(
+    () =>
+      Object.values(optionOverrides).reduce((n, edits) => n + (edits.removed?.length ?? 0), 0),
+    [optionOverrides],
+  )
 
   function handlePlatformChange(id: PlatformId) {
     setPlatform(savePlatform(id))
   }
 
   const activePlatform = PLATFORMS.find((p) => p.id === platform)!
+
+  /** Landing CTAs jump to the tool rather than navigating — it's one page. */
+  const toolRef = useRef<HTMLDivElement>(null)
+  function scrollToTool() {
+    toolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   function handleExport() {
     if (!validation?.ok) return
@@ -152,25 +224,37 @@ export default function App() {
 
   return (
     <div className="min-h-full">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 px-4 py-6">
-          <div>
-            <Logo />
-            <p className="mt-2 text-sm text-slate-500">{t('app.subtitle')}</p>
+      <header className="border-b-[3px] border-[color:var(--ink)] bg-[color:var(--cream)]">
+        <div className="mx-auto flex max-w-[104rem] items-center justify-between gap-4 px-6 py-3">
+          <Logo />
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+              className="hard-2 lift bg-white px-3 py-1.5 font-bold text-[color:var(--ink)]"
+              style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
+            >
+              {t('lang.other')}
+            </button>
+            {!workbook && <Button onClick={scrollToTool}>{t('lp.cta.primary')}</Button>}
           </div>
-          <button
-            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-            className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            {t('lang.other')}
-          </button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-          <p className="text-sm font-semibold text-indigo-800">{t('hint.scraper.title')}</p>
-          <p className="mt-1 text-sm text-indigo-700">{t('hint.scraper.body')}</p>
+      <div className="mx-auto max-w-[104rem] px-6 py-6">
+        {/* The landing only exists before a file is loaded — once you are
+            mapping, it would just be noise between you and your data. */}
+        {!workbook && <Landing onStart={scrollToTool} />}
+
+        <div ref={toolRef} className="mb-6 card p-4" style={{ borderColor: 'var(--ink)' }}>
+          <p
+            className="font-extrabold text-[color:var(--ink)]"
+            style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-label)' }}
+          >
+            {t('hint.scraper.title')}
+          </p>
+          <p className="mt-1 text-[color:var(--ink)]/70" style={{ fontSize: 'var(--fs-label)' }}>
+            {t('hint.scraper.body')}
+          </p>
         </div>
 
         <div className="mb-8">
@@ -253,10 +337,14 @@ export default function App() {
                     productCount={build.productCount}
                     optionCount={build.optionCount}
                     excludedCount={excludedRows.size}
+                    removedOptionCount={removedOptionCount}
                     onEditField={handleEditField}
                     onApplyCategoryToAll={handleApplyCategoryToAll}
                     onDeleteItem={handleDeleteItem}
                     onRestoreAll={handleRestoreAll}
+                    onRenameAxis={handleRenameAxis}
+                    onEditOptionValue={handleEditOptionValue}
+                    onRemoveOptionValue={handleRemoveOptionValue}
                   />
                 </Card>
               ) : products ? (
@@ -287,12 +375,43 @@ export default function App() {
                 </>
               )}
             </div>
-
-            <footer className="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-              {t('app.footer')} <span dir="ltr">s.salla.sa/import/products</span>
-            </footer>
           </>
         )}
+
+        {/* Outside the platform branch: the credits and the Salla note belong
+            on every screen, including "coming soon". */}
+        <footer className="mt-12 border-t-[3px] border-[color:var(--ink)] pt-7 pb-10 text-center">
+          {/* Under-development note — sets expectations and gives a direct line
+              for problems (mustard = the app's "warning/heads-up" tone). */}
+          <div className="mx-auto mb-7 max-w-xl">
+            <span className="pill pill--mustard pill--solid">{t('footer.betaBadge')}</span>
+            <p
+              className="mt-3 leading-relaxed text-[color:var(--ink)]/75"
+              style={{ fontSize: 'var(--fs-body)' }}
+            >
+              {t('footer.betaBody')}{' '}
+              <a
+                href={LINKS.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="font-extrabold text-[color:var(--ink)] underline decoration-2 underline-offset-2"
+              >
+                {t('footer.betaCta')}
+              </a>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
+            <MadeBy />
+            <AuthorCredit />
+          </div>
+          <p
+            className="mx-auto mt-5 max-w-2xl text-[color:var(--ink)]/50"
+            style={{ fontSize: 'var(--fs-label)' }}
+          >
+            {t('app.footer')} <span dir="ltr">s.salla.sa/import/products</span>
+          </p>
+        </footer>
       </div>
     </div>
   )

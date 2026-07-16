@@ -3,41 +3,42 @@ import { PRICE_OPS, PRICE_FIELDS } from '../lib/pricing'
 import { useI18n } from '../lib/i18n'
 import { Select, TextInput, Button, Label } from './ui'
 
-/** Machine names shown in the selects (mirror the Zid column keys). */
-const FIELD_LABEL: Record<PriceField, string> = {
-  price: 'price',
-  salePrice: 'sale_price',
-  cost: 'cost',
-}
-
 const opSymbol = (op: PriceRule['op']) =>
   PRICE_OPS.find((o) => o.op === op)?.symbol ?? op
-
-/** A one-line readout, e.g. `sale_price = price − 10%`. */
-function formula(rule: PriceRule): string {
-  const suffix = rule.op === 'percentOff' || rule.op === 'percentOf' ? '%' : ''
-  return `${FIELD_LABEL[rule.target]} = ${FIELD_LABEL[rule.source]} ${opSymbol(rule.op)} ${rule.value || '…'}${suffix}`
-}
 
 const DEFAULT_RULE: PriceRule = { target: 'salePrice', source: 'price', op: 'percentOff', value: '10' }
 
 /**
- * Export-only options for adapter platforms (Zid): a fixed/infinite quantity
- * applied to every row, and ordered price derivations relating price /
- * sale_price / cost.
+ * Export-only options: ordered price derivations relating price / sale_price /
+ * cost, plus (adapter platforms only) a fixed/infinite quantity for every row.
+ *
+ * `showQuantity` is false for Salla: its 40-column template has no quantity
+ * column at all, so offering the control there would promise an export that
+ * cannot happen. `fieldLabel` lets each platform name the three price fields in
+ * its own terms — Salla's Arabic headers vs Zid's machine column keys.
  */
 export default function ExportOptionsEditor({
   quantity,
   priceRules,
+  fieldLabel,
+  showQuantity = true,
   onQuantityChange,
   onPriceRulesChange,
 }: {
   quantity: QuantityConfig
   priceRules: PriceRule[]
+  fieldLabel: Record<PriceField, string>
+  showQuantity?: boolean
   onQuantityChange: (next: QuantityConfig) => void
   onPriceRulesChange: (next: PriceRule[]) => void
 }) {
   const { t } = useI18n()
+
+  /** A one-line readout, e.g. `sale_price = price − 10%`. */
+  const formula = (rule: PriceRule): string => {
+    const suffix = rule.op === 'percentOff' || rule.op === 'percentOf' ? '%' : ''
+    return `${fieldLabel[rule.target]} = ${fieldLabel[rule.source]} ${opSymbol(rule.op)} ${rule.value || '…'}${suffix}`
+  }
 
   const setRule = (i: number, patch: Partial<PriceRule>) =>
     onPriceRulesChange(priceRules.map((r, k) => (k === i ? { ...r, ...patch } : r)))
@@ -47,33 +48,35 @@ export default function ExportOptionsEditor({
   return (
     <div className="space-y-6">
       {/* Quantity */}
-      <div>
-        <Label>{t('qty.label')}</Label>
-        <div className="flex flex-wrap items-center gap-3">
-          <Select
-            className="max-w-xs"
-            value={quantity.mode}
-            onChange={(e) =>
-              onQuantityChange({ ...quantity, mode: e.target.value as QuantityConfig['mode'] })
-            }
-          >
-            <option value="source">{t('qty.mode.source')}</option>
-            <option value="infinite">{t('qty.mode.infinite')}</option>
-            <option value="fixed">{t('qty.mode.fixed')}</option>
-          </Select>
-          {quantity.mode === 'fixed' && (
-            <TextInput
-              className="max-w-[10rem]"
-              type="number"
-              min={0}
-              placeholder={t('qty.fixedValue')}
-              value={quantity.value}
-              onChange={(e) => onQuantityChange({ ...quantity, value: e.target.value })}
-            />
-          )}
+      {showQuantity && (
+        <div>
+          <Label>{t('qty.label')}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              className="max-w-xs"
+              value={quantity.mode}
+              onChange={(e) =>
+                onQuantityChange({ ...quantity, mode: e.target.value as QuantityConfig['mode'] })
+              }
+            >
+              <option value="source">{t('qty.mode.source')}</option>
+              <option value="infinite">{t('qty.mode.infinite')}</option>
+              <option value="fixed">{t('qty.mode.fixed')}</option>
+            </Select>
+            {quantity.mode === 'fixed' && (
+              <TextInput
+                className="max-w-[10rem]"
+                type="number"
+                min={0}
+                placeholder={t('qty.fixedValue')}
+                value={quantity.value}
+                onChange={(e) => onQuantityChange({ ...quantity, value: e.target.value })}
+              />
+            )}
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{t('qty.hint')}</p>
         </div>
-        <p className="mt-1 text-xs text-slate-500">{t('qty.hint')}</p>
-      </div>
+      )}
 
       {/* Price rules */}
       <div>
@@ -94,7 +97,7 @@ export default function ExportOptionsEditor({
                   >
                     {PRICE_FIELDS.map((f) => (
                       <option key={f} value={f}>
-                        {FIELD_LABEL[f]}
+                        {fieldLabel[f]}
                       </option>
                     ))}
                   </Select>
@@ -106,7 +109,7 @@ export default function ExportOptionsEditor({
                   >
                     {PRICE_FIELDS.map((f) => (
                       <option key={f} value={f}>
-                        {FIELD_LABEL[f]}
+                        {fieldLabel[f]}
                       </option>
                     ))}
                   </Select>

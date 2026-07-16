@@ -86,7 +86,37 @@ export default function OptionsEditor({
               </Select>
             </div>
             <div>
-              <Label>{t('opt.name')}</Label>
+              <Label>{t('opt.nameSource')}</Label>
+              <Select
+                value={opt.nameColumn ? 'column' : 'fixed'}
+                onChange={(e) =>
+                  update(i, {
+                    nameColumn:
+                      e.target.value === 'column' ? (opt.nameColumn ?? columns[0] ?? '') : undefined,
+                  })
+                }
+              >
+                <option value="fixed">{t('opt.nameSource.fixed')}</option>
+                <option value="column">{t('opt.nameSource.column')}</option>
+              </Select>
+            </div>
+            {opt.nameColumn !== undefined && (
+              <div>
+                <Label>{t('opt.nameCol')}</Label>
+                <Select
+                  value={opt.nameColumn}
+                  onChange={(e) => update(i, { nameColumn: e.target.value })}
+                >
+                  {columns.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>{opt.nameColumn !== undefined ? t('opt.nameFallback') : t('opt.name')}</Label>
               <TextInput
                 value={opt.name}
                 placeholder={t('opt.namePlaceholder')}
@@ -125,6 +155,9 @@ export default function OptionsEditor({
               </div>
             )}
           </div>
+          {opt.nameColumn !== undefined && (
+            <p className="mt-2 text-sm text-slate-500">{t('opt.nameColHint')}</p>
+          )}
         </div>
       ))}
 

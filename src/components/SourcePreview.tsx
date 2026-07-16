@@ -1,5 +1,5 @@
 import type { SourceWorkbook, SourceSheet } from '../lib/reader'
-import { isImageUrl } from '../lib/product'
+import { isImageUrl } from '../lib/urls'
 import { useI18n } from '../lib/i18n'
 
 const PREVIEW_ROWS = 10

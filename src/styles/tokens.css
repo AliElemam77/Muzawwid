@@ -12,7 +12,10 @@
   --violet: #6b5be6; /* secondary, active/selected state */
   --mustard: #ffc531; /* accent + warning */
   --sky: #3aa0ff; /* info */
-  --coral: #ff5b57; /* ERROR ONLY — never a CTA, never decoration */
+  /* Coral is the ERROR colour — never a CTA, and never decoration INSIDE the
+     UI. The one sanctioned exception is the purely decorative confetti layer
+     (.confetti), which carries no state and is aria-hidden. */
+  --coral: #ff5b57;
   --white: #ffffff; /* cards, data surfaces */
 
   /* Dead / disabled surface — must read as inert, not dim. */
@@ -212,6 +215,123 @@
 }
 .pill--solid {
   box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+}
+
+/* =============================================================================
+   Full-bleed — break a shape out of the centred container to the viewport edge.
+
+   Margin-based, so the element stays IN FLOW. The `position:relative; left:50%;
+   transform:translateX(-50%)` variant looks identical but keeps its static box
+   at the container's edge, widening the document by ~1 gutter — which in RTL
+   moves the scroll origin and clips the whole page. Do not reintroduce it.
+   ========================================================================== */
+
+.full-bleed {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+/* =============================================================================
+   Marker highlight — a flat bar swiped behind a headline word.
+
+   `position:relative` + `z-index:0` on the span makes it its OWN stacking
+   context, so the z-index:-1 bar sits behind the text but still paints ABOVE
+   any ancestor background. Without that, the bar vanishes under a section fill.
+   Sized in `em` so it tracks the headline's font-size at every breakpoint.
+   ========================================================================== */
+
+.marker {
+  position: relative;
+  z-index: 0;
+  white-space: nowrap;
+}
+/* Sits UNDER the word, not through it: Arabic glyphs hang lower than Latin
+   ones, so a Latin-tuned bar (bottom .06em / height .36em) cuts the letterforms
+   in half. Kept low and thin so it reads as a swipe beneath the baseline. */
+.marker::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-inline: -0.12em;
+  bottom: -0.05em;
+  height: 0.24em;
+  background: var(--mustard);
+  transform: rotate(-1.5deg);
+}
+.marker--teal::before {
+  background: var(--teal);
+}
+
+/* =============================================================================
+   Confetti — the decorative Memphis shape layer.
+
+   Purely ornamental: never carries state, never takes a pointer event, and is
+   aria-hidden at the container. Animations are CSS-only (no JS), so a frame is
+   always paintable. The rotate() directions are NOT mirrored for RTL — these
+   are free-floating ornaments, not directional affordances.
+   ========================================================================== */
+
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.confetti {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@keyframes confetti-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(8deg);
+  }
+}
+@keyframes confetti-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes confetti-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+@keyframes confetti-sway {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+.confetti--drift {
+  animation: confetti-drift 9s ease-in-out infinite;
+}
+.confetti--spin {
+  animation: confetti-spin 26s linear infinite;
+}
+.confetti--bob {
+  animation: confetti-bob 7s ease-in-out infinite;
+}
+.confetti--sway {
+  animation: confetti-sway 8s ease-in-out infinite;
+  transform-origin: top center;
 }
 
 /* =============================================================================

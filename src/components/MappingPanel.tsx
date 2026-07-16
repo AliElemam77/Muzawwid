@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { F } from '../lib/salla'
-import type { FieldSource, MappingConfig } from '../lib/types'
+import type { FieldSource, MappingConfig, PriceField } from '../lib/types'
 import type { SourceSheet } from '../lib/reader'
 import type { PlatformId } from '../lib/platforms'
 import { useI18n } from '../lib/i18n'
@@ -9,6 +9,7 @@ import FieldMapper from './FieldMapper'
 import ImageMerge from './ImageMerge'
 import SkuGenerator from './SkuGenerator'
 import OptionsEditor from './OptionsEditor'
+import PromoTitleEditor from './PromoTitleEditor'
 import DefaultsEditor from './DefaultsEditor'
 import ExportOptionsEditor from './ExportOptionsEditor'
 import MappingQuickView from './MappingQuickView'
@@ -36,6 +37,17 @@ const EXPORT_SECTION: SectionDef = {
   shortKey: 'map.sec.export',
   titleKey: 'export.title',
   subtitleKey: 'export.subtitle',
+}
+
+/**
+ * Salla gets the same section, minus quantity (its template has no quantity
+ * column), so it is named for what it actually does there: price formulas.
+ */
+const PRICES_SECTION: SectionDef = {
+  key: 'export',
+  shortKey: 'map.sec.prices',
+  titleKey: 'prices.title',
+  subtitleKey: 'prices.subtitle',
 }
 
 /**
@@ -132,7 +144,16 @@ export default function MappingPanel({
 }) {
   const { t } = useI18n()
   const columns = sheet.headers
-  const sections = platform === 'salla' ? BASE_SECTIONS : [...BASE_SECTIONS, EXPORT_SECTION]
+  const isSalla = platform === 'salla'
+  const sections = [...BASE_SECTIONS, isSalla ? PRICES_SECTION : EXPORT_SECTION]
+
+  /**
+   * Name the three price fields the way each platform's user thinks of them:
+   * Salla's actual Arabic column headers, or Zid's machine column keys.
+   */
+  const priceFieldLabel: Record<PriceField, string> = isSalla
+    ? { price: t('f.price'), salePrice: t('f.discountPrice'), cost: t('f.cost') }
+    : { price: 'price', salePrice: 'sale_price', cost: 'cost' }
 
   const [active, setActive] = useState(0)
   const clamped = Math.min(active, sections.length - 1)
@@ -156,6 +177,17 @@ export default function MappingPanel({
                 onChange={(source) => setField(f.header, source)}
               />
             ))}
+            {/* العنوان الترويجي needs more than a column pick — it is clamped to
+                25 chars and auto-derived when empty, so it gets its own block. */}
+            <div className="pt-2">
+              <h3 className="mb-2 font-extrabold text-[color:var(--ink)]" style={{ fontSize: 'var(--fs-label)' }}>
+                {t('promo.title')}
+              </h3>
+              <PromoTitleEditor
+                promoTitle={config.promoTitle}
+                onChange={(promoTitle) => onChange({ ...config, promoTitle })}
+              />
+            </div>
           </div>
         )
       case 'images':
@@ -194,6 +226,8 @@ export default function MappingPanel({
           <ExportOptionsEditor
             quantity={config.quantity}
             priceRules={config.priceRules}
+            fieldLabel={priceFieldLabel}
+            showQuantity={!isSalla}
             onQuantityChange={(quantity) => onChange({ ...config, quantity })}
             onPriceRulesChange={(priceRules) => onChange({ ...config, priceRules })}
           />
@@ -202,7 +236,7 @@ export default function MappingPanel({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_30rem]">
       {/* --- Left: sub-stepper + the active section only ---------------------- */}
       <div className="space-y-4">
         <SubStepper sections={sections} active={clamped} onPick={setActive} />

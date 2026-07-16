@@ -9,11 +9,20 @@ import {
   type OptionType,
 } from './salla'
 import { normalizeCategoryField } from './categories'
+import { applyPriceRules } from './pricing'
+import { classifyUrl } from './urls'
 import type { SourceSheet, SourceRow } from './reader'
-import type { MappingConfig, OptionColumn } from './types'
+import { DEFAULT_PROMO_TITLE, type MappingConfig, type OptionColumn } from './types'
 
 /** Salla's العنوان الترويجي (promo title) hard limit — enforced in `validate`. */
 const SALLA_PROMO_TITLE_MAX = 25
+
+/**
+ * When clamping a promo title, back off to the last word boundary only if that
+ * still keeps at least this many characters — otherwise a hard cut reads better
+ * than a two-word stub.
+ */
+const PROMO_WORD_BOUNDARY_MIN = 12
 
 /* ----------------------------- value helpers ----------------------------- */
 
@@ -92,6 +101,53 @@ function isHex(v: string): boolean {
   return /^#?[0-9a-fA-F]{3,8}$/.test(v.trim())
 }
 
+/* ------------------------------ promo title ------------------------------ */
+
+/**
+ * Cut a promo title down to Salla's 25-character limit. The cut prefers the
+ * last word boundary so the result never ends mid-word, unless that would throw
+ * away most of the text — then a hard cut wins. Trailing punctuation is dropped.
+ */
+export function clampPromoTitle(value: string): string {
+  const s = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (s.length <= SALLA_PROMO_TITLE_MAX) return s
+  const cut = s.slice(0, SALLA_PROMO_TITLE_MAX)
+  const lastSpace = cut.lastIndexOf(' ')
+  const out = lastSpace >= PROMO_WORD_BOUNDARY_MIN ? cut.slice(0, lastSpace) : cut
+  return out.replace(/[\s.,،؛:\-–—|/\\]+$/, '')
+}
+
+/** Descriptions are often HTML — flatten before using one as a promo title. */
+function plainText(value: string): string {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Resolve العنوان الترويجي for one product row: use the mapped/edited value if
+ * there is one, else derive it from the name or the description (the configured
+ * field first, the other as a backstop), then clamp to Salla's 25 chars.
+ */
+function promoTitleFor(parent: SallaRow, config: MappingConfig): string {
+  const cfg = config.promoTitle ?? DEFAULT_PROMO_TITLE
+  let value = (parent[F.promoTitle] ?? '').trim()
+
+  if (!value && cfg.fallback !== 'none') {
+    const order =
+      cfg.fallback === 'description'
+        ? [parent[F.description], parent[F.name]]
+        : [parent[F.name], parent[F.description]]
+    value = order.map((v) => plainText(v ?? '')).find((v) => v.length > 0) ?? ''
+  }
+
+  return cfg.truncate ? clampPromoTitle(value) : value
+}
+
 /* ------------------------------- field read ------------------------------ */
 
 /** Resolve a single Salla field's value from the config for one source row. */
@@ -109,7 +165,21 @@ function transformFieldValue(field: string, raw: string): string {
   }
   if (field === F.maxQty) return cleanMaxQty(raw)
   if (field === F.category) return normalizeCategoryField(raw)
+  // A hand-edited image cell arrives as pasted links — normalize it to the same
+  // comma-joined, de-duplicated shape `mergeImages` produces.
+  if (field === F.image) return dedupe(splitValues(raw)).join(',')
   return raw
+}
+
+/** Keep the first occurrence of each entry (order preserved). */
+function dedupe(values: string[]): string[] {
+  return [...new Set(values)]
+}
+
+/** Write a cell, or drop the key entirely when the value is empty. */
+function setOrClear(row: SallaRow, field: string, value: string) {
+  if (value) row[field] = value
+  else delete row[field]
 }
 
 /* -------------------------------- SKU gen -------------------------------- */
@@ -140,6 +210,16 @@ export interface RowMeta {
   sourceIndex: number
   /** True for a منتج (parent) row, false for a خيار (variant) row. */
   isProduct: boolean
+  /**
+   * منتج rows only, and only when the row declares options: the axes it
+   * declared, in column order ([1], [2], [3]) — lets the UI rename an axis.
+   */
+  axes?: { axisIndex: number; name: string }[]
+  /**
+   * خيار rows only: the option picks this variant carries, in the same column
+   * order — lets the UI rewrite or drop a specific value.
+   */
+  picks?: { axisIndex: number; original: string; value: string }[]
 }
 
 /**
@@ -208,24 +288,67 @@ export function groupOptionColumnsByName(options: OptionColumn[]): OptionColumn[
 
 /** One option value plus the source column it came from (for swatch lookup). */
 interface AxisValue {
+  /** The value as the sheet gave it — the stable key for a manual edit. */
+  original: string
+  /** What actually gets exported (the manual edit, if any). */
   value: string
   swatchColumn?: string
 }
 
 /** A per-row option axis: its representative column (name/type) + merged values. */
 interface RowAxis {
+  /** Position among the row's populated axes — the stable key for manual edits. */
+  index: number
   opt: OptionColumn
   values: AxisValue[]
+}
+
+/**
+ * Manual, per-product edits to the options the mapping produced — so a user can
+ * fix a bad axis name or value (or drop one) without touching the source sheet.
+ * Keyed by source row index; axis keys come from `RowAxis.index`.
+ */
+export interface OptionEdits {
+  /** axis index → replacement display name. */
+  names?: Record<number, string>
+  /** `${axisIndex}:${originalValue}` → replacement value. */
+  values?: Record<string, string>
+  /** `${axisIndex}:${originalValue}` keys removed from the export. */
+  removed?: string[]
+}
+
+export type OptionOverrides = Record<number, OptionEdits>
+
+/** The key an `OptionEdits.values` / `.removed` entry is stored under. */
+export function optionValueKey(axisIndex: number, originalValue: string): string {
+  return `${axisIndex}:${originalValue}`
+}
+
+/**
+ * Resolve each option's display name for THIS row. An option whose `nameColumn`
+ * is set reads its name from that cell (sheets where the axis label varies per
+ * product); the configured `name` stays the fallback for empty cells. Names are
+ * resolved before grouping, so two columns that resolve to the same name on a
+ * given row still merge into one axis.
+ */
+export function resolveOptionNames(row: SourceRow, options: OptionColumn[]): OptionColumn[] {
+  return options.map((o) =>
+    o.nameColumn ? { ...o, name: (row[o.nameColumn] ?? '').trim() || o.name } : o,
+  )
 }
 
 /**
  * Options that actually have (cleaned) values for this row — capped at 3.
  * Columns sharing a display name are merged into one axis first (see
  * `groupOptionColumnsByName`). A product whose option columns are all empty
- * yields none → simple product.
+ * yields none → simple product. Manual edits are applied last, keyed by the
+ * axis index assigned BEFORE them, so a key stays stable even when an edit
+ * empties an axis and drops it.
  */
-function rowAxes(row: SourceRow, options: OptionColumn[]): RowAxis[] {
-  return groupOptionColumnsByName(options)
+function rowAxes(row: SourceRow, options: OptionColumn[], edits?: OptionEdits): RowAxis[] {
+  const removed = new Set(edits?.removed ?? [])
+
+  return groupOptionColumnsByName(resolveOptionNames(row, options))
     .map((group) => {
       const seen = new Set<string>()
       const values: AxisValue[] = []
@@ -233,22 +356,44 @@ function rowAxes(row: SourceRow, options: OptionColumn[]): RowAxis[] {
         for (const v of cleanOptionValues(row[opt.column] ?? '', opt.type)) {
           if (seen.has(v)) continue
           seen.add(v)
-          values.push({ value: v, swatchColumn: opt.swatchColumn })
+          values.push({ original: v, value: v, swatchColumn: opt.swatchColumn })
         }
       }
       return { opt: group[0], values }
     })
     .filter((a) => a.values.length > 0)
     .slice(0, 3)
+    .map((axis, index) => ({
+      index,
+      // `??`, not `||`: an edit of '' means the user CLEARED the field and must
+      // see it stay cleared (`validate` then flags it) — snapping back to the
+      // sheet's value would fight them mid-edit.
+      opt: { ...axis.opt, name: edits?.names?.[index] ?? axis.opt.name },
+      values: axis.values
+        .filter((v) => !removed.has(optionValueKey(index, v.original)))
+        .map((v) => ({
+          ...v,
+          value: edits?.values?.[optionValueKey(index, v.original)] ?? v.value,
+        })),
+    }))
+    .filter((a) => a.values.length > 0)
+}
+
+/** One resolved option pick inside a variant combination. */
+interface ComboItem {
+  opt: OptionColumn
+  /** Stable axis key (see `RowAxis.index`), carried so the UI can edit it. */
+  axisIndex: number
+  /** The sheet's value — the edit key, kept even when `value` was rewritten. */
+  original: string
+  value: string
+  swatch: string
 }
 
 /** Cartesian product across the row's populated axes (+ hex swatch for colors). */
-function optionCombos(
-  row: SourceRow,
-  axes: RowAxis[],
-): { opt: OptionColumn; value: string; swatch: string }[][] {
-  const expanded = axes.map(({ opt, values }) =>
-    values.map(({ value, swatchColumn }) => {
+function optionCombos(row: SourceRow, axes: RowAxis[]): ComboItem[][] {
+  const expanded = axes.map(({ opt, index, values }) =>
+    values.map(({ value, original, swatchColumn }) => {
       let swatch = ''
       if (opt.type === 'color') {
         const fromCol = swatchColumn ? (row[swatchColumn] ?? '') : ''
@@ -259,18 +404,15 @@ function optionCombos(
         // [n] الصورة / اللون column so Salla renders it as an image swatch.
         swatch = value
       }
-      return { opt, value, swatch }
+      return { opt, axisIndex: index, original, value, swatch }
     }),
   )
 
-  return expanded.reduce<{ opt: OptionColumn; value: string; swatch: string }[][]>(
-    (acc, axis) => {
-      const next: { opt: OptionColumn; value: string; swatch: string }[][] = []
-      for (const combo of acc) for (const item of axis) next.push([...combo, item])
-      return next
-    },
-    [[]],
-  )
+  return expanded.reduce<ComboItem[][]>((acc, axis) => {
+    const next: ComboItem[][] = []
+    for (const combo of acc) for (const item of axis) next.push([...combo, item])
+    return next
+  }, [[]])
 }
 
 export function buildRows(
@@ -278,6 +420,7 @@ export function buildRows(
   config: MappingConfig,
   rowOverrides: RowOverrides = {},
   excludedRows: ReadonlySet<number> = new Set(),
+  optionOverrides: OptionOverrides = {},
 ): BuildResult {
   const out: SallaRow[] = []
   const meta: RowMeta[] = []
@@ -302,8 +445,19 @@ export function buildRows(
       if (v) parent[field] = v
     }
 
-    // Manual per-product edits (name / price / category) win over the mapping.
-    // Applied before variant expansion so an edited price flows to variants.
+    // Images (merge takes precedence over a single mapped image column).
+    const images = config.imageColumns.length
+      ? mergeImages(row, config.imageColumns)
+      : fieldValue(row, config, F.image)
+    if (images) parent[F.image] = images
+
+    // SKU.
+    const mappedSku = parentSku(row, config, index)
+    if (mappedSku) parent[F.sku] = mappedSku
+
+    // Manual per-product edits (name / price / category / images …) win over
+    // EVERYTHING the mapping produced, so they run last. Still ahead of variant
+    // expansion, so an edited price/SKU flows down to the variants.
     const overrides = rowOverrides[index]
     if (overrides) {
       for (const [field, raw] of Object.entries(overrides)) {
@@ -312,21 +466,40 @@ export function buildRows(
         else delete parent[field]
       }
     }
+    const sku = (parent[F.sku] ?? '').trim()
 
-    // Images (merge takes precedence over a single mapped image column).
-    const images = config.imageColumns.length
-      ? mergeImages(row, config.imageColumns)
-      : fieldValue(row, config, F.image)
-    if (images) parent[F.image] = images
+    // Price derivations, e.g. «سعر التكلفة = سعر المنتج − 30%» or «السعر المخفض
+    // = سعر المنتج − 10%». Runs AFTER the manual overrides so an edited price
+    // feeds the formula, and BEFORE variant expansion so a derived discount
+    // flows down to the خيار rows.
+    if (config.priceRules?.length) {
+      const prices = applyPriceRules(
+        {
+          price: parent[F.price] ?? '',
+          salePrice: parent[F.discountPrice] ?? '',
+          cost: parent[F.cost] ?? '',
+        },
+        config.priceRules,
+      )
+      setOrClear(parent, F.price, prices.price)
+      setOrClear(parent, F.discountPrice, prices.salePrice)
+      setOrClear(parent, F.cost, prices.cost)
+    }
 
-    // SKU.
-    const sku = parentSku(row, config, index)
-    if (sku) parent[F.sku] = sku
+    // العنوان الترويجي: clamp to Salla's 25 chars and, when nothing was mapped
+    // or typed, derive it from the name/description (both configurable).
+    const promo = promoTitleFor(parent, config)
+    if (promo) parent[F.promoTitle] = promo
+    else delete parent[F.promoTitle]
 
     // Only options that actually have values for THIS row become groups —
     // re-indexed sequentially (1..3) so the parent never declares an option
     // group that has no خيار values (which Salla rejects).
-    const axes = rowAxes(row, config.options.filter((o) => o.column))
+    const axes = rowAxes(
+      row,
+      config.options.filter((o) => o.column),
+      optionOverrides[index],
+    )
     axes.forEach(({ opt }, i) => {
       const cols = optionGroupCols((i + 1) as 1 | 2 | 3)
       parent[cols.name] = opt.name
@@ -336,7 +509,13 @@ export function buildRows(
 
     applyDefaults(parent, config, true)
     out.push(parent)
-    meta.push({ sourceIndex: index, isProduct: true })
+    meta.push({
+      sourceIndex: index,
+      isProduct: true,
+      ...(axes.length
+        ? { axes: axes.map((a) => ({ axisIndex: a.index, name: a.opt.name })) }
+        : {}),
+    })
     productCount++
 
     // Expand variants (cartesian product of the populated axes).
@@ -365,7 +544,15 @@ export function buildRows(
 
         applyDefaults(variant, config, false)
         out.push(variant)
-        meta.push({ sourceIndex: index, isProduct: false })
+        meta.push({
+          sourceIndex: index,
+          isProduct: false,
+          picks: combo.map((c) => ({
+            axisIndex: c.axisIndex,
+            original: c.original,
+            value: c.value,
+          })),
+        })
         optionCount++
       }
     }
@@ -453,10 +640,13 @@ export function validate(rows: SallaRow[]): Validation {
   const missingPrice = newBucket()
   const missingWeight = newBucket()
   const missingImage = newBucket()
+  const imageNotUrl = newBucket()
+  const imageNotImage = newBucket()
   const missingCategory = newBucket()
   const missingBrand = newBucket()
   const orphanOptions = newBucket()
   const emptyOptionValue = newBucket()
+  const missingOptionName = newBucket()
   const selectorName = newBucket()
   const promoTitleTooLong = newBucket()
 
@@ -470,8 +660,24 @@ export function validate(rows: SallaRow[]): Validation {
       if (!row[F.name]?.trim()) hit(missingName, `#${sheetRowNumber(index)}`)
       if (!cleanPrice(row[F.price] ?? '')) hit(missingPrice, locate(row, index))
       if (!row[F.image]?.trim()) hit(missingImage, locate(row, index))
+      else {
+        // Salla only accepts real image links here, and a scraped sheet happily
+        // hands us a product-page URL or plain text. Report both, separately:
+        // "not a link at all" and "a link, but nothing says it's an image".
+        const kinds = splitValues(row[F.image] ?? '').map(classifyUrl)
+        if (kinds.includes('notUrl')) hit(imageNotUrl, locate(row, index))
+        else if (kinds.includes('link')) hit(imageNotImage, locate(row, index))
+      }
       if (!row[F.category]?.trim()) hit(missingCategory, locate(row, index))
       if (!row[F.brand]?.trim()) hit(missingBrand, locate(row, index))
+      // A group is "declared" by the placeholder sitting in its value cell —
+      // Salla rejects one that carries no name (e.g. cleared in the preview).
+      if (
+        OPTION_GROUPS.some(
+          (g) => row[g.value] === OPTION_VALUE_PLACEHOLDER && !row[g.name]?.trim(),
+        )
+      )
+        hit(missingOptionName, locate(row, index))
       // Any declared option group whose name looks like a scrape selector.
       if (OPTION_GROUPS.some((g) => looksLikeSelectorName(row[g.name] ?? '')))
         hit(selectorName, locate(row, index))
@@ -502,6 +708,7 @@ export function validate(rows: SallaRow[]): Validation {
     dupSkus ? { code: 'dupSku', message: 'أرقام SKU مكررة', count: dupSkus } : null,
     issue('orphan', 'صفوف خيار بدون منتج أب', orphanOptions),
     issue('emptyOptionValue', 'صفوف خيار بدون قيمة', emptyOptionValue),
+    issue('missingOptionName', 'منتجات لها خيار بدون اسم', missingOptionName),
     issue('selectorName', 'أسماء خيارات تبدو كمُحدِّد برمجي', selectorName),
     issue(
       'promoTitleTooLong',
@@ -512,6 +719,8 @@ export function validate(rows: SallaRow[]): Validation {
 
   const warnings = [
     issue('missingImage', 'منتجات بدون صورة', missingImage),
+    issue('imageNotUrl', 'خانة الصور تحتوي نصًا ليس رابطًا', imageNotUrl),
+    issue('imageNotImage', 'روابط صور لا تبدو صورة (قد تكون رابط صفحة)', imageNotImage),
     issue('missingCategory', 'منتجات بدون تصنيف', missingCategory),
     issue('missingBrand', 'منتجات بدون ماركة', missingBrand),
   ].filter((i): i is Issue => i !== null)

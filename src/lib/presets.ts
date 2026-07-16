@@ -1,4 +1,4 @@
-import type { MappingConfig, Preset } from './types'
+import { DEFAULT_PROMO_TITLE, type MappingConfig, type Preset } from './types'
 
 const STORAGE_KEY = 'sheet-to-salla:presets'
 
@@ -8,6 +8,7 @@ function migrate(config: MappingConfig): MappingConfig {
     ...config,
     quantity: config.quantity ?? { mode: 'source', value: '' },
     priceRules: config.priceRules ?? [],
+    promoTitle: config.promoTitle ?? { ...DEFAULT_PROMO_TITLE },
   }
 }
 

@@ -37,6 +37,50 @@ const MESSAGES: Record<Lang, Dict> = {
     'app.footer':
       'يُنشئ ورقة واحدة فقط باسم «Salla Products Template Sheet» — جاهزة للرفع على',
 
+    // --- Landing (shown only before a file is loaded) ---------------------
+    'lp.eyebrow': 'جديد — تصدير «زد» صار متاح',
+    // Headline is split so the marker-highlight words can be wrapped.
+    'lp.h1.a': 'حوّل أي شيت منتجات لملف',
+    'lp.h1.mark1': 'سلة جاهز',
+    'lp.h1.b': 'في',
+    'lp.h1.mark2': 'دقيقة.',
+    'lp.lead':
+      'ارفع ملفك، طابِق الأعمدة، نزّل ملف الاستيراد. المطابقة تلقائية، والخيارات تتوسّع لصفوف «خيار» لوحدها، والتحقق يمسك الأخطاء قبل ما سلة ترفض الملف.',
+    'lp.cta.primary': 'ابدأ الآن — ارفع ملفك',
+    'lp.cta.secondary': 'شوف الخطوات',
+    'lp.proof':
+      'كل المعالجة تتم داخل متصفحك — ملفك ما يُرفع لأي خادم، ولا يحتاج حساب ولا اشتراك.',
+
+    'lp.mock.sheet': 'ورقة استيراد سلة',
+    'lp.mock.headers': '٤٠ عمود ✓',
+    'lp.mock.p1': 'عباية سوداء كلوش',
+    // The «منتج» / «خيار» row markers stay Arabic in BOTH languages — they are
+    // literal Salla cell values, not UI copy. The option NAME is user data.
+    'lp.mock.optName': 'المقاس',
+    'lp.mock.check1': 'ورقة واحدة بالاسم اللي سلة تطلبه',
+    'lp.mock.check2': 'الوزن والكمية مملوءة في كل صف',
+    'lp.mock.check3': 'صف «منتج» + صف لكل تركيبة خيار',
+
+    'lp.strip.label': 'يصدّر إلى',
+    'madeby.label': 'مشروع من',
+    'author.by': 'by',
+    'footer.betaBadge': '🚧 التطبيق تحت التطوير',
+    'footer.betaBody':
+      'بنطوّر «مزوّد» أول بأول ونضيف مزايا جديدة باستمرار. لو واجهتك أي مشكلة أو عندك اقتراح يحسّنه،',
+    'footer.betaCta': 'راسلني على لينكدإن',
+
+    'lp.feat.eyebrow': 'ليه تستخدمه',
+    'lp.feat.h2': 'الشيت الفوضوي مش مشكلتك. خلّي المطابقة علينا.',
+    'lp.feat.automap.title': 'مطابقة تلقائية',
+    'lp.feat.automap.body':
+      'يقرأ عناوين أعمدتك — عربي أو إنجليزي — ويربطها بحقول سلة من أول رفعة. وكل تخمين تقدر تعدّله بإيدك.',
+    'lp.feat.variants.title': 'خيارات ومتغيّرات',
+    'lp.feat.variants.body':
+      'المقاسات والألوان تتوسّع تلقائيًا لصف «خيار» لكل تركيبة، مع الرمز SKU والسعر والوزن جاهزين.',
+    'lp.feat.validate.title': 'تحقق قبل التصدير',
+    'lp.feat.validate.body':
+      'اسم ناقص، سعر فاضي، رابط صورة غلط — يطلعوا لك هنا بأرقام صفوفهم، قبل ما سلة ترفض الملف.',
+
     'step1.uploadTitle': '١) رفع الملف',
     'step1.uploadSubtitle': 'ابدأ برفع ملف المنتجات بصيغة xlsx أو xls أو csv.',
     'step1.sourceTitle': '١) الملف المصدر',
@@ -104,6 +148,7 @@ const MESSAGES: Record<Lang, Dict> = {
     'map.sec.options': 'الخيارات',
     'map.sec.defaults': 'الافتراضيات',
     'map.sec.export': 'التصدير',
+    'map.sec.prices': 'الأسعار',
     'map.nav.prev': 'السابق',
     'map.nav.next': 'التالي',
     'map.nav.progress': 'القسم {n} من {total}',
@@ -120,6 +165,18 @@ const MESSAGES: Record<Lang, Dict> = {
     'qv.skuSample': 'مثال الرمز',
 
     'images.note': 'اختر أعمدة الصور — تُدمج الروابط غير الفارغة (بدون تكرار) في عمود «صورة المنتج».',
+
+    'img.title': 'صور المنتج ({n})',
+    'img.uploadCta': '⬆ ارفع صورك واحصل على روابط',
+    'img.uploadHint':
+      'التطبيق لا يرفع أي ملف — سلة تحتاج رابطًا مباشرًا للصورة. ارفع صورك على الأداة الخارجية، انسخ الروابط، والصقها هنا.',
+    'img.addPlaceholder': 'الصق روابط الصور — واحد في كل سطر أو مفصولة بفاصلة',
+    'img.addBtn': 'إضافة الروابط',
+    'img.clear': 'مسح الكل',
+    'img.removeTitle': 'حذف هذا الرابط',
+    'img.done': 'تم',
+    'img.badge.notImage': 'ليس صورة؟',
+    'img.badge.notUrl': 'ليس رابطًا',
 
     'sku.none': 'بدون',
     'sku.column': 'من عمود',
@@ -146,7 +203,24 @@ const MESSAGES: Record<Lang, Dict> = {
     'opt.typeLabel': 'النوع',
     'opt.swatchLabel': 'عمود اللون (Hex) — اختياري',
     'opt.swatchInfer': '— (استنتاج من القيمة) —',
+    'opt.nameSource': 'مصدر اسم الخيار',
+    'opt.nameSource.fixed': 'اسم ثابت',
+    'opt.nameSource.column': 'من عمود في الشيت',
+    'opt.nameCol': 'عمود الاسم',
+    'opt.nameFallback': 'الاسم الاحتياطي',
+    'opt.nameColHint':
+      'اسم الخيار يُقرأ من هذا العمود لكل منتج على حدة. لو الخلية فاضية في صف ما، يُستخدم «الاسم الاحتياطي».',
     'btn.addOption': '+ إضافة عمود خيار',
+
+    'promo.title': 'العنوان الترويجي',
+    'promo.note':
+      'سلة ترفض أي عنوان ترويجي أطول من ٢٥ حرفًا. نقصّه تلقائيًا عند حدّ الكلمة، ولو كان فاضيًا نولّده من الاسم أو الوصف.',
+    'promo.fallbackLabel': 'لو العنوان الترويجي فاضي، خُذه من',
+    'promo.fallback.name': 'اسم المنتج',
+    'promo.fallback.description': 'وصف المنتج',
+    'promo.fallback.none': 'لا شيء (اتركه فاضيًا)',
+    'promo.truncateLabel': 'الحد الأقصى',
+    'promo.truncateHint': 'قصّ العنوان تلقائيًا عند ٢٥ حرفًا',
 
     'defaults.note':
       'قيم ثابتة تُملأ في كل صف (منتج وخيار) عندما تكون الخلية فارغة. الوزن مطلوب دائمًا من سلة.',
@@ -189,14 +263,18 @@ const MESSAGES: Record<Lang, Dict> = {
     'col.brand': 'الماركة',
     'col.promoTitle': 'العنوان الترويجي',
     'col.weight': 'الوزن',
-    'col.opt1': '[1] القيمة',
-    'col.opt2': '[2] القيمة',
-    'col.opt3': '[3] القيمة',
+    'col.opt1': '[1] الخيار',
+    'col.opt2': '[2] الخيار',
+    'col.opt3': '[3] الخيار',
     'col.images': 'الصور',
     'preview.action': 'إجراء',
     'preview.stats': '{products} منتج · {options} خيار · {total} صف إجمالًا — يظهر {shown}.',
     'preview.editNote':
-      'أعمدة «الاسم» و«السعر» و«التصنيف» قابلة للتعديل على المنتجات، وزر «حذف» يزيل البند بكل خياراته.',
+      'أعمدة «الاسم» و«السعر» و«التصنيف» و«العنوان الترويجي» قابلة للتعديل على المنتجات. في أعمدة الخيارات: صف المنتج يعرض اسم الخيار وصفوف «خيار» تعرض القيمة — والاثنان قابلان للتعديل. زر «حذف» يزيل البند بكل خياراته.',
+    'preview.optNameTitle': 'اسم الخيار — يظهر في «[n] الاسم» لهذا المنتج',
+    'preview.optRemoveTitle': 'حذف هذه القيمة من الخيار (تُحذف كل التركيبات التي تحتويها)',
+    'preview.optRemovedInfo': 'تم حذف {n} قيمة خيار.',
+    'preview.imagesBtn': '🖼 {n} — تعديل',
     'preview.applyAllLabel': 'تطبيق تصنيف على كل المنتجات',
     'preview.applyAllBtn': 'تطبيق على الكل',
     'preview.catNone': '— بدون —',
@@ -216,8 +294,14 @@ const MESSAGES: Record<Lang, Dict> = {
     'val.missingWeight': 'صفوف بدون وزن (حقل الوزن مطلوب)',
     'val.dupSku': 'أرقام SKU مكررة',
     'val.orphan': 'صفوف خيار بدون منتج أب',
+    'val.emptyOptionValue': 'صفوف خيار بدون قيمة',
+    'val.missingOptionName': 'منتجات لها خيار بدون اسم — اكتب اسم الخيار في المعاينة',
+    'val.selectorName': 'أسماء خيارات تبدو كمُحدِّد برمجي',
     'val.promoTitleTooLong': 'العنوان الترويجي يتجاوز 25 حرفًا',
     'val.missingImage': 'منتجات بدون صورة',
+    'val.imageNotUrl': 'خانة الصور تحتوي نصًا ليس رابطًا — راجعها من زر «تعديل» في عمود الصور',
+    'val.imageNotImage':
+      'روابط في خانة الصور لا تبدو صورة (غالبًا رابط صفحة المنتج) — راجعها من زر «تعديل» في عمود الصور',
     'val.missingCategory': 'منتجات بدون تصنيف',
     'val.missingBrand': 'منتجات بدون ماركة',
 
@@ -243,10 +327,17 @@ const MESSAGES: Record<Lang, Dict> = {
     'qty.hint': 'تُطبَّق على كل المنتجات والمتغيّرات. «غير محدود» يكتب النص infinite.',
     'price.label': 'معادلات الأسعار',
     'price.hint':
-      'اشتقّ sale_price أو cost أو price من حقل آخر. القواعد تُطبَّق بالترتيب، فيمكن لقاعدة أن تبني على نتيجة قاعدة قبلها.',
+      'اشتقّ حقل سعر من حقل آخر. القواعد تُطبَّق بالترتيب، فيمكن لقاعدة أن تبني على نتيجة قاعدة قبلها.',
     'price.empty': 'لا توجد معادلات — الأسعار تُصدَّر كما هي.',
     'price.add': '+ إضافة معادلة',
     'price.remove': 'حذف',
+    'price.f.price': 'سعر المنتج',
+    'price.f.salePrice': 'السعر المخفض',
+    'price.f.cost': 'سعر التكلفة',
+
+    'prices.title': 'معادلات الأسعار',
+    'prices.subtitle':
+      'اشتقّ «سعر التكلفة» أو «السعر المخفض» من «سعر المنتج» — تُطبَّق على كل منتج، والسعر المخفض ينزل للخيارات كمان.',
   },
 
   en: {
@@ -271,6 +362,47 @@ const MESSAGES: Record<Lang, Dict> = {
       'Turn any product file into a Salla-ready import file — everything runs in your browser, nothing is uploaded to a server.',
     'app.footer':
       'Produces a single sheet named “Salla Products Template Sheet” — ready to upload at',
+
+    // --- Landing (shown only before a file is loaded) ---------------------
+    'lp.eyebrow': 'NEW — Zid export just landed',
+    'lp.h1.a': 'Turn any product sheet into a',
+    'lp.h1.mark1': 'ready Salla file',
+    'lp.h1.b': 'in a',
+    'lp.h1.mark2': 'minute.',
+    'lp.lead':
+      'Upload, map your columns, download the import file. Mapping is automatic, options expand into their own variant rows, and validation catches the errors before Salla rejects the file.',
+    'lp.cta.primary': 'Start now — upload your file',
+    'lp.cta.secondary': 'See the steps',
+    'lp.proof':
+      'Everything runs inside your browser — your file is never uploaded to any server, and there is no account or subscription.',
+
+    'lp.mock.sheet': 'Salla import sheet',
+    'lp.mock.headers': '40 headers ✓',
+    'lp.mock.p1': 'Black flared abaya',
+    'lp.mock.optName': 'Size',
+    'lp.mock.check1': 'One sheet, named exactly as Salla wants',
+    'lp.mock.check2': 'Weight and quantity filled on every row',
+    'lp.mock.check3': 'A product row + one row per option combo',
+
+    'lp.strip.label': 'EXPORTS TO',
+    'madeby.label': 'A project by',
+    'author.by': 'by',
+    'footer.betaBadge': '🚧 Under active development',
+    'footer.betaBody':
+      'We keep improving Muzawwid and adding new features. If you hit any issue or have a suggestion to make it better,',
+    'footer.betaCta': 'message me on LinkedIn',
+
+    'lp.feat.eyebrow': 'WHY USE IT',
+    'lp.feat.h2': 'A messy sheet is not your problem. Leave the mapping to us.',
+    'lp.feat.automap.title': 'Automatic mapping',
+    'lp.feat.automap.body':
+      'It reads your column headers — Arabic or English — and wires them to Salla fields on the first upload. Every guess stays editable.',
+    'lp.feat.variants.title': 'Options & variants',
+    'lp.feat.variants.body':
+      'Sizes and colors expand into an option row per combination, with SKU, price and weight already filled in.',
+    'lp.feat.validate.title': 'Validation before export',
+    'lp.feat.validate.body':
+      'A missing name, an empty price, a bad image link — all listed here with their row numbers, before Salla rejects the file.',
 
     'step1.uploadTitle': '1) Upload file',
     'step1.uploadSubtitle': 'Start by uploading a product file in xlsx, xls, or csv format.',
@@ -339,6 +471,7 @@ const MESSAGES: Record<Lang, Dict> = {
     'map.sec.options': 'Options',
     'map.sec.defaults': 'Defaults',
     'map.sec.export': 'Export',
+    'map.sec.prices': 'Prices',
     'map.nav.prev': 'Back',
     'map.nav.next': 'Next',
     'map.nav.progress': 'Section {n} of {total}',
@@ -355,6 +488,18 @@ const MESSAGES: Record<Lang, Dict> = {
     'qv.skuSample': 'SKU sample',
 
     'images.note': 'Pick image columns — non-empty URLs are merged (de-duplicated) into the product image field.',
+
+    'img.title': 'Product images ({n})',
+    'img.uploadCta': '⬆ Upload your images & get links',
+    'img.uploadHint':
+      'This app never uploads a file — Salla needs a direct image link. Upload your images on the external tool, copy the links, and paste them here.',
+    'img.addPlaceholder': 'Paste image links — one per line, or comma-separated',
+    'img.addBtn': 'Add links',
+    'img.clear': 'Clear all',
+    'img.removeTitle': 'Remove this link',
+    'img.done': 'Done',
+    'img.badge.notImage': 'not an image?',
+    'img.badge.notUrl': 'not a link',
 
     'sku.none': 'None',
     'sku.column': 'From a column',
@@ -381,7 +526,24 @@ const MESSAGES: Record<Lang, Dict> = {
     'opt.typeLabel': 'Type',
     'opt.swatchLabel': 'Color column (Hex) — optional',
     'opt.swatchInfer': '— (infer from value) —',
+    'opt.nameSource': 'Option name from',
+    'opt.nameSource.fixed': 'A fixed name',
+    'opt.nameSource.column': 'A column in the sheet',
+    'opt.nameCol': 'Name column',
+    'opt.nameFallback': 'Fallback name',
+    'opt.nameColHint':
+      'The option name is read from this column per product. When the cell is empty on a row, the fallback name is used.',
     'btn.addOption': '+ Add option column',
+
+    'promo.title': 'Promo title',
+    'promo.note':
+      'Salla rejects a promo title longer than 25 characters. We clamp it at a word boundary and, when it is empty, derive one from the name or description.',
+    'promo.fallbackLabel': 'When the promo title is empty, take it from',
+    'promo.fallback.name': 'Product name',
+    'promo.fallback.description': 'Product description',
+    'promo.fallback.none': 'Nothing (leave it empty)',
+    'promo.truncateLabel': 'Length limit',
+    'promo.truncateHint': 'Clamp the title to 25 characters automatically',
 
     'defaults.note':
       'Constant values filled into every row (product & option) when the cell is empty. Weight is always required by Salla.',
@@ -422,14 +584,18 @@ const MESSAGES: Record<Lang, Dict> = {
     'col.brand': 'Brand',
     'col.promoTitle': 'Promo title',
     'col.weight': 'Weight',
-    'col.opt1': '[1] Value',
-    'col.opt2': '[2] Value',
-    'col.opt3': '[3] Value',
+    'col.opt1': '[1] Option',
+    'col.opt2': '[2] Option',
+    'col.opt3': '[3] Option',
     'col.images': 'Images',
     'preview.action': 'Action',
     'preview.stats': '{products} products · {options} options · {total} rows total — showing {shown}.',
     'preview.editNote':
-      'Name, Price and Category are editable on product rows; Delete removes the item with all its options.',
+      'Name, Price, Category and Promo title are editable on product rows. In the option columns, a product row shows the option name and each option row shows its value — both editable. Delete removes the item with all its options.',
+    'preview.optNameTitle': 'Option name — written to “[n] Name” for this product',
+    'preview.optRemoveTitle': 'Remove this value from the option (drops every combination using it)',
+    'preview.optRemovedInfo': '{n} option value(s) removed.',
+    'preview.imagesBtn': '🖼 {n} — edit',
     'preview.applyAllLabel': 'Apply a category to all products',
     'preview.applyAllBtn': 'Apply to all',
     'preview.catNone': '— None —',
@@ -450,7 +616,13 @@ const MESSAGES: Record<Lang, Dict> = {
     'val.dupSku': 'Duplicate SKUs',
     'val.promoTitleTooLong': 'Promo title exceeds 25 characters',
     'val.orphan': 'Option rows without a parent product',
+    'val.emptyOptionValue': 'Option rows carrying no value',
+    'val.missingOptionName': 'Products with an unnamed option — type the option name in the preview',
+    'val.selectorName': 'Option names that look like a code selector',
     'val.missingImage': 'Products without an image',
+    'val.imageNotUrl': 'The images cell holds text that is not a link — fix it via “edit” in the Images column',
+    'val.imageNotImage':
+      'Links in the images cell that do not look like an image (often the product page) — fix them via “edit” in the Images column',
     'val.missingCategory': 'Products without a category',
     'val.missingBrand': 'Products without a brand',
 
@@ -476,10 +648,17 @@ const MESSAGES: Record<Lang, Dict> = {
     'qty.hint': 'Applied to every product and variant. “Unlimited” writes the literal infinite.',
     'price.label': 'Price formulas',
     'price.hint':
-      'Derive sale_price, cost or price from another field. Rules run in order, so a rule can build on a previous result.',
+      'Derive one price field from another. Rules run in order, so a rule can build on a previous result.',
     'price.empty': 'No formulas — prices export as-is.',
     'price.add': '+ Add formula',
     'price.remove': 'Remove',
+    'price.f.price': 'Price',
+    'price.f.salePrice': 'Discounted price',
+    'price.f.cost': 'Cost price',
+
+    'prices.title': 'Price formulas',
+    'prices.subtitle':
+      'Derive the cost price or the discounted price from the product price — applied to every product, and the discounted price flows down to the options too.',
   },
 }
 

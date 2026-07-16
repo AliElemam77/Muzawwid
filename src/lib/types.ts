@@ -48,6 +48,27 @@ export interface OptionColumn {
   name: string // display name, e.g. المقاس / اللون
   type: OptionType // نص | لون | صورة
   swatchColumn?: string // optional source column with hex/color per value
+  /**
+   * Read the option's display name from THIS source column instead of typing a
+   * fixed `name` — for sheets where the axis label differs per product (one row
+   * says «المقاس», the next «الحجم»). `name` stays as the fallback for rows
+   * where this column is empty.
+   */
+  nameColumn?: string
+}
+
+/** Where العنوان الترويجي falls back to when the mapped value is empty. */
+export type PromoFallback = 'none' | 'name' | 'description'
+
+/**
+ * Salla rejects an العنوان الترويجي longer than 25 characters, so by default we
+ * clamp it and — when nothing is mapped — derive it from the product name.
+ */
+export interface PromoTitleConfig {
+  /** Cut any promo title down to 25 characters (Salla's hard limit). */
+  truncate: boolean
+  /** Field to derive the promo title from when the mapped value is empty. */
+  fallback: PromoFallback
 }
 
 /** Editable constant defaults, applied to EVERY row when the target is empty. */
@@ -73,6 +94,13 @@ export interface MappingConfig {
   quantity: QuantityConfig
   /** Ordered price derivations (sale_price / cost / price). */
   priceRules: PriceRule[]
+  /** Clamp/auto-fill behaviour for العنوان الترويجي. */
+  promoTitle: PromoTitleConfig
+}
+
+export const DEFAULT_PROMO_TITLE: PromoTitleConfig = {
+  truncate: true,
+  fallback: 'name',
 }
 
 export const DEFAULT_DEFAULTS: Defaults = {
@@ -95,6 +123,7 @@ export function emptyConfig(): MappingConfig {
     defaults: { ...DEFAULT_DEFAULTS },
     quantity: { mode: 'source', value: '' },
     priceRules: [],
+    promoTitle: { ...DEFAULT_PROMO_TITLE },
   }
 }
 

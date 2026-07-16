@@ -1,59 +1,68 @@
 /**
- * Muzawwid (مزوّد — "supplier") brand mark: a stacked-layers glyph inside a
- * rounded indigo badge, evoking supplying/stocking a store. Self-contained SVG.
+ * Muzawwid (مزوّد — "supplier") brand mark, drawn in the app's OWN system: a
+ * flat teal tile wearing the same 3px ink outline and hard offset shadow as
+ * every other surface. No gradient — tokens.css forbids them, and the previous
+ * mark's indigo gradient was the last one left in the app.
+ *
+ * The glyph says what the tool does in one picture: a full-width «منتج» bar
+ * branching down a spine into two shorter «خيار» bars — literally the parent +
+ * variant row structure `buildRows` writes into the Salla sheet. The spine is
+ * load-bearing, not decoration: three plain stacked bars read as a hamburger
+ * MENU icon, and the branch is what makes it a hierarchy instead. It sits on
+ * the trailing side, so the tree grows right-to-left like the Arabic UI.
+ *
+ * The tile is a DIV, not an SVG rect, so the hard shadow comes from `hard-2`
+ * and flips automatically with --sh-dir in RTL.
  */
-export function LogoMark({ size = 40 }: { size?: number }) {
+export function LogoMark({ size = 42 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      role="img"
-      aria-label="Muzawwid"
-      xmlns="http://www.w3.org/2000/svg"
+    <span
+      className="hard-2 flex shrink-0 items-center justify-center"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.26),
+        background: 'var(--teal)',
+      }}
+      aria-hidden="true"
     >
-      <defs>
-        <linearGradient id="muzawwid-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6366f1" />
-          <stop offset="1" stopColor="#4338ca" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="10" fill="url(#muzawwid-g)" />
-      {/* top layer (a "supplied" package) */}
-      <path d="M20 8 L31 13.5 L20 19 L9 13.5 Z" fill="#fff" />
-      {/* two receding layers below */}
-      <path
-        d="M9 19 L20 24.5 L31 19"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
-      <path
-        d="M9 24.5 L20 30 L31 24.5"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-    </svg>
+      <svg
+        width={Math.round(size * 0.6)}
+        height={Math.round(size * 0.6)}
+        viewBox="0 0 24 24"
+        fill="var(--ink)"
+      >
+        {/* منتج — the parent row, full width */}
+        <rect x="2" y="2.5" width="20" height="4.4" rx="2.2" />
+        {/* the spine the variants branch off (trailing side) */}
+        <rect x="16.6" y="6.9" width="2.2" height="13.2" rx="1.1" />
+        {/* خيار — two variant rows, each meeting the spine */}
+        <rect x="5.5" y="10.6" width="13.3" height="3.8" rx="1.9" />
+        <rect x="5.5" y="16.8" width="13.3" height="3.8" rx="1.9" />
+      </svg>
+    </span>
   )
 }
 
 /** Full lockup: mark + bilingual wordmark. */
 export default function Logo() {
   return (
-    <div className="flex items-center gap-3">
-      <LogoMark size={40} />
-      <div className="leading-tight">
-        <div className="text-lg font-extrabold tracking-tight text-slate-900">
-          Muzawwid
+    <div className="flex items-center gap-2.5">
+      <LogoMark size={42} />
+      <div className="leading-none">
+        <div
+          className="font-extrabold text-[color:var(--ink)]"
+          style={{ fontFamily: 'var(--font-display)', fontSize: '25px', letterSpacing: '-0.01em' }}
+        >
+          مزوّد
         </div>
-        <div className="text-xs font-semibold text-indigo-600">مزوّد</div>
+        <div
+          dir="ltr"
+          className="mt-1 font-bold text-[color:var(--ink)]/55"
+          style={{ fontSize: '9px', letterSpacing: '0.22em' }}
+        >
+          MUZAWWID
+        </div>
       </div>
     </div>
   )

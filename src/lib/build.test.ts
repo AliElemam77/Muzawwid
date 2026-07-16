@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { buildRows, validate, cleanPrice, cleanMaxQty, splitValues } from './build'
+import {
+  buildRows,
+  validate,
+  cleanPrice,
+  cleanMaxQty,
+  splitValues,
+  clampPromoTitle,
+  optionValueKey,
+} from './build'
 import { F, ROW_PRODUCT, ROW_OPTION, OPTION_VALUE_PLACEHOLDER, optionGroupCols } from './salla'
 import { emptyConfig } from './types'
 import type { SourceSheet } from './reader'
@@ -19,6 +27,18 @@ describe('value helpers', () => {
   it('splitValues splits on comma / Arabic comma / pipe / newline', () => {
     expect(splitValues('XL, L | S\nM،XS')).toEqual(['XL', 'L', 'S', 'M', 'XS'])
     expect(splitValues('')).toEqual([])
+  })
+
+  it('clampPromoTitle keeps <= 25 chars, cutting at a word boundary', () => {
+    expect(clampPromoTitle('عرض الشتاء')).toBe('عرض الشتاء')
+    expect(clampPromoTitle('  عرض   الشتاء ')).toBe('عرض الشتاء') // whitespace collapsed
+    expect(clampPromoTitle('')).toBe('')
+    // 26 chars → cut back to the last space, no trailing punctuation left
+    const out = clampPromoTitle('عرض خاص لفترة محدودة جدًا على هذا المنتج')
+    expect(out).toBe('عرض خاص لفترة محدودة')
+    expect(out.length).toBeLessThanOrEqual(25)
+    // no usable word boundary → hard cut at 25
+    expect(clampPromoTitle('x'.repeat(40))).toBe('x'.repeat(25))
   })
 
   it('cleanMaxQty blanks values below 1 (Salla rejects 0)', () => {
@@ -116,22 +136,79 @@ describe('buildRows', () => {
     expect(variants.every((r) => r[g2.value] === undefined)).toBe(true)
   })
 
-  it('never auto-generates العنوان الترويجي — stays empty unless the user maps/edits it', () => {
+  it('derives العنوان الترويجي from the name when nothing is mapped', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
     const { rows } = buildRows(sheet(['title'], [{ title: 'عباية سوداء كلوش' }]), config)
+    expect(rows[0][F.promoTitle]).toBe('عباية سوداء كلوش')
+  })
+
+  it('falls back to the description when configured, and flattens its HTML', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.description] = { kind: 'column', column: 'desc' }
+    config.promoTitle = { truncate: true, fallback: 'description' }
+
+    const { rows } = buildRows(
+      sheet(['title', 'desc'], [{ title: 'قميص', desc: '<p>قطن مصري</p>' }]),
+      config,
+    )
+    expect(rows[0][F.promoTitle]).toBe('قطن مصري')
+  })
+
+  it('falls back to the name when the configured description is empty', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.promoTitle = { truncate: true, fallback: 'description' }
+    const { rows } = buildRows(sheet(['title'], [{ title: 'قميص' }]), config)
+    expect(rows[0][F.promoTitle]).toBe('قميص')
+  })
+
+  it('leaves العنوان الترويجي empty when the fallback is disabled', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.promoTitle = { truncate: true, fallback: 'none' }
+    const { rows } = buildRows(sheet(['title'], [{ title: 'عباية' }]), config)
     expect(rows[0][F.promoTitle]).toBeUndefined()
   })
 
-  it('passes a mapped العنوان الترويجي straight through, untouched', () => {
+  it('clamps a mapped العنوان الترويجي to 25 chars at a word boundary', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
     config.fields[F.promoTitle] = { kind: 'column', column: 'promo' }
     const { rows } = buildRows(
-      sheet(['title', 'promo'], [{ title: 'x', promo: 'عرض الشتاء' }]),
+      sheet(['title', 'promo'], [
+        { title: 'x', promo: 'عرض الشتاء' }, // short → untouched
+        { title: 'y', promo: 'عرض خاص لفترة محدودة جدًا على هذا المنتج' },
+      ]),
       config,
     )
     expect(rows[0][F.promoTitle]).toBe('عرض الشتاء')
+
+    const clamped = rows[1][F.promoTitle]!
+    expect(clamped.length).toBeLessThanOrEqual(25)
+    expect(clamped).toBe('عرض خاص لفترة محدودة')
+    // validate must agree: a clamped title never trips the length error
+    expect(validate(rows).errors.some((e) => e.code === 'promoTitleTooLong')).toBe(false)
+  })
+
+  it('hard-cuts a long single word rather than leaving a stub', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    const { rows } = buildRows(sheet(['title'], [{ title: 'ab ' + 'x'.repeat(40) }]), config)
+    expect(rows[0][F.promoTitle]).toBe(('ab ' + 'x'.repeat(40)).slice(0, 25))
+  })
+
+  it('keeps a long العنوان الترويجي as-is when truncation is turned off', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.promoTitle] = { kind: 'column', column: 'promo' }
+    config.promoTitle = { truncate: false, fallback: 'name' }
+    const long = 'عرض خاص لفترة محدودة جدًا على هذا المنتج'
+    const { rows } = buildRows(sheet(['title', 'promo'], [{ title: 'x', promo: long }]), config)
+    expect(rows[0][F.promoTitle]).toBe(long)
+    // …and then validate is what tells the user (this is the escape hatch).
+    expect(validate(rows).errors.some((e) => e.code === 'promoTitleTooLong')).toBe(true)
   })
 
   it('replaces a mapped max-qty of 0 with the >= 1 default (Salla rule)', () => {
@@ -261,6 +338,163 @@ describe('buildRows', () => {
     expect(junk.rows[0][g1.name]).toBeUndefined()
   })
 
+  it('reads the option name from a column, per row, with the fixed name as fallback', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [{ column: 'val', name: 'خيار', type: 'text', nameColumn: 'label' }]
+
+    const { rows } = buildRows(
+      sheet(['title', 'label', 'val'], [
+        { title: 'أ', label: 'المقاس', val: 'S' },
+        { title: 'ب', label: 'الحجم', val: 'L' },
+        { title: 'ج', label: '', val: 'M' }, // empty cell → fixed name
+      ]),
+      config,
+    )
+    const g1 = optionGroupCols(1)
+    const products = rows.filter((r) => r[F.type] === ROW_PRODUCT)
+    expect(products.map((r) => r[g1.name])).toEqual(['المقاس', 'الحجم', 'خيار'])
+  })
+
+  it('merges two columns into one axis when they resolve to the SAME name on a row', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [
+      { column: 'v1', name: 'خيار', type: 'text', nameColumn: 'l1' },
+      { column: 'v2', name: 'خيار', type: 'text', nameColumn: 'l2' },
+    ]
+
+    const { rows, optionCount } = buildRows(
+      sheet(['title', 'l1', 'v1', 'l2', 'v2'], [
+        // Both columns say المقاس on this row → ONE axis holding 52 and 54.
+        { title: 'حذاء', l1: 'المقاس', v1: '52', l2: 'المقاس', v2: '54' },
+      ]),
+      config,
+    )
+    const g1 = optionGroupCols(1)
+    const g2 = optionGroupCols(2)
+    expect(optionCount).toBe(2)
+    expect(rows[0][g1.name]).toBe('المقاس')
+    expect(rows[0][g2.name]).toBeUndefined()
+    expect(rows.slice(1).map((r) => r[g1.value])).toEqual(['52', '54'])
+  })
+
+  it('applies manual option edits: rename an axis, rewrite a value, drop a value', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.sku = { mode: 'auto', prefix: 'SKU-' }
+    config.options = [{ column: 'size', name: 'خيار', type: 'text' }]
+
+    const src = sheet(['title', 'size'], [{ title: 'قميص', size: 'S,M,L' }])
+    const { rows, optionCount, meta } = buildRows(src, config, {}, new Set(), {
+      0: {
+        names: { 0: 'المقاس' },
+        values: { [optionValueKey(0, 'M')]: 'ميديم' },
+        removed: [optionValueKey(0, 'L')],
+      },
+    })
+
+    const g1 = optionGroupCols(1)
+    expect(rows[0][g1.name]).toBe('المقاس')
+    expect(optionCount).toBe(2) // L dropped
+    expect(rows.slice(1).map((r) => r[g1.value])).toEqual(['S', 'ميديم'])
+    // the rewritten value flows into the variant SKU too
+    expect(rows[2][F.sku]).toBe('SKU-1-ميديم')
+    // meta still keys the edit by the ORIGINAL value, so re-editing works
+    expect(meta[2].picks).toEqual([{ axisIndex: 0, original: 'M', value: 'ميديم' }])
+    expect(meta[0].axes).toEqual([{ axisIndex: 0, name: 'المقاس' }])
+  })
+
+  it('drops the option group entirely when every value was removed manually', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.options = [{ column: 'size', name: 'المقاس', type: 'text' }]
+
+    const src = sheet(['title', 'size'], [{ title: 'قميص', size: 'S,M' }])
+    const { rows, productCount, optionCount, meta } = buildRows(src, config, {}, new Set(), {
+      0: { removed: [optionValueKey(0, 'S'), optionValueKey(0, 'M')] },
+    })
+
+    // A parent declaring a group with no خيار rows is exactly what Salla rejects.
+    expect(productCount).toBe(1)
+    expect(optionCount).toBe(0)
+    expect(rows).toHaveLength(1)
+    expect(rows[0][optionGroupCols(1).name]).toBeUndefined()
+    expect(meta[0].axes).toBeUndefined()
+  })
+
+  it('lets a hand-edited image list override the mapped columns', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.imageColumns = ['img']
+
+    const src = sheet(['title', 'img'], [{ title: 'قميص', img: 'https://cdn.x/old.jpg' }])
+    const { rows } = buildRows(src, config, {
+      0: { [F.image]: 'https://cdn.x/a.jpg, https://cdn.x/b.jpg, https://cdn.x/a.jpg' },
+    })
+    // de-duplicated and comma-joined, same shape the merge produces
+    expect(rows[0][F.image]).toBe('https://cdn.x/a.jpg,https://cdn.x/b.jpg')
+  })
+
+  it('derives سعر التكلفة and السعر المخفض from سعر المنتج', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    config.priceRules = [
+      { target: 'cost', source: 'price', op: 'percentOff', value: '30' },
+      { target: 'salePrice', source: 'price', op: 'percentOff', value: '10' },
+    ]
+
+    const { rows } = buildRows(
+      sheet(['title', 'price'], [{ title: 'قميص', price: '200 ر.س' }]),
+      config,
+    )
+    expect(rows[0][F.price]).toBe('200')
+    expect(rows[0][F.cost]).toBe('140') // 200 − 30%
+    expect(rows[0][F.discountPrice]).toBe('180') // 200 − 10%
+  })
+
+  it('runs price rules in order, so one can build on the previous result', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    config.priceRules = [
+      { target: 'cost', source: 'price', op: 'percentOff', value: '50' }, // 100 → 50
+      { target: 'salePrice', source: 'cost', op: 'add', value: '5' }, // reads the NEW cost
+    ]
+    const { rows } = buildRows(sheet(['title', 'price'], [{ title: 'x', price: '100' }]), config)
+    expect(rows[0][F.cost]).toBe('50')
+    expect(rows[0][F.discountPrice]).toBe('55')
+  })
+
+  it('a price rule sees the EDITED price and its result reaches the variants', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    config.options = [{ column: 'size', name: 'المقاس', type: 'text' }]
+    config.priceRules = [{ target: 'salePrice', source: 'price', op: 'percentOff', value: '10' }]
+
+    const src = sheet(['title', 'price', 'size'], [{ title: 'قميص', price: '100', size: 'S,M' }])
+    // The user retyped the price in the preview → the formula must follow it.
+    const { rows } = buildRows(src, config, { 0: { [F.price]: '200' } })
+
+    expect(rows[0][F.discountPrice]).toBe('180')
+    // parent + both خيار rows all carry the derived discount
+    expect(rows.every((r) => r[F.discountPrice] === '180')).toBe(true)
+    expect(rows.every((r) => r[F.price] === '200')).toBe(true)
+  })
+
+  it('skips a price rule whose source is empty, leaving the target untouched', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    // No cost column mapped → cost is empty → the rule reading it is skipped.
+    config.priceRules = [{ target: 'salePrice', source: 'cost', op: 'add', value: '5' }]
+    const { rows } = buildRows(sheet(['title', 'price'], [{ title: 'x', price: '100' }]), config)
+    expect(rows[0][F.discountPrice]).toBeUndefined()
+    expect(rows[0][F.price]).toBe('100')
+  })
+
   it('reads a color swatch as hex onto the variant row', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
@@ -355,6 +589,23 @@ describe('validate', () => {
     expect(v.errors.some((e) => e.code === 'emptyOptionValue')).toBe(true)
   })
 
+  it('flags a declared option group whose name was cleared', () => {
+    const g1 = optionGroupCols(1)
+    const rows = [
+      {
+        [F.type]: ROW_PRODUCT,
+        [F.name]: 'قميص',
+        [F.price]: '10',
+        [F.weight]: '1',
+        [g1.name]: '',
+        [g1.value]: OPTION_VALUE_PLACEHOLDER,
+      },
+      { [F.type]: ROW_OPTION, [F.weight]: '1', [g1.value]: 'S' },
+    ]
+    const v = validate(rows)
+    expect(v.errors.some((e) => e.code === 'missingOptionName')).toBe(true)
+  })
+
   it('flags an option name that still looks like a scrape selector', () => {
     const g1 = optionGroupCols(1)
     const rows = [
@@ -368,6 +619,51 @@ describe('validate', () => {
     ]
     const v = validate(rows)
     expect(v.errors.some((e) => e.code === 'selectorName')).toBe(true)
+  })
+
+  it('warns when the images cell holds text that is not a link', () => {
+    const rows = [
+      {
+        [F.type]: ROW_PRODUCT,
+        [F.name]: 'قميص',
+        [F.price]: '10',
+        [F.weight]: '1',
+        [F.image]: 'صورة المنتج.jpg',
+      },
+    ]
+    const v = validate(rows)
+    expect(v.warnings.some((w) => w.code === 'imageNotUrl')).toBe(true)
+    expect(v.ok).toBe(true) // a warning must never block the export
+  })
+
+  it('warns when an image link does not look like an image (a page URL)', () => {
+    const rows = [
+      {
+        [F.type]: ROW_PRODUCT,
+        [F.name]: 'قميص',
+        [F.price]: '10',
+        [F.weight]: '1',
+        [F.image]: 'https://shop.example.com/products/shirt',
+      },
+    ]
+    const v = validate(rows)
+    expect(v.warnings.some((w) => w.code === 'imageNotImage')).toBe(true)
+  })
+
+  it('accepts real image links silently, extension-less CDN links included', () => {
+    const rows = [
+      {
+        [F.type]: ROW_PRODUCT,
+        [F.name]: 'قميص',
+        [F.price]: '10',
+        [F.weight]: '1',
+        [F.image]: 'https://cdn.x/a.jpg,https://cdn.salla.sa/abc123,https://x.io/i?format=webp',
+      },
+    ]
+    const v = validate(rows)
+    expect(v.warnings.some((w) => w.code === 'imageNotUrl')).toBe(false)
+    expect(v.warnings.some((w) => w.code === 'imageNotImage')).toBe(false)
+    expect(v.warnings.some((w) => w.code === 'missingImage')).toBe(false)
   })
 
   it('passes a well-formed product row and only warns on missing image/category', () => {

@@ -1,8 +1,10 @@
 import type { SourceSheet } from '../lib/reader'
 import type { MappingConfig, FieldSource } from '../lib/types'
 import type { PlatformId } from '../lib/platforms'
-import { splitValues } from '../lib/build'
-import { isImageUrl } from '../lib/product'
+import { splitValues, cleanPrice } from '../lib/build'
+import { applyPriceRules } from '../lib/pricing'
+import { F } from '../lib/salla'
+import { isImageUrl } from '../lib/urls'
 import { useI18n } from '../lib/i18n'
 import type { SectionKey } from './MappingPanel'
 
@@ -30,7 +32,14 @@ function relevantColumns(section: SectionKey, config: MappingConfig): Set<string
     config.options.forEach((o) => {
       set.add(o.column)
       if (o.swatchColumn) set.add(o.swatchColumn)
+      if (o.nameColumn) set.add(o.nameColumn)
     })
+  } else if (section === 'export') {
+    // The price formulas read these three, whichever way they were mapped.
+    for (const f of [F.price, F.discountPrice, F.cost]) {
+      const src = config.fields[f]
+      if (src?.kind === 'column') set.add(src.column)
+    }
   }
   return set
 }
@@ -244,18 +253,44 @@ function Snippet({
     )
   }
 
-  // export (adapter platforms only)
   if (section === 'export') {
+    // Salla has no quantity column, so only the price formulas are shown there.
     return (
       <>
-        <SnippetRow label="الكمية" value={config.quantity.mode === 'fixed' ? config.quantity.value : config.quantity.mode} />
-        <SnippetRow label="قواعد السعر" value={String(config.priceRules.length)} />
+        {platform !== 'salla' && (
+          <SnippetRow
+            label={t('qty.label')}
+            value={config.quantity.mode === 'fixed' ? config.quantity.value : config.quantity.mode}
+          />
+        )}
+        {config.priceRules.length === 0 ? (
+          <SnippetRow label={t('price.label')} value="" />
+        ) : (
+          config.priceRules.map((r, i) => (
+            <SnippetRow key={i} label={t(`price.f.${r.target}`)} value={priceSample(config, row, i)} />
+          ))
+        )}
       </>
     )
   }
 
-  void platform
   return <Empty />
+}
+
+/**
+ * The value rule `i` would write for this row — the rules up to and including
+ * it, applied to the row's real prices. Sample only; export uses the real path.
+ */
+function priceSample(config: MappingConfig, row: Record<string, string>, i: number): string {
+  const prices = applyPriceRules(
+    {
+      price: cleanPrice(fieldVal(config.fields[F.price], row)),
+      salePrice: cleanPrice(fieldVal(config.fields[F.discountPrice], row)),
+      cost: cleanPrice(fieldVal(config.fields[F.cost], row)),
+    },
+    config.priceRules.slice(0, i + 1),
+  )
+  return prices[config.priceRules[i].target]
 }
 
 function Empty() {
