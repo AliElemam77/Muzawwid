@@ -11,7 +11,7 @@ describe('resolveQuantity', () => {
   })
   it('writes the literal "infinite"', () => {
     expect(resolveQuantity('7', { mode: 'infinite', value: '' })).toBe('infinite')
-  })
+  }) 
   it('writes the configured fixed number (trimmed)', () => {
     expect(resolveQuantity('7', { mode: 'fixed', value: ' 100 ' })).toBe('100')
   })

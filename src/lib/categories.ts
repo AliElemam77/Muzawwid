@@ -1,13 +1,13 @@
 const STORAGE_KEY = 'sheet-to-salla:categories'
 
-/** Separates multiple categories (paths) in one cell: comma / Arabic comma. */
+/** Separates multiple categories (paths) in one cell:  comma / Arabic comma. */
 const CATEGORY_PATH_SEP = /[,،]+/
 /** Separates hierarchy levels within a path: `>` or the guillemets `›` / `»`. */
 const CATEGORY_LEVEL_SEP = /\s*[>›»]\s*/
 
 /**
  * Normalize a product's category cell to the platform-standard shape used by
- * both Salla and Zid: hierarchy levels joined by ` > ` and multiple categories
+ * both Salla and  Zid: hierarchy levels joined by ` > ` and multiple categories
  * joined by `, `, e.g.
  *
  *   `ملابس>نسائية>بناتي`            → `ملابس > نسائية > بناتي`
@@ -21,7 +21,7 @@ export function normalizeCategoryField(raw: string): string {
   const paths: string[] = []
   const seen = new Set<string>()
   for (const rawPath of raw.split(CATEGORY_PATH_SEP)) {
-    const levels = rawPath
+    const levels = rawPath 
       .split(CATEGORY_LEVEL_SEP)
       .map((s) => s.trim())
       .filter(Boolean)
