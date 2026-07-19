@@ -133,12 +133,6 @@ function OutputMockup() {
 
 /* --------------------------------- landing -------------------------------- */
 
-const FEATURES: { key: string; tone: 'teal' | 'violet' | 'mustard'; glyph: string }[] = [
-  { key: 'automap', tone: 'teal', glyph: '⚡' },
-  { key: 'variants', tone: 'violet', glyph: '⧉' },
-  { key: 'validate', tone: 'mustard', glyph: '✓' },
-]
-
 /**
  * The company's OTHER tools, promoted so visitors discover them. `href` present
  * → a live tool with a "try it" button; `href` absent → a coming-soon card with
