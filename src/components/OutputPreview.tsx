@@ -2,7 +2,8 @@ import { Fragment, useState } from 'react'
 import { F, optionGroupCols, ROW_PRODUCT, type SallaRow } from '../lib/salla'
 import type { RowMeta } from '../lib/build'
 import { useI18n } from '../lib/i18n'
-import { Select, TextInput, Button } from './ui'
+import { TextInput, Button } from './ui'
+import CategoryPicker from './CategoryPicker'
 import ProductImagesEditor from './ProductImagesEditor'
 
 /** Product-level text fields the user can edit inline in the preview. */
@@ -104,17 +105,11 @@ export default function OutputPreview({
             <label className="mb-1 block text-xs font-medium text-slate-500">
               {t('preview.applyAllLabel')}
             </label>
-            <Select
+            <CategoryPicker
               value={bulkCategory}
-              onChange={(e) => setBulkCategory(e.target.value)}
-            >
-              <option value="">{t('preview.catNone')}</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </Select>
+              categories={categories}
+              onChange={setBulkCategory}
+            />
           </div>
           <Button onClick={() => onApplyCategoryToAll(bulkCategory)}>
             {t('preview.applyAllBtn')}
@@ -173,30 +168,18 @@ export default function OutputPreview({
                       )}
                     </td>
                     {PREVIEW_COLS.map((c) => {
-                      // Category → dropdown from the store list (products only).
+                      // Category → multi-pick from the store tree (products only).
                       if (c.header === F.category && isProduct && rowMeta) {
-                        const current = row[F.category] ?? ''
-                        // Keep a mapped value that isn't in the store list selectable.
-                        const extra = current && !categories.includes(current) ? current : null
                         return (
                           <td key={c.header} className="border-b border-slate-100 px-2 py-1">
-                            <Select
-                              value={current}
-                              className="min-w-32 px-2 py-1 text-xs"
-                              onChange={(e) =>
-                                onEditField(rowMeta.sourceIndex, F.category, e.target.value)
+                            <CategoryPicker
+                              value={row[F.category] ?? ''}
+                              categories={categories}
+                              className="min-w-32"
+                              onChange={(next) =>
+                                onEditField(rowMeta.sourceIndex, F.category, next)
                               }
-                            >
-                              <option value="">{t('preview.catNone')}</option>
-                              {categories.map((cat) => (
-                                <option key={cat} value={cat}>
-                                  {cat}
-                                </option>
-                              ))}
-                              {extra && (
-                                <option value={extra}>{t('preview.catNotListed', { name: extra })}</option>
-                              )}
-                            </Select>
+                            />
                           </td>
                         )
                       }

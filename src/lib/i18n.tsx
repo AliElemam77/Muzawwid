@@ -108,9 +108,17 @@ const MESSAGES: Record<Lang, Dict> = {
     'categories.subtitle':
       'عرّف تصنيفات متجرك مرة واحدة لتختار منها لكل منتج في المعاينة — بدل كتابتها يدويًا.',
     'categories.note':
-      'أضف تصنيفات متجرك مرة واحدة لتختار منها لكل منتج في خطوة المعاينة. يمكنك لصق عدة تصنيفات مفصولة بفاصلة أو سطر جديد.',
+      'أضف تصنيفات متجرك مرة واحدة لتختار منها لكل منتج في خطوة المعاينة. يمكنك إضافة عدة تصنيفات دفعة واحدة بفصلها بفاصلة، وإضافة تصنيف فرعي داخل أي تصنيف بزر «+ تصنيف فرعي».',
     'categories.placeholder': 'مثال: قمصان، بناطيل، أحذية',
+    'categories.storeWarnTitle': 'مهم: التصنيف لازم يكون موجود في متجرك قبل الاستيراد.',
+    'categories.storeWarnBody':
+      'المنصّة بتربط المنتج بتصنيف موجود عندها فعلاً — مش بتنشئ تصنيفات جديدة من الملف. أي تصنيف تكتبه هنا ومش متضاف في لوحة تحكم متجرك، الاستيراد هيرفضه أو المنتج هيتساب بدون تصنيف. أضِف التصنيفات والتصنيفات الفرعية في متجرك الأول بنفس الأسماء بالظبط.',
+    'categories.addMain': 'إضافة تصنيف رئيسي',
+    'categories.addSub': '+ تصنيف فرعي',
+    'categories.addSubTitle': 'إضافة تصنيف فرعي داخل «{name}»',
+    'categories.subPlaceholder': 'تصنيف فرعي داخل «{parent}»',
     'categories.removeTitle': 'حذف التصنيف',
+    'categories.removeWithSubs': 'حذف التصنيف ومعه {n} تصنيف فرعي',
     'categories.empty': 'لا توجد تصنيفات بعد — أضف تصنيفات متجرك للبدء.',
 
     'step2.title': '٢) مطابقة الأعمدة',
@@ -238,6 +246,7 @@ const MESSAGES: Record<Lang, Dict> = {
     'defaults.maxQtyHint': 'سلة ترفض الفارغ/الصفر — لازم ≥ 1. القيمة العالية = بلا حد عملي',
 
     'btn.add': 'إضافة',
+    'btn.cancel': 'إلغاء',
     'btn.delete': 'حذف',
 
     // Salla field labels
@@ -289,6 +298,11 @@ const MESSAGES: Record<Lang, Dict> = {
     'preview.applyAllBtn': 'تطبيق على الكل',
     'preview.catNone': '— بدون —',
     'preview.catNotListed': '{name} (غير مُدرج)',
+    'preview.catPick': 'اختر تصنيفًا أو أكثر',
+    'preview.catCount': '{n} تصنيفات',
+    'preview.catClear': 'إلغاء تحديد الكل',
+    'preview.catEmptyList': 'لا توجد تصنيفات — أضفها من «تصنيفات متجرك».',
+    'preview.catCoveredBySub': 'مُغطّى بتصنيف فرعي مختار — ألغِ تحديد الفرعي أولًا.',
     'preview.deletedInfo': 'تم حذف {n} بند من التصدير.',
     'preview.restoreAll': 'استرجاع الكل',
     'preview.deleteTitle': 'حذف هذا البند بكل خياراته',
@@ -441,9 +455,18 @@ const MESSAGES: Record<Lang, Dict> = {
     'categories.subtitle':
       'Define your store categories once, then pick from them per product in the preview — instead of typing each.',
     'categories.note':
-      'Add your store categories once, then pick from them per product in the preview step. You can paste several categories separated by comma or newline.',
+      'Add your store categories once, then pick from them per product in the preview step. Separate several with a comma to add them at once, and use “+ Sub-category” to nest one inside another.',
     'categories.placeholder': 'e.g. Shirts, Pants, Shoes',
+    'categories.storeWarnTitle':
+      'Important: the category must already exist in your store before importing.',
+    'categories.storeWarnBody':
+      'The platform links each product to a category that already exists in your store — it does not create categories from the file. Any category you type here but have not added in your store dashboard will be rejected on import, or the product will land with no category. Create the categories and sub-categories in your store first, with exactly the same names.',
+    'categories.addMain': 'Add main category',
+    'categories.addSub': '+ Sub-category',
+    'categories.addSubTitle': 'Add a sub-category inside “{name}”',
+    'categories.subPlaceholder': 'Sub-category inside “{parent}”',
     'categories.removeTitle': 'Remove category',
+    'categories.removeWithSubs': 'Remove this category and its {n} sub-categories',
     'categories.empty': 'No categories yet — add your store categories to start.',
 
     'step2.title': '2) Map columns',
@@ -571,8 +594,8 @@ const MESSAGES: Record<Lang, Dict> = {
     'defaults.maxQtyHint': 'Salla rejects empty/0 — must be ≥ 1. A high value means no practical limit',
 
     'btn.add': 'Add',
+    'btn.cancel': 'Cancel',
     'btn.delete': 'Delete',
-
     'f.name': 'Product name',
     'f.price': 'Price',
     'f.category': 'Category',
@@ -620,6 +643,11 @@ const MESSAGES: Record<Lang, Dict> = {
     'preview.applyAllBtn': 'Apply to all',
     'preview.catNone': '— None —',
     'preview.catNotListed': '{name} (not listed)',
+    'preview.catPick': 'Pick one or more categories',
+    'preview.catCount': '{n} categories',
+    'preview.catClear': 'Clear all',
+    'preview.catEmptyList': 'No categories yet — add them under “Your store categories”.',
+    'preview.catCoveredBySub': 'Covered by a selected sub-category — clear that first.',
     'preview.deletedInfo': '{n} item(s) removed from the export.',
     'preview.restoreAll': 'Restore all',
     'preview.deleteTitle': 'Delete this item and all its options',

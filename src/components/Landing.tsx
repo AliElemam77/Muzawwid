@@ -240,7 +240,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                 ))}
               </span>
               <p
-                className="min-w-0 flex-1 font-medium text-[color:var(--ink)]/70"
+                className="min-w-0 flex-1 font-medium text-(--ink)/70"
                 style={{ fontSize: 'var(--fs-label)', lineHeight: 1.5 }}
               >
                 {t('lp.proof')}
@@ -264,7 +264,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       >
         <div className="mx-auto flex max-w-[104rem] flex-wrap items-center justify-between gap-x-8 gap-y-4 px-6">
           <span
-            className="font-extrabold tracking-widest text-[color:var(--mustard)]"
+            className="font-extrabold tracking-widest text-(--mustard)"
             style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-label)' }}
           >
             {t('lp.strip.label')}
@@ -273,7 +273,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             {PLATFORMS.map((p) => (
               <li key={p.id} className="flex items-center gap-2">
                 <span
-                  className="font-bold text-[color:var(--cream)]"
+                  className="font-bold text-(--cream)"
                   style={{ fontFamily: 'var(--font-display)', fontSize: '17px', opacity: p.ready ? 0.95 : 0.45 }}
                 >
                   {t(p.nameKey)}
@@ -302,7 +302,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
       <section className="py-14 text-center ">
         <span className="pill pill--violet pill--solid">{t('lp.tools.eyebrow')}</span>
         <h2
-          className="mx-auto mt-4 max-w-3xl font-extrabold text-[color:var(--ink)]"
+          className="mx-auto mt-4 max-w-3xl font-extrabold text-(--ink)"
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: 'clamp(1.75rem, 3vw, 2.85rem)',
@@ -313,7 +313,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
           {t('lp.tools.h2')}
         </h2>
         <p
-          className="mx-auto mt-3 max-w-xl font-medium text-[color:var(--ink)]/70"
+          className="mx-auto mt-3 max-w-xl font-medium text-(--ink)/70"
           style={{ fontSize: '16px', lineHeight: 1.6 }}
         >
           {t('lp.tools.lead')}
@@ -327,14 +327,14 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                 <div className="min-w-0">
                   <h3
                     dir="ltr"
-                    className="truncate text-start font-extrabold text-[color:var(--ink)]"
+                    className="truncate text-start font-extrabold text-(--ink)"
                     style={{ fontFamily: 'var(--font-display)', fontSize: '21px' }}
                   >
                     {tool.name}
                   </h3>
                   <span
                     dir="ltr"
-                    className="block truncate text-start font-bold text-[color:var(--ink)]/45"
+                    className="block truncate text-start font-bold text-(--ink)/45"
                     style={{ fontSize: '12px' }}
                   >
                     {tool.meta}
@@ -343,7 +343,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
               </div>
 
               <p
-                className="font-medium text-[color:var(--ink)]/75"
+                className="font-medium text-(--ink)/75"
                 style={{ fontSize: '15px', lineHeight: 1.6 }}
               >
                 {t(`lp.tools.${tool.key}.body`)}

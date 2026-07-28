@@ -1,11 +1,19 @@
 import { useState } from 'react'
-import { splitCategoryInput, normalizeCategories } from '../lib/categories'
+import {
+  buildCategoryTree,
+  addCategoryPath,
+  removeCategoryPath,
+  type CategoryNode,
+} from '../lib/categories'
 import { useI18n } from '../lib/i18n'
 import { TextInput, Button } from './ui'
 
 /**
- * Manage the store's category list (persisted by the parent). Users define
- * their categories once, then pick from them per product in the preview.
+ * Manage the store's category list (persisted by the parent) as a TREE: a main
+ * category can hold sub-categories, nested as deep as the store needs. The list
+ * itself stays flat — one full path per entry (`ملابس > رجالي`) — so the user
+ * never types the `>` separator; the UI composes it from where they clicked.
+ * Users define categories once here, then pick from them per product.
  */
 export default function CategoriesManager({
   categories,
@@ -16,20 +24,123 @@ export default function CategoriesManager({
 }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
+  /** Path whose "add sub-category" input is open ('' = none). */
+  const [addingUnder, setAddingUnder] = useState<string | null>(null)
+  const [subDraft, setSubDraft] = useState('')
 
-  function addFromDraft() {
-    const added = splitCategoryInput(draft)
-    if (added.length) onChange(normalizeCategories([...categories, ...added]))
+  const tree = buildCategoryTree(categories)
+
+  function addTopLevel() {
+    if (!draft.trim()) return
+    onChange(addCategoryPath(categories, '', draft))
     setDraft('')
   }
 
-  function remove(name: string) {
-    onChange(categories.filter((c) => c !== name))
+  function addSub(parentPath: string) {
+    if (!subDraft.trim()) return
+    onChange(addCategoryPath(categories, parentPath, subDraft))
+    setSubDraft('')
+    setAddingUnder(null)
+  }
+
+  function openSub(path: string) {
+    setAddingUnder((cur) => (cur === path ? null : path))
+    setSubDraft('')
+  }
+
+  function renderNode(node: CategoryNode) {
+    const isAdding = addingUnder === node.path
+    return (
+      <li key={node.path}>
+        <div
+          className="flex items-center gap-2 py-1"
+          // Indent by depth. Logical padding so RTL and LTR both nest inward.
+          style={{ paddingInlineStart: `${node.depth * 1.25}rem` }}
+        >
+          {node.depth > 0 && (
+            <span aria-hidden className="text-[color:var(--ink)]/30">
+              ↳
+            </span>
+          )}
+          <span
+            className={
+              'rounded-full border border-[color:var(--ink)]/20 px-3 py-1 ' +
+              (node.depth === 0 ? 'font-bold' : 'text-[color:var(--ink)]/80')
+            }
+            style={{ fontSize: 'var(--fs-label)' }}
+          >
+            {node.label}
+          </span>
+          <button
+            onClick={() => openSub(node.path)}
+            title={t('categories.addSubTitle', { name: node.label })}
+            className="rounded-md border border-[color:var(--ink)]/20 px-2 py-1 text-xs font-bold transition hover:bg-[color:var(--ink)]/5"
+          >
+            {t('categories.addSub')}
+          </button>
+          <button
+            onClick={() => onChange(removeCategoryPath(categories, node.path))}
+            title={
+              node.children.length
+                ? t('categories.removeWithSubs', { n: node.children.length })
+                : t('categories.removeTitle')
+            }
+            className="text-[color:var(--ink)]/40 transition hover:text-red-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        {isAdding && (
+          <div
+            className="flex items-end gap-2 py-1"
+            style={{ paddingInlineStart: `${(node.depth + 1) * 1.25}rem` }}
+          >
+            <div className="max-w-xs flex-1">
+              <TextInput
+                autoFocus
+                value={subDraft}
+                placeholder={t('categories.subPlaceholder', { parent: node.label })}
+                className="px-2 py-1 text-xs"
+                onChange={(e) => setSubDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addSub(node.path)
+                  }
+                  if (e.key === 'Escape') setAddingUnder(null)
+                }}
+              />
+            </div>
+            <Button onClick={() => addSub(node.path)} disabled={!subDraft.trim()}>
+              {t('btn.add')}
+            </Button>
+            <Button variant="ghost" onClick={() => setAddingUnder(null)}>
+              {t('btn.cancel')}
+            </Button>
+          </div>
+        )}
+
+        {node.children.length > 0 && <ul>{node.children.map(renderNode)}</ul>}
+      </li>
+    )
   }
 
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">{t('categories.note')}</p>
+      {/* Salla matches import rows to categories that ALREADY exist in the
+          store — it does not create them. A category typed only here fails the
+          import, so the warning has to be impossible to miss. */}
+      <div className="mb-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
+        <p className="text-sm font-extrabold text-red-700">
+          ⚠️ {t('categories.storeWarnTitle')}
+        </p>
+        <p className="mt-1 text-sm font-bold text-red-600">{t('categories.storeWarnBody')}</p>
+      </div>
+
+      <p className="mb-3 text-[color:var(--ink)]/70" style={{ fontSize: 'var(--fs-label)' }}>
+        {t('categories.note')}
+      </p>
 
       <div className="flex items-end gap-2">
         <div className="flex-1">
@@ -40,36 +151,22 @@ export default function CategoriesManager({
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                addFromDraft()
+                addTopLevel()
               }
             }}
           />
         </div>
-        <Button onClick={addFromDraft} disabled={!draft.trim()}>
-          {t('btn.add')}
+        <Button onClick={addTopLevel} disabled={!draft.trim()}>
+          {t('categories.addMain')}
         </Button>
       </div>
 
-      {categories.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <span
-              key={c}
-              className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm text-indigo-800"
-            >
-              {c}
-              <button
-                onClick={() => remove(c)}
-                title={t('categories.removeTitle')}
-                className="text-indigo-400 transition hover:text-red-600"
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-        </div>
+      {tree.length > 0 ? (
+        <ul className="mt-4">{tree.map(renderNode)}</ul>
       ) : (
-        <p className="mt-4 text-sm text-slate-400">{t('categories.empty')}</p>
+        <p className="mt-4 text-[color:var(--ink)]/50" style={{ fontSize: 'var(--fs-label)' }}>
+          {t('categories.empty')}
+        </p>
       )}
     </div>
   )

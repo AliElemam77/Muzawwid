@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { SourcedProduct } from '../lib/product'
 import { F } from '../lib/salla'
 import { useI18n } from '../lib/i18n'
-import { Select, TextInput, Button } from './ui'
+import { TextInput, Button } from './ui'
+import CategoryPicker from './CategoryPicker'
 
 const COLLAPSED_ROWS = 12
 
@@ -46,14 +47,11 @@ export default function ZidPreview({
             <label className="mb-1 block text-xs font-medium text-slate-500">
               {t('preview.applyAllLabel')}
             </label>
-            <Select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
-              <option value="">{t('preview.catNone')}</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </Select>
+            <CategoryPicker
+              value={bulkCategory}
+              categories={categories}
+              onChange={setBulkCategory}
+            />
           </div>
           <Button onClick={() => onApplyCategoryToAll(bulkCategory)}>
             {t('preview.applyAllBtn')}
@@ -97,8 +95,6 @@ export default function ZidPreview({
           <tbody>
             {shown.map((p) => {
               const opts = p.options.filter((o) => o.values.length > 0)
-              const cat = p.categoriesAr
-              const extraCat = cat && !categories.includes(cat) ? cat : null
               return (
                 <tr key={p.sourceIndex} className="odd:bg-white even:bg-slate-50/50">
                   <td className="border-b border-slate-100 px-2 py-1">
@@ -134,21 +130,12 @@ export default function ZidPreview({
                     {(p.weight || '1') + ' ' + (p.weightUnit || 'kg')}
                   </td>
                   <td className="border-b border-slate-100 px-2 py-1">
-                    <Select
-                      value={cat}
-                      className="min-w-32 px-2 py-1 text-xs"
-                      onChange={(e) => onEditField(p.sourceIndex, F.category, e.target.value)}
-                    >
-                      <option value="">{t('preview.catNone')}</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                      {extraCat && (
-                        <option value={extraCat}>{t('preview.catNotListed', { name: extraCat })}</option>
-                      )}
-                    </Select>
+                    <CategoryPicker
+                      value={p.categoriesAr}
+                      categories={categories}
+                      className="min-w-32"
+                      onChange={(next) => onEditField(p.sourceIndex, F.category, next)}
+                    />
                   </td>
                   <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2">
                     <span className={opts.length ? 'font-semibold text-indigo-600' : 'text-slate-400'}>

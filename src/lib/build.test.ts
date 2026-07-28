@@ -314,6 +314,25 @@ describe('buildRows', () => {
     }
   })
 
+  it('normalizes the category cell on the منتج row and leaves it empty on خيار rows', () => {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.category] = { kind: 'column', column: 'cat' }
+    config.options = [{ column: 'size', name: 'المقاس', type: 'text' }]
+
+    const { rows } = buildRows(
+      sheet(
+        ['title', 'cat', 'size'],
+        [{ title: 'عباية', cat: 'نسائي>عبايات ، اعياد', size: 'S,M' }],
+      ),
+      config,
+    )
+    const [parent, ...variants] = rows
+    expect(parent[F.category]).toBe('نسائي > عبايات, اعياد')
+    // The official template writes the category on the product row only.
+    for (const v of variants) expect(v[F.category]).toBeUndefined()
+  })
+
   it('drops URL/garbage option values and dedupes; all-empty option → simple product', () => {
     const config = emptyConfig()
     config.fields[F.name] = { kind: 'column', column: 'title' }
