@@ -11,11 +11,19 @@ import SkuGenerator from './SkuGenerator'
 import OptionsEditor from './OptionsEditor'
 import PromoTitleEditor from './PromoTitleEditor'
 import DefaultsEditor from './DefaultsEditor'
+import DescriptionTemplateEditor from './DescriptionTemplateEditor'
 import ExportOptionsEditor from './ExportOptionsEditor'
 import MappingQuickView from './MappingQuickView'
 
 /** Stable identifiers for the Map sub-steps (shared with MappingQuickView). */
-export type SectionKey = 'fields' | 'images' | 'sku' | 'options' | 'defaults' | 'export'
+export type SectionKey =
+  | 'fields'
+  | 'description'
+  | 'images'
+  | 'sku'
+  | 'options'
+  | 'defaults'
+  | 'export'
 
 interface SectionDef {
   key: SectionKey
@@ -26,6 +34,7 @@ interface SectionDef {
 
 const BASE_SECTIONS: SectionDef[] = [
   { key: 'fields', shortKey: 'map.sec.fields', titleKey: 'map.fields.title', subtitleKey: 'map.fields.subtitle' },
+  { key: 'description', shortKey: 'map.sec.description', titleKey: 'tpl.title', subtitleKey: 'tpl.subtitle' },
   { key: 'images', shortKey: 'map.sec.images', titleKey: 'map.images.title', subtitleKey: 'map.images.subtitle' },
   { key: 'sku', shortKey: 'map.sec.sku', titleKey: 'map.sku.title' },
   { key: 'options', shortKey: 'map.sec.options', titleKey: 'map.options.title', subtitleKey: 'map.options.subtitle' },
@@ -189,6 +198,14 @@ export default function MappingPanel({
               />
             </div>
           </div>
+        )
+      case 'description':
+        return (
+          <DescriptionTemplateEditor
+            sheet={sheet}
+            config={config}
+            onChange={(descriptionTemplate) => onChange({ ...config, descriptionTemplate })}
+          />
         )
       case 'images':
         return (

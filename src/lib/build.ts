@@ -9,6 +9,7 @@ import {
   type OptionType,
 } from './salla'
 import { normalizeCategoryField } from './categories'
+import { renderTemplate } from './template'
 import { applyPriceRules } from './pricing'
 import { classifyUrl } from './urls'
 import type { SourceSheet, SourceRow } from './reader'
@@ -484,6 +485,21 @@ export function buildRows(
       setOrClear(parent, F.price, prices.price)
       setOrClear(parent, F.discountPrice, prices.salePrice)
       setOrClear(parent, F.cost, prices.cost)
+    }
+
+    // الوصف من قالب: build the description from the user's HTML skeleton,
+    // filled from this row. Runs AFTER the manual overrides and the price rules
+    // so `{{سعر المنتج}}` sees the final, cleaned price — and BEFORE the promo
+    // title, which may fall back to the description.
+    //
+    // A row the user edited by hand keeps that edit: the template is a bulk
+    // tool, and silently overwriting a deliberate per-product description would
+    // make the preview's own editor useless.
+    const tpl = config.descriptionTemplate
+    if (tpl?.enabled && tpl.html.trim() && overrides?.[F.description] === undefined) {
+      const rendered = renderTemplate(tpl.html, { ...row, ...parent })
+      // Empty means every placeholder resolved away — leave the mapped value.
+      if (rendered) parent[F.description] = rendered
     }
 
     // العنوان الترويجي: clamp to Salla's 25 chars and, when nothing was mapped

@@ -1,4 +1,5 @@
 import type { OptionType } from './salla'
+import { EMPTY_TEMPLATE, type TemplateConfig } from './template'
 
 /** How a single Salla field gets its value. */
 export type FieldSource =
@@ -96,6 +97,11 @@ export interface MappingConfig {
   priceRules: PriceRule[]
   /** Clamp/auto-fill behaviour for العنوان الترويجي. */
   promoTitle: PromoTitleConfig
+  /**
+   * Optional HTML description built from a template + `{{placeholders}}`.
+   * Optional so presets saved before the feature existed still load.
+   */
+  descriptionTemplate?: TemplateConfig
 }
 
 export const DEFAULT_PROMO_TITLE: PromoTitleConfig = {
@@ -124,6 +130,7 @@ export function emptyConfig(): MappingConfig {
     quantity: { mode: 'source', value: '' },
     priceRules: [],
     promoTitle: { ...DEFAULT_PROMO_TITLE },
+    descriptionTemplate: { ...EMPTY_TEMPLATE },
   }
 }
 
