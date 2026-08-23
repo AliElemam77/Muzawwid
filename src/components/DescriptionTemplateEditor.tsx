@@ -179,7 +179,7 @@ export default function DescriptionTemplateEditor({
             >
               {t('tpl.varsLabel')}
             </p>
-            <div className="scroll-thin flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+            <div className="scroll-thin flex max-h-32 flex-wrap gap-1.5 overflow-y-auto p-1">
               {vars.map((v) => (
                 <button
                   key={v.name}
@@ -187,15 +187,15 @@ export default function DescriptionTemplateEditor({
                   title={t(v.source === 'field' ? 'tpl.varField' : 'tpl.varColumn')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => insertVar(v.name)}
-                  className={
-                    'border px-2 py-1 font-bold transition hover:bg-[color:var(--ink)]/8 ' +
-                    (v.source === 'field'
-                      ? 'border-[color:var(--ink)]/40 text-[color:var(--ink)]'
-                      : 'border-[color:var(--ink)]/20 text-[color:var(--ink)]/60')
-                  }
-                  style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
+                  className={`hard-2 lift flex items-center gap-1 px-2.5 py-1 text-xs font-bold transition ${
+                    v.source === 'field'
+                      ? 'bg-[color:var(--teal)]/20 text-[color:var(--ink)]'
+                      : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                  }`}
+                  style={{ borderRadius: 'var(--r-pill)' }}
                 >
-                  + {v.name}
+                  <span className="text-[10px] text-[color:var(--ink)]/50">+</span>
+                  <span>{v.name}</span>
                 </button>
               ))}
             </div>

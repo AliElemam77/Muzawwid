@@ -334,8 +334,17 @@ export function optionValueKey(axisIndex: number, originalValue: string): string
  */
 export function resolveOptionNames(row: SourceRow, options: OptionColumn[]): OptionColumn[] {
   return options.map((o) =>
-    o.nameColumn ? { ...o, name: (row[o.nameColumn] ?? '').trim() || o.name } : o,
+    o.nameColumn ? { ...o, name: axisNameFromCell(row[o.nameColumn] ?? '') || o.name } : o,
   )
+}
+
+/**
+ * Read an axis name out of a label cell. Scrapers commonly glue the currently
+ * selected value onto the label — `اللون: Red`, `Size: M` — and only the part
+ * before the colon is the axis name. A cell with no colon is used as-is.
+ */
+export function axisNameFromCell(cell: string): string {
+  return cell.split(/[:：]/)[0].trim()
 }
 
 /**

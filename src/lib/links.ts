@@ -6,4 +6,6 @@ export const LINKS = {
   linkedin: 'https://www.linkedin.com/in/ali-elemamm/',
   /** wepix — the direct image-upload tool (also the image-editor handoff). */
   wepix: 'https://wepix.omar-khaled-wk.workers.dev/',
+  /** The uploader screen itself — embedded in an iframe inside the images editor. */
+  wepixEmbed: 'https://wepix.omar-khaled-wk.workers.dev/wepix',
 } as const

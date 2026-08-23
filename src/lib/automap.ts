@@ -1,6 +1,6 @@
 import { F } from './salla'
 import { isSelectorLike } from './product'
-import { emptyConfig, type MappingConfig } from './types'
+import { emptyConfig, type MappingConfig, type OptionColumn } from './types'
 import type { SourceSheet, SourceRow } from './reader'
 
 /** Normalize a header for loose matching (lowercase, strip punctuation/diacritics). */
@@ -59,13 +59,32 @@ function looksLikeImage(header: string): boolean {
 
 /** Header substrings that disqualify a column from ever being an option. */
 const OPTION_BLACKLIST = /href|url|link|src|image|img|slide|rating|review|ctr|span|grid|mode|button|price|title|\bsku\b/i
+
+/**
+ * The same list in Arabic — this tool's sheets are mostly Arabic, so the
+ * English-only blacklist above protected almost nobody.
+ *
+ * It matters most for «السعر»: option detection runs BEFORE simple fields, and
+ * a price of `179` matches the bare-number size pattern, so the price column
+ * was being claimed as a size option and «سعر المنتج» came out empty.
+ *
+ * Tested against `norm()`, so «تكلفة» and «تكلفه» both match.
+ */
+const OPTION_BLACKLIST_AR =
+  /سعر|تكلفه|مخفض|خصم|رمز|كود|باركود|وزن|وصف|تصنيف|ماركه|رابط|صوره|كميه|سعرات/
+
 /** A CSS-module hash header, e.g. `_buttonOptionsCtr_14os5_1`. */
 const CSS_HASH = /^_.*_[a-z0-9]{4,}_?\d*$/i
 const URL_RE = /^https?:\/\//i
 
 function headerBlacklisted(header: string): boolean {
   const h = header.trim()
-  return CSS_HASH.test(h) || OPTION_BLACKLIST.test(h) || isSelectorLike(h)
+  return (
+    CSS_HASH.test(h) ||
+    OPTION_BLACKLIST.test(h) ||
+    OPTION_BLACKLIST_AR.test(norm(h)) ||
+    isSelectorLike(h)
+  )
 }
 
 /** Read up to `limit` rows: total scanned + the non-empty trimmed values. */
@@ -106,8 +125,18 @@ const COLOR_NAMES = [
 function fracMatch(values: string[], pred: (v: string) => boolean): number {
   return values.length ? values.filter(pred).length / values.length : 0
 }
+/**
+ * A hex colour, strictly enough that a NUMBER is not one.
+ *
+ * The loose `#?[0-9a-f]{3,8}` this used to be matched a bare `179` — so a
+ * price column of three-digit values read as a column of colour codes, got
+ * claimed as a colour option, and the price never reached «سعر المنتج» at all.
+ * Without the `#`, require a hex letter and a full-length code.
+ */
 function isHexColor(v: string): boolean {
-  return /^#?[0-9a-f]{3,8}$/i.test(v.trim())
+  const s = v.trim()
+  if (/^#[0-9a-f]{3,8}$/i.test(s)) return true
+  return /^[0-9a-f]{6,8}$/i.test(s) && /[a-f]/i.test(s)
 }
 function valuesLookLikeSizes(values: string[]): boolean {
   return fracMatch(values, (v) => SIZE_TOKEN.test(v.trim())) >= 0.6
@@ -152,6 +181,57 @@ function detectOption(
   return { name: clean ? header.trim() : 'خيار', type: 'text' }
 }
 
+/* ---------------------- labelled option families (scrapes) ---------------- */
+/*
+ * Variant scrapers rarely give one tidy column per attribute. The common shape
+ * is a LABEL column naming the axis followed by one column per available value:
+ *
+ *   label          opt-label  opt-label (2)  opt-label (3)  label (2)  opt-label (4) …
+ *   اللون: Red     Red        Khaki          Black          Size       S
+ *
+ * Each `opt-label*` column belongs to the label column that precedes it, and
+ * the axis name lives in the DATA (per row), not in the header — which is what
+ * `OptionColumn.nameColumn` exists for. Columns pointing at the same label
+ * merge into one axis in `build.ts`, so this yields «اللون» with three values
+ * rather than three one-value axes.
+ */
+
+/**
+ * `opt-label`, `opt-label (7)`, `option value`, `قيمه الخيار` — holds ONE value.
+ * Tested BEFORE the name pattern, since `opt-label` would otherwise read as a
+ * label column and every value column would be lost.
+ */
+const AXIS_VALUE_RE = /^(opt|option|value|قيمه|قيمه الخيار)( (label|value|قيمه))?( \d+)?$/
+/** `label`, `label (2)`, `option name`, `اسم الخيار` — names an axis. */
+const AXIS_NAME_RE = /^(option |opt )?(label|name|اسم الخيار|الخيار)( \d+)?$/
+
+/**
+ * Pair every value column with the label column that precedes it. Returns an
+ * empty list unless the sheet really has this shape, so ordinary sheets keep
+ * the plain header-based detection below.
+ */
+function detectLabelledOptionFamilies(headers: string[]): OptionColumn[] {
+  const found: OptionColumn[] = []
+  let labelColumn: string | null = null
+  let axisCount = 0
+
+  for (const header of headers) {
+    const n = norm(header)
+    if (AXIS_VALUE_RE.test(n)) {
+      // Salla exposes exactly three option groups — ignore any further axis.
+      if (!labelColumn || axisCount > 3) continue
+      found.push({ column: header, name: 'خيار', type: 'text', nameColumn: labelColumn })
+      continue
+    }
+    if (AXIS_NAME_RE.test(n)) {
+      labelColumn = header
+      axisCount++
+    }
+  }
+
+  return found
+}
+
 /* ------------------------------- entry point ----------------------------- */
 
 /**
@@ -175,8 +255,18 @@ export function autoMap(sheet: SourceSheet): MappingConfig {
   // (which provide exactly three option groups).
   const optionCols: string[] = []
   const axisNames = new Set<string>()
+
+  // A scraped "label + opt-label…" layout wins outright: its label columns say
+  // what each axis is called, which no header-based guess can recover.
+  const labelled = detectLabelledOptionFamilies(headers)
+  for (const opt of labelled) {
+    config.options.push(opt)
+    optionCols.push(opt.column)
+    if (opt.nameColumn) optionCols.push(opt.nameColumn)
+  }
+
   for (const header of headers) {
-    if (imageCols.includes(header)) continue
+    if (imageCols.includes(header) || optionCols.includes(header)) continue
     const { total, values } = columnValues(rows, header)
     const det = detectOption(header, total, values)
     if (!det) continue

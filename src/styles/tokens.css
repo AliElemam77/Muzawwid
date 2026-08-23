@@ -67,8 +67,8 @@
      uses calc(<x> * var(--sh-dir)) for its horizontal offset — never a
      hardcoded left/right offset. */
   --sh-dir: 1;
-  --ol-3: 3px; /* outline: buttons, cards, pills, dropzone, modals */
-  --ol-2: 2px; /* outline: inputs, selects */
+  --ol-3: 1.5px; /* outline: buttons, cards, pills, dropzone, modals */
+  --ol-2: 1.25px; /* outline: inputs, selects */
 }
 
 [dir='rtl'] {
@@ -81,11 +81,11 @@
 
 .hard-3 {
   border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
 }
 .hard-2 {
   border: var(--ol-2) solid var(--ink);
-  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
 }
 
 /* Interactive lift: press the "key" in on hover, bottom out on active. */
@@ -95,11 +95,11 @@
     box-shadow 0.06s ease;
 }
 .lift:hover:not(:disabled):not([aria-disabled='true']) {
-  transform: translate(calc(2px * var(--sh-dir)), 2px);
-  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+  transform: translate(calc(1.5px * var(--sh-dir)), 1.5px);
+  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
 }
 .lift:active:not(:disabled):not([aria-disabled='true']) {
-  transform: translate(calc(6px * var(--sh-dir)), 6px);
+  transform: translate(calc(3.5px * var(--sh-dir)), 3.5px);
   box-shadow: 0 0 0 0 var(--ink);
 }
 
@@ -120,18 +120,18 @@
   line-height: 1;
   cursor: pointer;
   border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
   transition:
     transform 0.06s ease,
     box-shadow 0.06s ease;
   outline: none;
 }
 .btn:hover:not(:disabled) {
-  transform: translate(calc(2px * var(--sh-dir)), 2px);
-  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+  transform: translate(calc(1.5px * var(--sh-dir)), 1.5px);
+  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
 }
 .btn:active:not(:disabled) {
-  transform: translate(calc(6px * var(--sh-dir)), 6px);
+  transform: translate(calc(3.5px * var(--sh-dir)), 3.5px);
   box-shadow: 0 0 0 0 var(--ink);
 }
 .btn:focus-visible {
@@ -176,7 +176,7 @@
   background: var(--white);
   border-radius: var(--r-card);
   border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(6px * var(--sh-dir)) 6px 0 var(--ink);
+  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
 }
 
 /* =============================================================================

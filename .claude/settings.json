@@ -15,7 +15,11 @@
       "Bash(python -c \"import fitz; print\\('pymupdf', fitz.__doc__[:20]\\)\")",
       "Bash(timeout 90 node shot1080.cjs)",
       "Bash(rm -f __TRACKED_VAR__/muzawwid-linkedin.pdf)",
-      "Bash(pnpm dev *)"
+      "Bash(pnpm dev *)",
+      "PowerShell(npx tsc -b --pretty false 2>&1)",
+      "PowerShell(pnpm test 2>&1)",
+      "PowerShell(npx vite build 2>&1)",
+      "Bash(curl -sSI \"https://wepix.omar-khaled-wk.workers.dev/wepix\")"
     ]
   }
 }

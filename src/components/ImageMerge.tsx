@@ -20,29 +20,35 @@ export default function ImageMerge({
   }
 
   return (
-    <div>
-      <p className="mb-2 text-sm text-slate-500">{t('images.note')}</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-(--ink)/70">{t('images.note')}</p>
+        {selected.length > 0 && (
+          <span className="rounded-full bg-(--teal)/20 border border-(--teal) px-2 py-0.5 text-xs font-black text-(--ink)">
+            تم تحديد {selected.length} أعمدة
+          </span>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {columns.map((col) => {
           const on = selected.includes(col)
           return (
-            <label
+            <button
               key={col}
-              className={
-                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition ' +
-                (on
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-800'
-                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50')
-              }
+              type="button"
+              onClick={() => toggle(col)}
+              className={`hard-2 lift flex cursor-pointer items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                on
+                  ? 'bg-(--teal) text-(--on-teal)'
+                  : 'bg-white text-(--ink) hover:bg-(--cream)'
+              }`}
             >
-              <input
-                type="checkbox"
-                className="accent-indigo-600"
-                checked={on}
-                onChange={() => toggle(col)}
-              />
-              {col}
-            </label>
+              <span className={`flex h-4 w-4 items-center justify-center rounded-sm border border-(--ink) ${on ? 'bg-white text-(--ink) font-black text-[10px]' : 'bg-transparent'}`}>
+                {on ? '✓' : ''}
+              </span>
+              <span>{col}</span>
+            </button>
           )
         })}
       </div>
