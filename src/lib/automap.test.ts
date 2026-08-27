@@ -89,3 +89,128 @@ describe('autoMap — option column guardrails', () => {
     expect(autoMap(s).options).toHaveLength(0)
   })
 })
+
+describe('autoMap — scraped "label + opt-label" families', () => {
+  // The shape most variant scrapers emit: a label column naming the axis,
+  // followed by one column per available value, repeated per axis.
+  const HEADERS = [
+    'title',
+    'label',
+    'opt-label',
+    'opt-label (2)',
+    'opt-label (3)',
+    'label (2)',
+    'opt-label (4)',
+    'opt-label (5)',
+    'opt-label (6)',
+  ]
+
+  const ROW = {
+    title: 'تيشيرت',
+    label: 'اللون: Red',
+    'opt-label': 'Red',
+    'opt-label (2)': 'Khaki',
+    'opt-label (3)': 'Black',
+    'label (2)': 'Size',
+    'opt-label (4)': 'S',
+    'opt-label (5)': 'M',
+    'opt-label (6)': 'L',
+  }
+
+  it('binds every value column to the label column before it', () => {
+    const config = autoMap(sheet(HEADERS, [ROW]))
+
+    const first = config.options.filter((o) => o.nameColumn === 'label')
+    const second = config.options.filter((o) => o.nameColumn === 'label (2)')
+    expect(first.map((o) => o.column)).toEqual(['opt-label', 'opt-label (2)', 'opt-label (3)'])
+    expect(second.map((o) => o.column)).toEqual(['opt-label (4)', 'opt-label (5)', 'opt-label (6)'])
+  })
+
+  it('never maps a label column as an option value or a simple field', () => {
+    const config = autoMap(sheet(HEADERS, [ROW]))
+    expect(config.options.some((o) => o.column === 'label')).toBe(false)
+    expect(config.options.some((o) => o.column === 'label (2)')).toBe(false)
+    expect(Object.values(config.fields).some((f) => f.kind === 'column' && f.column === 'label')).toBe(false)
+  })
+
+  it('builds two axes named from the label cells, with the value stripped off', () => {
+    const s = sheet(HEADERS, [ROW])
+    const [p] = buildProducts(s, autoMap(s))
+
+    expect(p.options).toHaveLength(2)
+    // «اللون: Red» names the axis اللون — "Red" is a value, not part of the name.
+    expect(p.options[0].nameAr).toBe('اللون')
+    expect(p.options[0].values).toEqual(['Red', 'Khaki', 'Black'])
+    expect(p.options[1].nameAr).toBe('Size')
+    expect(p.options[1].values).toEqual(['S', 'M', 'L'])
+  })
+
+  it('lets the axis name differ per row (same columns, different product)', () => {
+    const s = sheet(HEADERS, [
+      ROW,
+      { ...ROW, label: 'Size', 'opt-label': 'S', 'opt-label (2)': 'M', 'opt-label (3)': 'L', 'label (2)': '' },
+    ])
+    const products = buildProducts(s, autoMap(s))
+    expect(products[1].options[0].nameAr).toBe('Size')
+    expect(products[1].options[0].values).toEqual(['S', 'M', 'L'])
+  })
+})
+
+describe('autoMap — an Arabic sheet must not lose its price column', () => {
+  /** The shape almost every Arabic sheet in this tool actually has. */
+  const arabicSheet = () =>
+    sheet(
+      ['اسم المنتج', 'السعر', 'التصنيف', 'الوصف'],
+      [
+        { 'اسم المنتج': 'باور بانك', السعر: '179', التصنيف: 'شواحن', الوصف: 'وصف' },
+        { 'اسم المنتج': 'شاحن جداري', السعر: '289', التصنيف: 'شواحن', الوصف: 'وصف' },
+        { 'اسم المنتج': 'كيبل', السعر: '349', التصنيف: 'كيابل', الوصف: 'وصف' },
+      ],
+    )
+
+  it('maps «السعر» to the price field', () => {
+    // It used to be claimed as an OPTION before ever reaching the price field:
+    // `179` matches both the bare-number size pattern and the loose hex-colour
+    // pattern, and the blacklist that would have saved it was English-only.
+    expect(autoMap(arabicSheet()).fields[F.price]).toEqual({ kind: 'column', column: 'السعر' })
+  })
+
+  it('never claims «السعر» as an option', () => {
+    expect(autoMap(arabicSheet()).options.map((o) => o.column)).not.toContain('السعر')
+  })
+
+  it('keeps other Arabic field columns out of the options too', () => {
+    const s = sheet(
+      ['اسم المنتج', 'سعر التكلفة', 'الوزن', 'الباركود', 'رمز المنتج', 'المقاس'],
+      [
+        { 'اسم المنتج': 'قميص', 'سعر التكلفة': '120', الوزن: '1', الباركود: '620123', 'رمز المنتج': 'SH1', المقاس: 'S' },
+        { 'اسم المنتج': 'قميص', 'سعر التكلفة': '130', الوزن: '2', الباركود: '620124', 'رمز المنتج': 'SH2', المقاس: 'M' },
+      ],
+    )
+    const columns = autoMap(s).options.map((o) => o.column)
+    expect(columns).toEqual(['المقاس'])
+  })
+
+  it('still recognises a genuine colour column', () => {
+    const s = sheet(
+      ['اسم المنتج', 'اللون'],
+      [
+        { 'اسم المنتج': 'قميص', اللون: '#ff0000' },
+        { 'اسم المنتج': 'قميص', اللون: '#00ff00' },
+      ],
+    )
+    expect(autoMap(s).options[0]).toMatchObject({ column: 'اللون', type: 'color' })
+  })
+
+  it('still recognises a genuine size column of bare numbers', () => {
+    const s = sheet(
+      ['اسم المنتج', 'المقاس'],
+      [
+        { 'اسم المنتج': 'تنورة', المقاس: '40' },
+        { 'اسم المنتج': 'تنورة', المقاس: '42' },
+        { 'اسم المنتج': 'تنورة', المقاس: '44' },
+      ],
+    )
+    expect(autoMap(s).options.map((o) => o.column)).toEqual(['المقاس'])
+  })
+})

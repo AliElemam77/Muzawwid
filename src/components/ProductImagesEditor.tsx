@@ -1,17 +1,9 @@
 import { useState } from 'react'
 import { splitValues } from '../lib/build'
 import { classifyUrl, type UrlKind } from '../lib/urls'
-import { LINKS } from '../lib/links'
 import { useI18n } from '../lib/i18n'
 import { Button } from './ui'
-
-/**
- * Where the user uploads their own image files and gets back hot-link URLs to
- * paste here — this tool never uploads anything itself (everything stays in the
- * browser), so an external host is the only way to turn a local file into a
- * link Salla can fetch.
- */
-const UPLOADER_URL = LINKS.wepix
+import WepixUploadModal from './WepixUploadModal'
 
 /** Per-link status chip: image / plain link / not a link at all. */
 function KindBadge({ kind }: { kind: UrlKind }) {
@@ -46,6 +38,8 @@ export default function ProductImagesEditor({
 }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
+  // The uploader opens in place, so the mapping being edited stays put.
+  const [uploaderOpen, setUploaderOpen] = useState(false)
   const urls = splitValues(value)
 
   function addDraft() {
@@ -62,14 +56,13 @@ export default function ProductImagesEditor({
           {t('img.title', { n: urls.length })}
         </span>
         <div className="flex items-center gap-2">
-          <a
-            href={UPLOADER_URL}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => setUploaderOpen(true)}
             className="rounded-lg border border-indigo-300 bg-white px-2.5 py-1 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
           >
             {t('img.uploadCta')}
-          </a>
+          </button>
           <Button variant="ghost" onClick={onClose}>
             {t('img.done')}
           </Button>
@@ -134,6 +127,8 @@ export default function ProductImagesEditor({
           </Button>
         )}
       </div>
+
+      {uploaderOpen && <WepixUploadModal onClose={() => setUploaderOpen(false)} />}
     </div>
   )
 }

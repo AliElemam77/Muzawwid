@@ -1,6 +1,7 @@
 import type { SourceWorkbook, SourceSheet } from '../lib/reader'
 import { isImageUrl } from '../lib/urls'
 import { useI18n } from '../lib/i18n'
+import StepTips from './StepTips'
 
 const PREVIEW_ROWS = 10
 
@@ -33,6 +34,9 @@ export default function SourcePreview({
 
   return (
     <div>
+      <div className="mb-4">
+        <StepTips tips={[t('tips.source.1'), t('tips.source.2'), t('tips.source.3')]} />
+      </div>
       {workbook.sheets.length > 1 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-slate-600">{t('source.pick')}</span>

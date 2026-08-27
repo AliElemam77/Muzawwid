@@ -1,12 +1,13 @@
 import type { OptionColumn } from '../lib/types'
 import type { OptionType } from '../lib/salla'
 import { useI18n } from '../lib/i18n'
-import { Select, TextInput, Label, Button } from './ui'
+import { Select, TextInput, Button } from './ui'
+import OptionsVisualGuide from './OptionsVisualGuide'
 
-const TYPE_KEYS: { value: OptionType; key: string }[] = [
-  { value: 'text', key: 'opt.type.text' },
-  { value: 'color', key: 'opt.type.color' },
-  { value: 'image', key: 'opt.type.image' },
+const TYPE_KEYS: { value: OptionType; key: string; icon: string }[] = [
+  { value: 'text', key: 'opt.type.text', icon: '📝' },
+  { value: 'color', key: 'opt.type.color', icon: '🎨' },
+  { value: 'image', key: 'opt.type.image', icon: '🖼️' },
 ]
 
 /** Max distinct option axes a target template (Salla/Zid) can hold. */
@@ -21,9 +22,7 @@ function distinctAxisCount(options: OptionColumn[]): number {
 
 /**
  * Declare option (variant) columns. Multiple columns that share the SAME name
- * merge into ONE axis, so you can add as many columns as you like — only the
- * number of DISTINCT names is capped at 3 (the Salla/Zid template ceiling).
- * Each option value expands into one خيار row under its parent منتج row.
+ * merge into ONE axis. Each option value expands into one خيار row under its parent منتج row.
  */
 export default function OptionsEditor({
   columns,
@@ -42,7 +41,6 @@ export default function OptionsEditor({
     onChange(options.filter((_, idx) => idx !== i))
   }
   function add() {
-    // Prefill the name of the last option so same-named columns merge by default.
     const lastName = options[options.length - 1]?.name ?? ''
     onChange([...options, { column: columns[0] ?? '', name: lastName, type: 'text' }])
   }
@@ -52,31 +50,38 @@ export default function OptionsEditor({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">{t('opt.note')}</p>
+      <p className="text-xs font-medium text-[color:var(--ink)]/70">{t('opt.note')}</p>
+      <OptionsVisualGuide />
 
       {overLimit && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          {t('opt.tooMany', { count: axisCount, max: MAX_AXES })}
-        </p>
+        <div className="hard-2 rounded-xl bg-[color:var(--warning-tint)] p-3 text-xs font-bold text-[color:var(--ink)] border-[color:var(--mustard)]">
+          ⚠️ {t('opt.tooMany', { count: axisCount, max: MAX_AXES })}
+        </div>
       )}
 
       {options.map((opt, i) => (
         <div
           key={i}
-          className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+          className="hard-2 rounded-xl bg-white p-4 space-y-3"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-700">{t('opt.group', { n: i + 1 })}</span>
-            <Button variant="danger" onClick={() => remove(i)}>
+          <div className="flex items-center justify-between border-b border-[color:var(--ink)]/10 pb-2">
+            <span className="text-xs font-black text-[color:var(--ink)]">
+              {t('opt.group', { n: i + 1 })}
+            </span>
+            <Button variant="danger" onClick={() => remove(i)} className="!py-1 !px-2.5 text-xs">
               {t('btn.delete')}
             </Button>
           </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <Label>{t('opt.sourceCol')}</Label>
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-[color:var(--ink)]">
+                {t('opt.sourceCol')}
+              </label>
               <Select
                 value={opt.column}
                 onChange={(e) => update(i, { column: e.target.value })}
+                className="!py-1.5 !text-xs font-bold"
               >
                 {columns.map((c) => (
                   <option key={c} value={c}>
@@ -85,65 +90,47 @@ export default function OptionsEditor({
                 ))}
               </Select>
             </div>
-            <div>
-              <Label>{t('opt.nameSource')}</Label>
-              <Select
-                value={opt.nameColumn ? 'column' : 'fixed'}
-                onChange={(e) =>
-                  update(i, {
-                    nameColumn:
-                      e.target.value === 'column' ? (opt.nameColumn ?? columns[0] ?? '') : undefined,
-                  })
-                }
-              >
-                <option value="fixed">{t('opt.nameSource.fixed')}</option>
-                <option value="column">{t('opt.nameSource.column')}</option>
-              </Select>
-            </div>
-            {opt.nameColumn !== undefined && (
-              <div>
-                <Label>{t('opt.nameCol')}</Label>
-                <Select
-                  value={opt.nameColumn}
-                  onChange={(e) => update(i, { nameColumn: e.target.value })}
-                >
-                  {columns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
-            <div>
-              <Label>{opt.nameColumn !== undefined ? t('opt.nameFallback') : t('opt.name')}</Label>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-[color:var(--ink)]">
+                {t('opt.name')}
+              </label>
               <TextInput
                 value={opt.name}
                 placeholder={t('opt.namePlaceholder')}
                 onChange={(e) => update(i, { name: e.target.value })}
+                className="!py-1.5 !text-xs font-bold"
               />
             </div>
-            <div>
-              <Label>{t('opt.typeLabel')}</Label>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-[color:var(--ink)]">
+                {t('opt.typeLabel')}
+              </label>
               <Select
                 value={opt.type}
                 onChange={(e) => update(i, { type: e.target.value as OptionType })}
+                className="!py-1.5 !text-xs font-bold"
               >
                 {TYPE_KEYS.map((tk) => (
                   <option key={tk.value} value={tk.value}>
-                    {t(tk.key)}
+                    {tk.icon} {t(tk.key)}
                   </option>
                 ))}
               </Select>
             </div>
+
             {opt.type === 'color' && (
-              <div>
-                <Label>{t('opt.swatchLabel')}</Label>
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-[color:var(--ink)]">
+                  {t('opt.swatchLabel')}
+                </label>
                 <Select
                   value={opt.swatchColumn ?? ''}
                   onChange={(e) =>
                     update(i, { swatchColumn: e.target.value || undefined })
                   }
+                  className="!py-1.5 !text-xs font-bold"
                 >
                   <option value="">{t('opt.swatchInfer')}</option>
                   {columns.map((c) => (
@@ -155,13 +142,10 @@ export default function OptionsEditor({
               </div>
             )}
           </div>
-          {opt.nameColumn !== undefined && (
-            <p className="mt-2 text-sm text-slate-500">{t('opt.nameColHint')}</p>
-          )}
         </div>
       ))}
 
-      <Button variant="ghost" onClick={add}>
+      <Button variant="ghost" onClick={add} className="!py-1.5 !px-3 text-xs">
         {t('btn.addOption')}
       </Button>
     </div>

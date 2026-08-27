@@ -1,4 +1,5 @@
 import type { OptionType } from './salla'
+import type { SourceSheet } from './reader'
 import { EMPTY_TEMPLATE, type TemplateConfig } from './template'
 
 /** How a single Salla field gets its value. */
@@ -134,8 +135,14 @@ export function emptyConfig(): MappingConfig {
   }
 }
 
-/** A saved preset. */
-export interface Preset {
-  name: string
+/** One export history entry: saved mapping + metadata for quick reload. */
+export interface HistoryItem {
+  id: string
+  name: string // file name or user-facing label
   config: MappingConfig
+  ts: string // ISO timestamp or locale string
+  sheetName?: string
+  // Optional lightweight snapshot of the source sheet so history entries
+  // remain usable after a page reload (no uploaded workbook).
+  sheet?: SourceSheet
 }
