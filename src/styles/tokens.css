@@ -218,6 +218,51 @@
 }
 
 /* =============================================================================
+   Description-template editor + preview.
+
+   The app's global reset flattens list markers and heading sizes, which is
+   right everywhere else — but here the user is authoring the HTML that lands
+   in Salla's الوصف column, so what they type must look like what they get.
+   Scoped to .tpl-editor so nothing else in the app inherits it.
+   ========================================================================== */
+
+.tpl-editor {
+  line-height: 1.7;
+}
+.tpl-editor p {
+  margin: 0 0 0.5rem;
+}
+.tpl-editor h1,
+.tpl-editor h2,
+.tpl-editor h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-body);
+  margin: 0.75rem 0 0.35rem;
+}
+.tpl-editor ul,
+.tpl-editor ol {
+  margin: 0 0 0.5rem;
+  padding-inline-start: 1.5rem;
+}
+.tpl-editor ul {
+  list-style: disc;
+}
+.tpl-editor ol {
+  list-style: decimal;
+}
+.tpl-editor li {
+  margin: 0.15rem 0;
+}
+.tpl-editor > :last-child {
+  margin-bottom: 0;
+}
+.tpl-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--dead-ink);
+}
+
+/* =============================================================================
    Full-bleed — break a shape out of the centred container to the viewport edge.
 
    Margin-based, so the element stays IN FLOW. The `position:relative; left:50%;

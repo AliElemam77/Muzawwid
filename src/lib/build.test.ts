@@ -694,3 +694,74 @@ describe('validate', () => {
     expect(v.warnings.length).toBeGreaterThan(0)
   })
 })
+
+describe('description template', () => {
+  function tplSheet() {
+    return sheet(
+      ['title', 'price', 'fabric'],
+      [{ title: 'عباية', price: '299 ر.س', fabric: 'كريب' }],
+    )
+  }
+
+  function tplConfig(html: string, enabled = true) {
+    const config = emptyConfig()
+    config.fields[F.name] = { kind: 'column', column: 'title' }
+    config.fields[F.price] = { kind: 'column', column: 'price' }
+    config.descriptionTemplate = { enabled, html }
+    return config
+  }
+
+  it('is OFF until switched on — the export is untouched', () => {
+    const config = tplConfig('<p>{{أسم المنتج}}</p>', false)
+    config.fields[F.description] = { kind: 'constant', value: 'وصف أصلي' }
+    const { rows } = buildRows(tplSheet(), config)
+    expect(rows[0][F.description]).toBe('وصف أصلي')
+  })
+
+  it('fills mapped Salla fields AND raw sheet columns', () => {
+    const { rows } = buildRows(
+      tplSheet(),
+      tplConfig('<p>{{أسم المنتج}}</p><ul><li>الخامة: {{fabric}}</li></ul>'),
+    )
+    expect(rows[0][F.description]).toBe('<p>عباية</p><ul><li>الخامة: كريب</li></ul>')
+  })
+
+  it('uses the PROCESSED value — the price is already cleaned', () => {
+    const { rows } = buildRows(tplSheet(), tplConfig('<p>{{سعر المنتج}}</p>'))
+    // '299 ر.س' in the sheet, '299' after cleanPrice
+    expect(rows[0][F.description]).toBe('<p>299</p>')
+  })
+
+  it('sees a manual edit to another field', () => {
+    const { rows } = buildRows(tplSheet(), tplConfig('<p>{{أسم المنتج}}</p>'), {
+      0: { [F.name]: 'عباية مطرزة' },
+    })
+    expect(rows[0][F.description]).toBe('<p>عباية مطرزة</p>')
+  })
+
+  it('never overwrites a description the user edited by hand', () => {
+    const { rows } = buildRows(tplSheet(), tplConfig('<p>{{أسم المنتج}}</p>'), {
+      0: { [F.description]: 'وصف كتبته بإيدي' },
+    })
+    expect(rows[0][F.description]).toBe('وصف كتبته بإيدي')
+  })
+
+  it('leaves the mapped description alone when the template resolves to nothing', () => {
+    const config = tplConfig('<p>{{عمود مش موجود}}</p>')
+    config.fields[F.description] = { kind: 'constant', value: 'وصف أصلي' }
+    const { rows } = buildRows(tplSheet(), config)
+    expect(rows[0][F.description]).toBe('وصف أصلي')
+  })
+
+  it('writes the description on the منتج row only, never on خيار rows', () => {
+    const config = tplConfig('<p>{{أسم المنتج}}</p>')
+    config.options = [{ column: 'size', name: 'المقاس', type: 'text' }]
+    const { rows } = buildRows(
+      sheet(['title', 'size'], [{ title: 'عباية', size: 'S,M' }]),
+      config,
+    )
+    const [parent, ...variants] = rows
+    expect(parent[F.description]).toBe('<p>عباية</p>')
+    for (const v of variants) expect(v[F.description]).toBeUndefined()
+  })
+})

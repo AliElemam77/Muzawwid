@@ -3,6 +3,7 @@ import type { MappingConfig, FieldSource } from '../lib/types'
 import type { PlatformId } from '../lib/platforms'
 import { splitValues, cleanPrice } from '../lib/build'
 import { applyPriceRules } from '../lib/pricing'
+import { templateTokens } from '../lib/template'
 import { F } from '../lib/salla'
 import { isImageUrl } from '../lib/urls'
 import { useI18n } from '../lib/i18n'
@@ -34,6 +35,10 @@ function relevantColumns(section: SectionKey, config: MappingConfig): Set<string
       if (o.swatchColumn) set.add(o.swatchColumn)
       if (o.nameColumn) set.add(o.nameColumn)
     })
+  } else if (section === 'description') {
+    // Highlight the sheet columns the template actually references. A token
+    // naming a Salla field simply isn't a column and drops out here.
+    for (const name of templateTokens(config.descriptionTemplate?.html ?? '')) set.add(name)
   } else if (section === 'export') {
     // The price formulas read these three, whichever way they were mapped.
     for (const f of [F.price, F.discountPrice, F.cost]) {
