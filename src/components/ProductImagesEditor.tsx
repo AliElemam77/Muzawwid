@@ -14,7 +14,9 @@ function KindBadge({ kind }: { kind: UrlKind }) {
     <span
       className={
         'shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ' +
-        (warn ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700')
+        (warn
+          ? 'border border-[#ffc531]/35 bg-[#ffc531]/15 text-[#ffd666]'
+          : 'border border-[#FF6B50]/35 bg-[#FF6B50]/15 text-[#FF856E]')
       }
     >
       {warn ? t('img.badge.notImage') : t('img.badge.notUrl')}
@@ -50,16 +52,16 @@ export default function ProductImagesEditor({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+    <div className="rounded-xl border border-white/10 bg-[#161616] p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-bold text-slate-700">
+        <span className="text-sm font-bold text-white">
           {t('img.title', { n: urls.length })}
         </span>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setUploaderOpen(true)}
-            className="rounded-lg border border-indigo-300 bg-white px-2.5 py-1 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
+            className="rounded-lg border border-[color:var(--violet)]/40 bg-[color:var(--violet)]/15 px-2.5 py-1 text-xs font-bold text-[#c4b5fd] transition hover:bg-[color:var(--violet)]/25 hover:text-white"
           >
             {t('img.uploadCta')}
           </button>
@@ -69,7 +71,7 @@ export default function ProductImagesEditor({
         </div>
       </div>
 
-      <p className="mb-2 text-xs text-slate-500">{t('img.uploadHint')}</p>
+      <p className="mb-2 text-xs text-[#A3A3A3]">{t('img.uploadHint')}</p>
 
       {urls.length > 0 && (
         <ul className="mb-3 space-y-1">
@@ -78,28 +80,28 @@ export default function ProductImagesEditor({
             return (
               <li
                 key={`${url}-${i}`}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1"
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#111111] px-2 py-1"
               >
                 {kind === 'image' ? (
                   <img
                     src={url}
                     alt=""
                     loading="lazy"
-                    className="h-8 w-8 shrink-0 rounded-md border border-slate-200 object-cover"
+                    className="h-8 w-8 shrink-0 rounded-md border border-white/10 object-cover"
                   />
                 ) : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 text-xs text-slate-400">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 text-xs text-[#A3A3A3]">
                     ?
                   </span>
                 )}
-                <span dir="ltr" className="min-w-0 flex-1 truncate text-xs text-slate-600" title={url}>
+                <span dir="ltr" className="min-w-0 flex-1 truncate text-xs text-[#D4D4D4]" title={url}>
                   {url}
                 </span>
                 <KindBadge kind={kind} />
                 <button
                   onClick={() => onChange(urls.filter((_, idx) => idx !== i).join(','))}
                   title={t('img.removeTitle')}
-                  className="shrink-0 rounded-md border border-red-200 px-1.5 py-0.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                  className="shrink-0 rounded-md border border-[#FF6B50]/35 px-1.5 py-0.5 text-xs font-bold text-[#FF856E] transition hover:bg-[#FF6B50]/15 hover:text-white"
                 >
                   ✕
                 </button>
@@ -115,7 +117,7 @@ export default function ProductImagesEditor({
         dir="ltr"
         rows={2}
         placeholder={t('img.addPlaceholder')}
-        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
+        className="w-full rounded-lg border border-white/10 bg-[#1A1A1A] px-2 py-1.5 text-xs text-[color:var(--ink)] outline-none transition focus:border-[color:var(--coral-accent)] placeholder:text-[#777777]"
       />
       <div className="mt-2 flex items-center gap-2">
         <Button onClick={addDraft} disabled={!draft.trim()}>

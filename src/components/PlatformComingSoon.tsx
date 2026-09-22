@@ -14,15 +14,15 @@ export default function PlatformComingSoon({
   const name = t(platform.nameKey)
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-[#111111] p-10 text-center shadow-lg">
       <platform.Logo size={64} />
-      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+      <span className="rounded-full border border-[#ffc531]/35 bg-[#ffc531]/15 px-3 py-1 text-xs font-bold text-[#ffd666]">
         {t('platform.soonBadge')}
       </span>
-      <h3 className="text-lg font-bold text-slate-900">
+      <h3 className="text-lg font-black text-white">
         {t('platform.soonTitle', { name })}
       </h3>
-      <p className="max-w-md text-sm text-slate-500">
+      <p className="max-w-md text-sm text-[#D4D4D4]">
         {t('platform.soonBody', { name })}
       </p>
       <Button onClick={onBackToSalla}>{t('platform.switchToSalla')}</Button>

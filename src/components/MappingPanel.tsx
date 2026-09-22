@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { Check } from 'lucide-react'
 import { F } from '../lib/salla'
 import type { FieldSource, MappingConfig, PriceField } from '../lib/types'
 import type { SourceSheet } from '../lib/reader'
@@ -104,32 +105,24 @@ function SubStepper({
       {sections.map((s, i) => {
         const isCurrent = i === active
         const isDone = completedMap[s.key]
-        const chip = isCurrent
-          ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-          : isDone
-            ? 'bg-[color:var(--teal)] text-[color:var(--on-teal)]'
-            : 'bg-white text-[color:var(--ink)]'
+
         return (
           <li key={s.key} className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => onPick(i)}
               aria-current={isCurrent ? 'step' : undefined}
-              className={`hard-2 lift flex items-center gap-1.5 px-3 py-1.5 ${chip}`}
-              style={{ borderRadius: 'var(--r-pill)' }}
+              className={`step-chip step-chip--clickable text-xs ${
+                isCurrent ? 'step-chip--current' : isDone ? 'step-chip--done' : ''
+              }`}
             >
-              <span
-                className="flex h-5 w-5 items-center justify-center border border-[color:var(--ink)] text-[11px] font-extrabold shadow-xs"
-                style={{ borderRadius: 'var(--r-pill)' }}
-              >
-                {isDone ? '✓' : i + 1}
+              <span className="step-badge">
+                {isDone ? <Check className="size-3 stroke-[3]" /> : i + 1}
               </span>
-              <span className="font-bold whitespace-nowrap" style={{ fontSize: 'var(--fs-label)' }}>
-                {t(s.shortKey)}
-              </span>
+              <span>{t(s.shortKey)}</span>
             </button>
             {i < sections.length - 1 && (
-              <span aria-hidden className="hidden h-0.5 w-2 bg-[color:var(--ink)]/30 sm:block" />
+              <span aria-hidden className={`step-line !w-2 ${isDone ? 'step-line--done' : ''}`} />
             )}
           </li>
         )
@@ -268,17 +261,12 @@ export default function MappingPanel({
                       key={tab.key}
                       type="button"
                       onClick={() => setFieldFilter(tab.key)}
-                      className={`hard-2 lift flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition ${
-                        active
-                          ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-                          : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                      className={`step-chip step-chip--clickable !py-1 text-xs ${
+                        active ? 'step-chip--current' : ''
                       }`}
-                      style={{ borderRadius: 'var(--r-pill)' }}
                     >
                       <span>{tab.label}</span>
-                      <span className="rounded-full bg-black/10 px-1 text-[10px]">
-                        {tab.count}
-                      </span>
+                      <span className="step-badge font-mono !text-[10px]">{tab.count}</span>
                     </button>
                   )
                 })}
@@ -310,8 +298,8 @@ export default function MappingPanel({
             </div>
 
             {/* Promo Title Special Block */}
-            <div className="mt-4 rounded-xl border-2 border-[color:var(--ink)] bg-[color:var(--cream)]/40 p-4">
-              <h3 className="mb-2 font-extrabold text-[color:var(--ink)]" style={{ fontSize: 'var(--fs-label)' }}>
+            <div className="mt-4 rounded-xl border border-white/10 bg-[#141414] p-4">
+              <h3 className="mb-2 font-black text-white text-xs">
                 {t('promo.title')}
               </h3>
               <PromoTitleEditor
@@ -404,23 +392,31 @@ export default function MappingPanel({
             variant="ghost"
             onClick={() => changeSection(Math.max(0, clamped - 1))}
             disabled={clamped === 0}
+            className="!border-white/15 !text-white hover:!bg-white/10"
           >
             {t('map.nav.prev')}
           </Button>
-          <span className="font-bold text-[color:var(--ink)]/60" style={{ fontSize: 'var(--fs-label)' }}>
+          <span className="font-bold text-xs text-[#A3A3A3]">
             {t('map.nav.progress', { n: clamped + 1, total: sections.length })}
           </span>
           <Button
-            variant="secondary"
+            variant="ghost"
             onClick={() => changeSection(Math.min(sections.length - 1, clamped + 1))}
             disabled={clamped === sections.length - 1}
+            className="!border-white/15 !text-white hover:!bg-white/10"
           >
             {t('map.nav.next')}
           </Button>
         </nav>
 
-        <div className="flex justify-end border-t border-[color:var(--ink)]/15 pt-4">
-          <Button onClick={onFinish}>{t('map.finish')}</Button>
+        <div className="flex justify-end border-t border-white/10 pt-4">
+          <button
+            type="button"
+            onClick={onFinish}
+            className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-6 py-2.5 text-xs sm:text-sm font-black text-[#050505] shadow-lg shadow-[#FF6B50]/20 transition-all hover:bg-[#ff856e] hover:scale-105 active:scale-95"
+          >
+            {t('map.finish')}
+          </button>
         </div>
       </div>
     </div>

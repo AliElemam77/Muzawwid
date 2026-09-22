@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Check, AlertTriangle, Info } from 'lucide-react'
 
 export interface ToastMessage {
   id: string
@@ -44,17 +45,20 @@ export default function ToastContainer() {
               ? 'bg-[color:var(--sky)] text-[color:var(--on-sky)]'
               : 'bg-[color:var(--teal)] text-[color:var(--on-teal)]'
 
-        const icon =
-          toast.type === 'warning' ? '⚠️' : toast.type === 'info' ? 'ℹ️' : '✓'
-
         return (
           <div
             key={toast.id}
-            className={`hard-3 flex items-center gap-2.5 px-4 py-2.5 font-bold shadow-lg pointer-events-auto transition-all transform animate-bounce-short ${bg}`}
+            className={`hard-2 flex items-center gap-2.5 px-4 py-2.5 font-bold shadow-lg pointer-events-auto transition-all transform animate-bounce-short ${bg}`}
             style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-body)' }}
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/80 text-xs font-black text-[color:var(--ink)]">
-              {icon}
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs font-black text-[color:var(--ink)]">
+              {toast.type === 'warning' ? (
+                <AlertTriangle className="size-3 text-[color:var(--ink)]" />
+              ) : toast.type === 'info' ? (
+                <Info className="size-3 text-[color:var(--ink)]" />
+              ) : (
+                <Check className="size-3 text-[color:var(--ink)] stroke-[3]" />
+              )}
             </span>
             <span>{toast.text}</span>
           </div>

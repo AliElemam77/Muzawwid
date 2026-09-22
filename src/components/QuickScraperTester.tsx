@@ -1,8 +1,20 @@
 import { useState } from 'react'
+import {
+  FlaskConical,
+  Loader2,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  ExternalLink,
+  Check,
+} from 'lucide-react'
 import { fetchProductImages } from '../lib/scrape'
+import { useI18n } from '../lib/i18n'
 import { Button, TextInput } from './ui'
 
 export default function QuickScraperTester() {
+  const { t } = useI18n()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [images, setImages] = useState<string[] | null>(null)
@@ -27,7 +39,7 @@ export default function QuickScraperTester() {
       const results = await fetchProductImages(target)
       setImages(results)
       if (results.length === 0) {
-        setError('لم نتمكن من العثور على صور لهذا المنتج في الصفحة.')
+        setError(t('tester.noImages'))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -56,84 +68,87 @@ export default function QuickScraperTester() {
   }
 
   return (
-    <div className="card mb-8 p-5 border-2 border-[color:var(--violet)] bg-white shadow-md">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--violet)] text-xl text-[color:var(--on-violet)]">
-            🧪
+    <div className="card mb-8 border border-[color:var(--violet)]/40 bg-[#111111] p-5 shadow-lg">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--violet)] text-[color:var(--on-violet)]">
+            <FlaskConical className="size-5" />
           </span>
           <div>
             <h3
-              className="text-base font-extrabold text-[color:var(--ink)]"
+              className="text-base font-black text-white"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              تجربة جلب الصور من أي رابط (Live Scraper Tester)
+              {t('tester.title')}
             </h3>
-            <p className="text-xs text-[color:var(--ink)]/70 font-medium">
-              ضع رابط صفحة أي منتج (سلة، زد، شوبيفاي، ووكومرس، أو موقع React) لاستخراج كل صوره فوراً بدون شيت.
-            </p>
+            <p className="text-xs font-medium text-[#A3A3A3]">{t('tester.subtitle')}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
+      <div className="flex flex-col items-stretch gap-2.5 sm:flex-row">
         <div className="relative flex-1">
           <TextInput
             type="url"
             dir="ltr"
-            placeholder="https://example.com/product/123..."
+            placeholder={t('tester.urlPlaceholder')}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className="!text-xs font-mono !py-2.5 placeholder:text-slate-400 placeholder:font-sans"
+            className="!text-xs font-mono !py-2.5 placeholder:font-sans placeholder:text-[#777777]"
           />
         </div>
         <Button
           onClick={handleTest}
           disabled={loading || !url.trim()}
+          variant="coral"
           className="shrink-0 !py-2.5 !px-5 text-xs font-black"
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <span className="inline-block animate-spin">🔄</span>
-              <span>جارٍ الفحص…</span>
+              <Loader2 className="size-4 animate-spin" />
+              <span>{t('tester.running')}</span>
             </span>
           ) : (
-            'جلب الصور 🚀'
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="size-4" />
+              <span>{t('tester.fetch')}</span>
+            </span>
           )}
         </Button>
       </div>
 
       {/* Loading notice */}
       {loading && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-[color:var(--cream)] p-3 text-xs font-bold text-[color:var(--ink)]">
-          <span className="animate-spin text-base">⏳</span>
-          <span>جارٍ فحص الرابط عبر Jina AI واستخراج بيانات المعرض والـ JSON-LD… يرجى الانتظار ثوانٍ.</span>
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-white/10 bg-[#1A1A1A] p-3 text-xs font-bold text-[color:var(--ink)]">
+          <Loader2 className="size-4 animate-spin text-[color:var(--coral-accent)]" />
+          <span>{t('tester.runningNote')}</span>
         </div>
       )}
 
       {/* Error state */}
       {error && !loading && (
-        <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-800">
-          <div className="flex items-center gap-1.5 font-bold mb-1">
-            <span>⚠️</span>
-            <span>تعذّر استخراج الصور:</span>
+        <div className="mt-4 rounded-lg border border-[#FF6B50]/35 bg-[#FF6B50]/12 p-3 text-xs text-[#FF856E]">
+          <div className="mb-1 flex items-center gap-1.5 font-black">
+            <AlertTriangle className="size-4" />
+            <span>{t('tester.errorTitle')}</span>
           </div>
-          <p className="font-mono text-[11px] opacity-90 dir-ltr text-start">{error}</p>
-          <p className="mt-1.5 text-[11px] text-red-700">
-            تأكد أن الرابط يعمل في المتصفح ويشير مباشرة إلى صفحة منتج عامة.
+          <p dir="ltr" className="text-start font-mono text-[11px] text-[#EBEBEB]">
+            {error}
           </p>
+          <p className="mt-1.5 text-[11px] text-[#D4D4D4]">{t('tester.errorHint')}</p>
         </div>
       )}
 
       {/* Results state */}
       {images && !loading && (
-        <div className="mt-4 rounded-xl border border-[color:var(--ink)]/15 bg-[color:var(--cream)]/40 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="mt-4 rounded-xl border border-white/10 bg-[#161616] p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="pill pill--teal font-black text-xs">
-                ✅ تم العثور على {images.length} صورة
+              <span className="pill pill--teal flex items-center gap-1 text-xs font-black">
+                <CheckCircle2 className="size-3.5" />
+                <span>{t('tester.found', { n: images.length })}</span>
               </span>
             </div>
 
@@ -141,33 +156,50 @@ export default function QuickScraperTester() {
               <Button
                 variant="secondary"
                 onClick={copyAll}
-                className="!py-1 !px-3 text-xs font-bold"
+                className="flex items-center gap-1.5 !py-1 !px-3 text-xs font-bold"
               >
-                {copiedAll ? '✓ تم نسخ جميع الروابط!' : '📋 نسخ كل الروابط (مفصولة بفاصلة)'}
+                {copiedAll ? (
+                  <>
+                    <Check className="size-3.5" />
+                    <span>{t('tester.copiedAll')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" />
+                    <span>{t('tester.copyAll')}</span>
+                  </>
+                )}
               </Button>
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {images.map((imgUrl, index) => (
               <div
                 key={`${imgUrl}-${index}`}
-                className="group relative flex flex-col rounded-lg border border-[color:var(--ink)]/20 bg-white p-1.5 shadow-sm transition hover:shadow-md"
+                className="group relative flex flex-col rounded-lg border border-white/10 bg-[#111111] p-1.5 transition hover:border-white/25"
               >
-                <div className="relative aspect-square w-full overflow-hidden rounded-md bg-slate-100">
+                <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#0A0A0A]">
                   <img
                     src={imgUrl}
-                    alt={`صورة ${index + 1}`}
+                    alt={t('tester.imageAlt', { n: index + 1 })}
                     loading="lazy"
                     className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                     onError={(e) => {
                       const target = e.currentTarget
                       target.style.display = 'none'
-                      target.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'text-xs', 'text-slate-400')
-                      if (target.parentElement) target.parentElement.innerText = 'صورة غير متاحة'
+                      target.parentElement?.classList.add(
+                        'flex',
+                        'items-center',
+                        'justify-center',
+                        'text-xs',
+                        'text-[#A3A3A3]',
+                      )
+                      if (target.parentElement)
+                        target.parentElement.innerText = t('tester.imageUnavailable')
                     }}
                   />
-                  <span className="absolute top-1 start-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-bold text-white">
+                  <span className="absolute top-1 start-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-bold text-white">
                     #{index + 1}
                   </span>
                 </div>
@@ -177,17 +209,28 @@ export default function QuickScraperTester() {
                     href={imgUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="truncate text-[10px] text-[color:var(--violet)] hover:underline font-mono"
+                    className="flex items-center gap-0.5 truncate font-mono text-[10px] text-[#c4b5fd] hover:underline"
                     title={imgUrl}
                   >
-                    عرض ↗
+                    <span>{t('tester.view')}</span>
+                    <ExternalLink className="size-2.5" />
                   </a>
                   <button
                     type="button"
                     onClick={() => copyOne(imgUrl, index)}
-                    className="shrink-0 rounded bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 transition"
+                    className="flex shrink-0 items-center gap-1 rounded border border-white/10 bg-[#1A1A1A] px-1.5 py-0.5 text-[10px] font-bold text-[#D4D4D4] transition hover:bg-[#262626] hover:text-white"
                   >
-                    {copiedIndex === index ? '✓ نُسخ' : 'نسخ'}
+                    {copiedIndex === index ? (
+                      <>
+                        <Check className="size-3" />
+                        <span>{t('tester.copied')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-3" />
+                        <span>{t('tester.copy')}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

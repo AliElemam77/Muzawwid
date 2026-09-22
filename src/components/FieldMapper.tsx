@@ -30,31 +30,31 @@ export default function FieldMapper({
 
   return (
     <div
-      className={`hard-2 flex flex-col justify-between rounded-xl p-3.5 transition-all bg-white ${
+      className={`flex flex-col justify-between rounded-xl p-3.5 transition-all bg-[#141414] border ${
         required && !isMapped
-          ? 'border-[color:var(--mustard)] bg-[color:var(--warning-tint)]/40 shadow-xs'
+          ? 'border-[#FF6B50]/40 bg-[#FF6B50]/10 shadow-sm'
           : isMapped
-            ? 'border-[color:var(--ink)] hover:scale-[1.01]'
-            : 'border-[color:var(--ink)]/30 opacity-90 hover:opacity-100'
+            ? 'border-[#12b3a4]/40 hover:border-[#12b3a4]/70'
+            : 'border-white/10 hover:border-white/20'
       }`}
     >
       {/* Header */}
       <div className="mb-2.5 flex items-start justify-between gap-2">
-        <span className="text-sm font-black text-[color:var(--ink)] leading-tight">
+        <span className="text-sm font-black text-white leading-tight">
           {label}
         </span>
         {required ? (
           <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold border ${
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black border ${
               isMapped
-                ? 'bg-[color:var(--teal)]/20 border-[color:var(--teal)] text-[color:var(--ink)]'
-                : 'bg-[color:var(--mustard)] border-[color:var(--ink)] text-[color:var(--ink)]'
+                ? 'bg-[#12b3a4]/20 border-[#12b3a4]/40 text-[#2FE0CF]'
+                : 'bg-[#FF6B50]/20 border-[#FF6B50]/40 text-[#FF856E]'
             }`}
           >
             {isMapped ? '✓ ' + t('field.requiredBadge') : t('field.requiredBadge') + ' *'}
           </span>
         ) : isMapped ? (
-          <span className="shrink-0 rounded-full bg-[color:var(--teal)]/15 border border-[color:var(--teal)]/40 px-1.5 py-0.5 text-[10px] font-bold text-[color:var(--ink)]">
+          <span className="shrink-0 rounded-full bg-[#12b3a4]/20 border border-[#12b3a4]/40 px-2 py-0.5 text-[10px] font-bold text-[#2FE0CF]">
             ✓
           </span>
         ) : null}
@@ -63,14 +63,14 @@ export default function FieldMapper({
       {/* Controls */}
       <div className="space-y-2">
         {/* Source Mode Toggle Buttons */}
-        <div className="flex rounded-lg bg-[color:var(--cream)]/60 p-0.5 text-[11px] font-bold border border-[color:var(--ink)]/15">
+        <div className="flex rounded-lg bg-[#1E1E1E] p-1 text-[11px] font-bold border border-white/10">
           <button
             type="button"
             onClick={() => onChange({ kind: 'column', column: columns[0] ?? '' })}
             className={`flex-1 rounded-md py-1 transition ${
               source.kind === 'column'
-                ? 'bg-white shadow-xs text-[color:var(--ink)] font-black'
-                : 'text-[color:var(--ink)]/60 hover:text-[color:var(--ink)]'
+                ? 'bg-[#FF6B50] shadow-sm text-[#050505] font-black'
+                : 'text-[#D4D4D4] hover:text-white'
             }`}
           >
             {t('field.column')}
@@ -80,8 +80,8 @@ export default function FieldMapper({
             onClick={() => onChange({ kind: 'constant', value: '' })}
             className={`flex-1 rounded-md py-1 transition ${
               source.kind === 'constant'
-                ? 'bg-white shadow-xs text-[color:var(--ink)] font-black'
-                : 'text-[color:var(--ink)]/60 hover:text-[color:var(--ink)]'
+                ? 'bg-[#FF6B50] shadow-sm text-[#050505] font-black'
+                : 'text-[#D4D4D4] hover:text-white'
             }`}
           >
             {t('field.constant')}
@@ -91,8 +91,8 @@ export default function FieldMapper({
             onClick={() => onChange({ kind: 'none' })}
             className={`flex-1 rounded-md py-1 transition ${
               source.kind === 'none'
-                ? 'bg-white shadow-xs text-[color:var(--ink)] font-black'
-                : 'text-[color:var(--ink)]/60 hover:text-[color:var(--ink)]'
+                ? 'bg-[#FF6B50] shadow-sm text-[#050505] font-black'
+                : 'text-[#D4D4D4] hover:text-white'
             }`}
           >
             {t('field.none')}
@@ -115,13 +115,13 @@ export default function FieldMapper({
             </Select>
             {sample ? (
               <p
-                className="truncate rounded-md bg-[color:var(--cream)]/60 px-2 py-0.5 text-[10px] font-medium text-[color:var(--ink)]/75 border border-black/5"
+                className="truncate rounded-md bg-[#1A1A1A] px-2 py-0.5 text-[10px] font-medium text-[#D4D4D4] border border-white/5"
                 title={sample}
               >
                 {t('field.sample', { v: sample.length > 35 ? sample.slice(0, 35) + '…' : sample })}
               </p>
             ) : (
-              <p className="text-[10px] text-[color:var(--ink)]/40 px-1">—</p>
+              <p className="text-[10px] text-[#888888] px-1">—</p>
             )}
           </div>
         )}
@@ -136,7 +136,7 @@ export default function FieldMapper({
         )}
 
         {source.kind === 'none' && (
-          <div className="flex h-14 items-center justify-center rounded-lg border border-dashed border-[color:var(--ink)]/15 text-[11px] font-medium text-[color:var(--ink)]/40">
+          <div className="flex h-14 items-center justify-center rounded-lg border border-dashed border-white/10 text-[11px] font-medium text-[#888888]">
             {t('qv.none')}
           </div>
         )}

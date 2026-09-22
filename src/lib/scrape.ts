@@ -38,14 +38,33 @@ function attr(tag: string, name: string): string {
   return m ? m[1] : ''
 }
 
-/** `&amp;` → `&`, and protocol-relative `//host/…` → `https://host/…`. */
+/** Strip CDN resizing suffixes (e.g. `_375x375_crop_center`, `_100x100`) and width params to recover the full-res original. */
+function cleanCdnImageUrl(url: string): string {
+  return url
+    .replace(/_(?:\d+x\d+(?:_crop_[a-z]+)?|\d+x|x\d+|small|thumb|compact|pico|icon)(?=\.[a-z0-9]+)/gi, '')
+    .replace(/([?&])width=\d+(&|$)/gi, '$1')
+    .replace(/[?&]$/, '')
+}
+
+/** `&amp;` → `&`, unescape `\/` → `/`, and protocol-relative `//host/…` → `https://host/…`. */
 function normalizeUrl(raw: string): string {
-  const v = raw
+  let v = raw
     .trim()
     .replace(/&amp;/gi, '&')
     .replace(/&quot;/gi, '"')
     .replace(/&#0?39;/g, "'")
-  return v.startsWith('//') ? `https:${v}` : v
+    .replace(/\\\//g, '/')
+  if (v.startsWith('//')) v = `https:${v}`
+  return cleanCdnImageUrl(v)
+}
+
+function dedupeKey(url: string): string {
+  try {
+    const u = new URL(url)
+    return `${u.hostname}${u.pathname}`.toLowerCase()
+  } catch {
+    return url.replace(/[?#].*$/, '').toLowerCase()
+  }
 }
 
 function dedupe(urls: string[]): string[] {
@@ -53,9 +72,10 @@ function dedupe(urls: string[]): string[] {
   const out: string[] = []
   for (const raw of urls) {
     const url = normalizeUrl(raw)
-    if (!url || PLACEHOLDER_RE.test(url) || !/^https?:\/\//i.test(url)) continue
-    if (seen.has(url)) continue
-    seen.add(url)
+    if (!url || PLACEHOLDER_RE.test(url) || !/^https?:\/\//i.test(url) || isJunkImage(url)) continue
+    const key = dedupeKey(url)
+    if (seen.has(key)) continue
+    seen.add(key)
     out.push(url)
   }
   return out
@@ -86,13 +106,24 @@ function lightboxUrls(block: string): string[] {
 }
 
 /** Common noise terms in image URLs or tags that should never be in a product gallery */
-const NOISE_RE =
-  /(logo|icon|badge|avatar|payment|banner|flag|visa|mada|mastercard|apple[-_]?pay|tabby|tamara|stc[-_]?pay|placeholder|spinner|loader|empty)/i
-
 function isJunkImage(url: string): boolean {
-  if (NOISE_RE.test(url)) return true
-  if (/\.svg(\?|#|$)/i.test(url)) return true
   if (PLACEHOLDER_RE.test(url)) return true
+  if (/\.svg(\?|#|$)/i.test(url)) return true
+
+  // Payment gateways & checkout badges (never product photos)
+  if (/(?:apple[-_]?pay|tabby|tamara|stc[-_]?pay|mastercard|visa|mada)(?:\.|\b|_|-)/i.test(url)) return true
+  if (/(?:spinner|loader)\.(?:gif|png|webp)/i.test(url)) return true
+
+  // Site logos & user avatars
+  if (/(?:site|store|header|footer|brand)[-_.]logo/i.test(url)) return true
+  if (/avatar[-_.]/i.test(url)) return true
+
+  // If the image is explicitly inside a store's product upload directory, trust it
+  if (/\/(?:products|files|uploads)\//i.test(url)) return false
+
+  // For generic DOM URLs outside product directories, filter out standalone logos, banners, icons
+  if (/(?:^|\/)[-_.]*(?:logo|icon|badge|banner)[-_.]*(?:\.|\/|$)/i.test(url)) return true
+
   return false
 }
 
@@ -148,13 +179,25 @@ function findProductImagesInJson(obj: unknown, urls: string[]): void {
 
   const isProduct =
     typeof type === 'string'
-      ? type.toLowerCase() === 'product'
+      ? /^(?:Product|ProductGroup|ProductModel)$/i.test(type)
       : Array.isArray(type)
-        ? type.some((t) => typeof t === 'string' && t.toLowerCase() === 'product')
+        ? type.some((t) => typeof t === 'string' && /^(?:Product|ProductGroup|ProductModel)$/i.test(t))
         : false
 
   if (isProduct && record.image) {
     collectJsonImages(record.image, urls)
+  }
+
+  if (Array.isArray(record.hasVariant)) {
+    for (const item of record.hasVariant) {
+      findProductImagesInJson(item, urls)
+    }
+  }
+
+  if (Array.isArray(record.variants)) {
+    for (const item of record.variants) {
+      findProductImagesInJson(item, urls)
+    }
   }
 
   if (Array.isArray(record['@graph'])) {
@@ -210,6 +253,152 @@ function extractJsonLdImages(html: string): string[] {
       }
     }
   }
+  return dedupe(urls)
+}
+
+function collectShopifyImages(obj: unknown, urls: string[], depth = 0): void {
+  if (depth > 6 || !obj || typeof obj !== 'object') return
+  if (Array.isArray(obj)) {
+    for (const item of obj) collectShopifyImages(item, urls, depth + 1)
+    return
+  }
+
+  const record = obj as Record<string, unknown>
+
+  // 1. Direct images array (Shopify standard: ["//cdn...", ...])
+  if (Array.isArray(record.images)) {
+    for (const img of record.images) {
+      const u =
+        typeof img === 'string'
+          ? img
+          : (img as Record<string, unknown>)?.src || (img as Record<string, unknown>)?.url
+      if (typeof u === 'string' && !isJunkImage(u)) urls.push(u)
+    }
+  }
+
+  // 2. Shopify 2.0 media array
+  if (Array.isArray(record.media)) {
+    for (const m of record.media) {
+      if (!m || typeof m !== 'object') continue
+      const med = m as Record<string, unknown>
+      const src =
+        med.src ||
+        (med.preview_image && typeof med.preview_image === 'object'
+          ? (med.preview_image as Record<string, unknown>).src
+          : null)
+      if (typeof src === 'string' && !isJunkImage(src)) urls.push(src)
+    }
+  }
+
+  // 3. Nested product object (e.g. meta.product)
+  if (record.product && typeof record.product === 'object') {
+    collectShopifyImages(record.product, urls, depth + 1)
+  }
+}
+
+/**
+ * Extract full product gallery images from Shopify stores.
+ * Works with Shopify themes via:
+ * 1. Standard `<script type="application/json">` or inline `<script>` product payloads
+ * 2. Attribute-embedded product JSON (e.g. Alpine.js `x-data="Product({ product: ... })"`, Vue, Stencil)
+ * 3. DOM product thumbnail links & gallery slides
+ */
+function extractShopifyImages(html: string): string[] {
+  const urls: string[] = []
+
+  // 1. Parse JSON script tags (e.g. data-product-json or ProductJson)
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+  for (let match = scriptRegex.exec(html); match; match = scriptRegex.exec(html)) {
+    const content = match[1]?.trim()
+    if (!content || (!content.includes('"images"') && !content.includes('"media"'))) continue
+    try {
+      const data = JSON.parse(content)
+      collectShopifyImages(data, urls)
+    } catch {
+      /* not pure JSON, will be caught by regex scanner below */
+    }
+  }
+
+  // 2. Scan script tags & attributes for Shopify product payloads ("images": [ ... ] or &quot;images&quot;: [ ... ])
+  const imgArrayRegex = /(?:"|&quot;)images(?:"|&quot;)\s*:\s*(\[[^\]]+\])/g
+  let m
+  while ((m = imgArrayRegex.exec(html)) !== null) {
+    try {
+      const decodedJson = m[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/\\\//g, '/')
+      const arr = JSON.parse(decodedJson)
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          const u =
+            typeof item === 'string'
+              ? item
+              : (item as Record<string, unknown>)?.src || (item as Record<string, unknown>)?.url
+          if (typeof u === 'string' && !isJunkImage(u)) urls.push(u)
+        }
+      }
+    } catch {
+      const urlMatches = m[1].match(/(?:https?:)?\/\/[^"'\s\\]+/gi) || []
+      for (const u of urlMatches) {
+        if (!isJunkImage(u)) urls.push(u)
+      }
+    }
+  }
+
+  // Scan for "media": [ ... ] or &quot;media&quot;: [ ... ]
+  const mediaArrayRegex = /(?:"|&quot;)media(?:"|&quot;)\s*:\s*(\[[^\]]+\])/g
+  while ((m = mediaArrayRegex.exec(html)) !== null) {
+    try {
+      const decodedJson = m[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/\\\//g, '/')
+      const arr = JSON.parse(decodedJson)
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          const med = item as Record<string, unknown>
+          const src =
+            med?.src ||
+            (med?.preview_image && typeof med.preview_image === 'object'
+              ? (med.preview_image as Record<string, unknown>).src
+              : null)
+          if (typeof src === 'string' && !isJunkImage(src)) urls.push(src)
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 2. DOM thumbnail anchors (e.g. <a class="media-thumbnail" href="//cdn.shopify.com/...">)
+  const linkRegex =
+    /<a\b[^>]*\bhref\s*=\s*["']([^"']+\.(?:jpe?g|png|webp|avif)(?:\?[^"']*)?)["'][^>]*>/gi
+  let lm
+  while ((lm = linkRegex.exec(html)) !== null) {
+    const tag = lm[0]
+    const href = lm[1]
+    if (
+      /media-thumbnail|product-thumbnail|gallery|lightbox|photo|slide/i.test(tag) ||
+      /\/cdn\/shop\/(?:products|files)\//i.test(href)
+    ) {
+      if (!isJunkImage(href)) urls.push(href)
+    }
+  }
+
+  // 3. DOM product images / slides (e.g. product-images__slide, product-thumbnail-list-item)
+  const domSlideRegex =
+    /<(?:div|li)\b[^>]*class\s*=\s*["'][^"']*\b(product-thumbnail|media-thumbnail|product-images__slide|product__media-item|product-gallery__thumbnail)\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:div|li)>/gi
+  for (let match = domSlideRegex.exec(html); match; match = domSlideRegex.exec(html)) {
+    const block = match[2]
+    for (const src of imgUrls(block)) {
+      if (!isJunkImage(src)) urls.push(src)
+    }
+    for (const link of lightboxUrls(block)) {
+      if (!isJunkImage(link)) urls.push(link)
+    }
+  }
+
   return dedupe(urls)
 }
 
@@ -348,9 +537,40 @@ function extractNextDataImages(html: string): string[] {
 function extractDomGalleryImages(html: string): string[] {
   const urls: string[] = []
 
+  // 1. Dedicated thumbnail list items and slides
+  const thumbSlideRegex =
+    /<(?:li|div)\b[^>]*class\s*=\s*["'][^"']*\b(product-thumbnail|media-thumbnail|product-gallery__thumbnail|product-gallery-item|product-images__slide|product__media-item|splide__slide|swiper-slide)\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:li|div)>/gi
+  let sm
+  while ((sm = thumbSlideRegex.exec(html)) !== null) {
+    const block = sm[2]
+    for (const src of imgUrls(block)) {
+      if (!isJunkImage(src)) urls.push(src)
+    }
+    for (const link of lightboxUrls(block)) {
+      if (!isJunkImage(link)) urls.push(link)
+    }
+  }
+
+  // 2. Direct thumbnail anchor links
+  const linkRegex =
+    /<a\b[^>]*\bhref\s*=\s*["']([^"']+\.(?:jpe?g|png|webp|avif)(?:\?[^"']*)?)["'][^>]*>/gi
+  let lm
+  while ((lm = linkRegex.exec(html)) !== null) {
+    const tag = lm[0]
+    const href = lm[1]
+    if (
+      /media-thumbnail|product-thumbnail|gallery|lightbox|photo|slide/i.test(tag) ||
+      /\bdata-fslightbox\b/i.test(tag) ||
+      /\bdata-type\s*=\s*["']image["']/i.test(tag) ||
+      /\/(?:products|files|uploads)\//i.test(href)
+    ) {
+      if (!isJunkImage(href)) urls.push(href)
+    }
+  }
+
+  // 3. Containers with standard gallery classnames
   const galleryRegex =
     /<(?:div|section|ul)\b[^>]*class\s*=\s*["'][^"']*\b(product[_-]gallery|product[_-]images|product[_-]media|product[_-]carousel|woocommerce-product-gallery|image-gallery)\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:div|section|ul)>/gi
-
   for (let m = galleryRegex.exec(html); m; m = galleryRegex.exec(html)) {
     const block = m[2]
     for (const link of lightboxUrls(block)) {
@@ -361,6 +581,7 @@ function extractDomGalleryImages(html: string): string[] {
     }
   }
 
+  // 4. Schema itemprop="image"
   const itempropRegex = /<(?:img|a)\b[^>]*itemprop\s*=\s*["']image["'][^>]*>/gi
   for (let m = itempropRegex.exec(html); m; m = itempropRegex.exec(html)) {
     const tag = m[0]
@@ -390,6 +611,76 @@ function extractOpenGraphImages(html: string): string[] {
   return dedupe(urls)
 }
 
+/**
+ * Extract WooCommerce product images, especially variable products where images
+ * are stored per-variation in `data-product_variations` or swatch attributes.
+ */
+function extractWooCommerceImages(html: string): string[] {
+  const urls: string[] = []
+
+  // 1. data-product_variations attribute (WooCommerce Variable Products)
+  const variationsRegex =
+    /data-product_variations\s*=\s*(?:"([^"]*)"|'([^']*)')/gi
+  let match
+  while ((match = variationsRegex.exec(html)) !== null) {
+    const raw = (match[1] ?? match[2] ?? '').trim()
+    if (!raw) continue
+    try {
+      const decoded = raw
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&#0?39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+      const data = JSON.parse(decoded)
+      if (Array.isArray(data)) {
+        for (const v of data) {
+          if (!v || typeof v !== 'object') continue
+          // Main variation image (prefer full_src for unconstrained original resolution)
+          const img = v.image
+          if (img && typeof img === 'object') {
+            const src = img.full_src || img.url || img.src || img.large_image
+            if (typeof src === 'string' && !isJunkImage(src)) urls.push(src)
+          } else if (typeof v.image_src === 'string' && !isJunkImage(v.image_src)) {
+            urls.push(v.image_src)
+          }
+
+          // Variation gallery images (WooCommerce Additional Variation Images plugins)
+          const gallery = v.gallery_images || v.variation_gallery_images || v.additional_images
+          if (Array.isArray(gallery)) {
+            for (const g of gallery) {
+              const gSrc =
+                typeof g === 'string'
+                  ? g
+                  : g?.full_src || g?.url || g?.src || g?.large_image
+              if (typeof gSrc === 'string' && !isJunkImage(gSrc)) urls.push(gSrc)
+            }
+          }
+        }
+      }
+    } catch {
+      // Fallback: extract image URLs directly from the variations attribute
+      const fullSrcMatches = raw.match(/"(?:full_src|url|large_image)":\s*\\?"([^"\\]+)/g)
+      if (fullSrcMatches) {
+        for (const m of fullSrcMatches) {
+          const val = m.replace(/^"(?:full_src|url|large_image)":\s*\\?"/, '')
+          if (val && !isJunkImage(val)) urls.push(val)
+        }
+      }
+    }
+  }
+
+  // 2. Swatches and variation option elements: data-image, data-large_image
+  const swatchRegex =
+    /<(?:img|span|div|a|li)\b[^>]*\b(?:data-image|data-large_image|data-variation_image|data-original-image)\s*=\s*["']([^"']+)["'][^>]*>/gi
+  while ((match = swatchRegex.exec(html)) !== null) {
+    const src = match[1]?.trim()
+    if (src && /^https?:\/\//i.test(src) && !isJunkImage(src)) urls.push(src)
+  }
+
+  return dedupe(urls)
+}
+
 /** Check that a response really is a product page with extractable images. */
 export function hasGallery(html: string): boolean {
   return extractImageUrls(html).length > 0
@@ -399,7 +690,7 @@ export function hasGallery(html: string): boolean {
  * Extract all product gallery images from any storefront page.
  * Chooses the source that provides the most complete product gallery:
  * 1. Salla slider (when present on Salla stores)
- * 2. Compares JSON-LD, Next.js / React RSC data, and DOM gallery to pick the richest set
+ * 2. Compares JSON-LD, Shopify, Next.js / React RSC data, WooCommerce variations, and DOM gallery
  * 3. OpenGraph fallback (primary product photo)
  */
 export function extractImageUrls(html: string): string[] {
@@ -407,11 +698,17 @@ export function extractImageUrls(html: string): string[] {
   if (salla.length > 0) return salla
 
   const jsonLd = extractJsonLdImages(html)
+  const shopify = extractShopifyImages(html)
   const nextData = extractNextDataImages(html)
   const domGallery = extractDomGalleryImages(html)
+  const woo = extractWooCommerceImages(html)
+
+  // In WooCommerce and modular stores, variation images complement the featured gallery
+  const domWithWoo = dedupe([...domGallery, ...woo])
+  const jsonWithWoo = dedupe([...jsonLd, ...woo])
 
   // Pick the richest gallery source
-  const candidates = [jsonLd, nextData, domGallery]
+  const candidates = [jsonLd, shopify, nextData, domGallery, woo, domWithWoo, jsonWithWoo]
   candidates.sort((a, b) => b.length - a.length)
   const best = candidates[0]
   if (best && best.length > 0) return best
@@ -516,10 +813,13 @@ class Pacer {
   private stamps: number[] = []
   private queue: Promise<void> = Promise.resolve()
 
-  constructor(
-    private readonly limit: number,
-    private readonly windowMs: number,
-  ) {}
+  private readonly limit: number
+  private readonly windowMs: number
+
+  constructor(limit: number, windowMs: number) {
+    this.limit = limit
+    this.windowMs = windowMs
+  }
 
   /** Resolves once this request is allowed to go out. */
   take(signal?: AbortSignal): Promise<void> {

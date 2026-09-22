@@ -8,4 +8,6 @@ export const LINKS = {
   wepix: 'https://wepix.omar-khaled-wk.workers.dev/',
   /** The uploader screen itself — embedded in an iframe inside the images editor. */
   wepixEmbed: 'https://wepix.omar-khaled-wk.workers.dev/wepix',
+  /** Project GitHub */
+  github: 'https://github.com/AliElemam77/Muzawwid',
 } as const

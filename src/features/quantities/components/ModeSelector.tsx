@@ -1,3 +1,5 @@
+import type { ComponentType } from 'react'
+import { Package, Layers } from 'lucide-react'
 import { useI18n } from '../../../lib/i18n'
 
 export type Mode = 'products' | 'quantities'
@@ -12,20 +14,29 @@ export type Mode = 'products' | 'quantities'
 export default function ModeSelector({ onPick }: { onPick: (mode: Mode) => void }) {
   const { t } = useI18n()
 
-  const cards: { mode: Mode; icon: string; titleKey: string; bodyKey: string; tone: string }[] = [
+  const cards: {
+    mode: Mode
+    Icon: ComponentType<{ className?: string }>
+    titleKey: string
+    bodyKey: string
+    tone: string
+    iconColor: string
+  }[] = [
     {
       mode: 'products',
-      icon: '📦',
+      Icon: Package,
       titleKey: 'mode.products.title',
       bodyKey: 'mode.products.body',
       tone: 'var(--violet)',
+      iconColor: 'var(--on-violet)',
     },
     {
       mode: 'quantities',
-      icon: '🔢',
+      Icon: Layers,
       titleKey: 'mode.quantities.title',
       bodyKey: 'mode.quantities.body',
       tone: 'var(--teal)',
+      iconColor: 'var(--on-teal)',
     },
   ]
 
@@ -47,15 +58,15 @@ export default function ModeSelector({ onPick }: { onPick: (mode: Mode) => void 
             key={card.mode}
             type="button"
             onClick={() => onPick(card.mode)}
-            className="card lift p-5 text-start transition"
+            className="card lift p-5 text-start transition group"
             style={{ borderColor: 'var(--ink)' }}
           >
             <span
               aria-hidden
-              className="mb-3 flex h-12 w-12 items-center justify-center text-2xl hard-2"
-              style={{ background: card.tone, borderRadius: 'var(--r-card)' }}
+              className="mb-3 flex h-12 w-12 items-center justify-center hard-2 transition-transform group-hover:scale-105"
+              style={{ background: card.tone, borderRadius: 'var(--r-card)', color: card.iconColor }}
             >
-              {card.icon}
+              <card.Icon className="size-6" />
             </span>
             <span
               className="block font-extrabold text-[color:var(--ink)]"

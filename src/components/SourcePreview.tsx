@@ -39,16 +39,16 @@ export default function SourcePreview({
       </div>
       {workbook.sheets.length > 1 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-slate-600">{t('source.pick')}</span>
+          <span className="text-xs font-bold text-[#D4D4D4]">{t('source.pick')}</span>
           {workbook.sheets.map((s) => (
             <button
               key={s.name}
               onClick={() => onPickSheet(s.name)}
               className={
-                'rounded-lg px-3 py-1.5 text-sm font-semibold transition ' +
+                'rounded-lg px-3 py-1.5 text-xs font-bold transition ' +
                 (s.name === sheet.name
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200')
+                  ? 'bg-[#FF6B50] text-[#050505]'
+                  : 'bg-[#181818] border border-white/10 text-[#D4D4D4] hover:text-white hover:bg-white/5')
               }
             >
               {s.name}
@@ -57,7 +57,7 @@ export default function SourcePreview({
         </div>
       )}
 
-      <p className="mb-2 text-sm text-slate-500">
+      <p className="mb-2.5 text-xs font-bold text-[#A3A3A3]">
         {t('source.stats', {
           cols: sheet.headers.length,
           rows: sheet.rows.length,
@@ -65,14 +65,14 @@ export default function SourcePreview({
         })}
       </p>
 
-      <div className="scroll-thin overflow-x-auto rounded-xl border border-slate-200">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-slate-50">
+      <div className="scroll-thin overflow-x-auto rounded-xl border border-white/10 bg-[#111111]">
+        <table className="min-w-full border-collapse text-xs">
+          <thead className="bg-[#161616] border-b border-white/10">
             <tr>
               {sheet.headers.map((h) => (
                 <th
                   key={h}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700"
+                  className="whitespace-nowrap px-3.5 py-2.5 text-start font-black text-[#FFFFFF]"
                 >
                   {h}
                 </th>
@@ -81,13 +81,13 @@ export default function SourcePreview({
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="odd:bg-white even:bg-slate-50/50">
+              <tr key={i} className="border-b border-white/5 odd:bg-[#111111] even:bg-[#151515] hover:bg-white/5 transition-colors">
                 {sheet.headers.map((h) => {
                   const shown = displayCell(r[h] ?? '', linkPlaceholder)
                   return (
                     <td
                       key={h}
-                      className="max-w-[16rem] truncate whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600"
+                      className="max-w-[16rem] truncate whitespace-nowrap px-3.5 py-2 text-[#D4D4D4] font-medium"
                       title={shown}
                     >
                       {shown}

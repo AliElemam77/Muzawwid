@@ -261,6 +261,143 @@ describe('extractImageUrls', () => {
       'https://cdn.test/files/img-6',
     ])
   })
+
+  it('extracts images from Shopify data-product-json script and absolutises protocol-relative URLs', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Armchair",
+        "image": "https://dstoreegypt.com/cdn/shop/files/main.jpg"
+      }
+      </script>
+      <script type="application/json" data-product-json="" class="productJson">
+      {
+        "id": 256212,
+        "title": "Armchair",
+        "images": [
+          "//dstoreegypt.com/cdn/shop/files/chair-0.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-1.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-2.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-3.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-4.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-5.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-6.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-7.jpg"
+        ]
+      }
+      </script>
+    </head><body><h1>Armchair</h1></body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://dstoreegypt.com/cdn/shop/files/chair-0.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-1.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-2.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-3.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-4.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-5.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-6.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-7.jpg',
+    ])
+  })
+
+  it('extracts variation images from WooCommerce data-product_variations (e.g. saudihomeco)', () => {
+    const html = `<!DOCTYPE html><html><body>
+      <div class="woocommerce-product-gallery">
+        <img src="https://store.test/wp-content/uploads/featured.png" class="wp-post-image">
+      </div>
+      <form class="variations_form cart" data-product_variations='[
+        {"variation_id":101,"image":{"full_src":"https://store.test/wp-content/uploads/red.png","url":"https://store.test/wp-content/uploads/red-600x338.png"}},
+        {"variation_id":102,"image":{"full_src":"https://store.test/wp-content/uploads/blue.png","url":"https://store.test/wp-content/uploads/blue-600x338.png"}},
+        {"variation_id":103,"image":{"full_src":"https://store.test/wp-content/uploads/green.png","url":"https://store.test/wp-content/uploads/green-600x338.png"}}
+      ]'>
+      </form>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/wp-content/uploads/featured.png',
+      'https://store.test/wp-content/uploads/red.png',
+      'https://store.test/wp-content/uploads/blue.png',
+      'https://store.test/wp-content/uploads/green.png',
+    ])
+  })
+
+  it('de-duplicates different responsive sizes and extracts from inline Shopify script tags (e.g. Sodashi)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <!-- Two JSON-LD tags with different widths of the same photo -->
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Nourishing Repair Treatment",
+        "image": ["https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632&width=1500"]
+      }
+      </script>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Nourishing Repair Treatment",
+        "image": ["https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632&width=480"]
+      }
+      </script>
+    </head><body>
+      <script id="subscription-helper">
+        var product = {
+          "images": [
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo1.webp?v=1773125632",
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo2.webp?v=1773125632",
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo3.jpg?v=1773125632"
+          ]
+        };
+      </script>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632',
+      'https://sodashi.com.au/cdn/shop/files/photo2.webp?v=1773125632',
+      'https://sodashi.com.au/cdn/shop/files/photo3.jpg?v=1773125632',
+    ])
+  })
+
+  it('extracts images from Shopify custom/Alpine themes with HTML-encoded payloads and DOM thumbnail links (e.g. Picky Bars)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <!-- JSON-LD ProductGroup which only carries single variant rendering -->
+      <script type="application/ld+json">
+      {
+        "@type": "ProductGroup",
+        "name": "Ah, Fudge Nuts!",
+        "hasVariant": [
+          {
+            "@type": "Product",
+            "name": "Single Bar",
+            "image": "https://pickybars.com/cdn/shop/products/bar-render.png?v=1623091649"
+          }
+        ]
+      }
+      </script>
+    </head><body>
+      <!-- Alpine.js / HTML-encoded product payload in x-data attribute -->
+      <data-island x-data="Product({ product: {&quot;id&quot;:57777881093,&quot;images&quot;:[&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/bar-render.png?v=1623091649&quot;,&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/afn-wrapper-icons.jpg?v=1623091649&quot;,&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/afn-nutrition.jpg?v=1623091649&quot;]} })">
+      </data-island>
+      <!-- DOM thumbnail list items -->
+      <div class="product-media">
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/bar-render.png?v=1623091649"></a>
+        </li>
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/afn-wrapper-icons.jpg?v=1623091649"></a>
+        </li>
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/afn-nutrition.jpg?v=1623091649"></a>
+        </li>
+      </div>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://pickybars.com/cdn/shop/products/bar-render.png?v=1623091649',
+      'https://pickybars.com/cdn/shop/products/afn-wrapper-icons.jpg?v=1623091649',
+      'https://pickybars.com/cdn/shop/products/afn-nutrition.jpg?v=1623091649',
+    ])
+  })
 })
 
 // --- Reading the sheet ------------------------------------------------------

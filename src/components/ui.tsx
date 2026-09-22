@@ -11,9 +11,10 @@ import type {
  *  centrally by --sh-dir, so callers never think about direction. */
 
 const controlBase =
-  'w-full bg-white px-3 py-2 text-[color:var(--ink)] outline-none ' +
-  'hard-2 disabled:cursor-not-allowed disabled:bg-[color:var(--dead)] ' +
-  'disabled:text-[color:var(--dead-ink)] disabled:border-transparent disabled:shadow-none'
+  'w-full bg-[#1A1A1A] px-3.5 py-2.5 text-[color:var(--ink)] outline-none ' +
+  'border border-white/10 rounded-xl transition-all focus:border-[color:var(--coral-accent)] ' +
+  'disabled:cursor-not-allowed disabled:bg-[color:var(--dead)] ' +
+  'disabled:text-[color:var(--dead-ink)] disabled:border-transparent'
 
 const controlStyle = { borderRadius: 'var(--r-input)', fontSize: 'var(--fs-body)' }
 
@@ -72,7 +73,7 @@ export function Button({
   className = '',
   ...rest
 }: {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'coral'
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button className={`btn btn--${variant} ${className}`} {...rest}>

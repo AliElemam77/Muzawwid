@@ -149,45 +149,49 @@ export default function OutputPreview({
     <div className="space-y-4">
       {/* 1. Summary Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="hard-2 rounded-xl bg-white p-3 text-start">
-          <span className="text-xs font-bold text-[color:var(--ink)]/60">
+        <div className="rounded-xl bg-[#141414] border border-white/10 p-3.5 text-start">
+          <span className="text-xs font-bold text-[#A3A3A3]">
             {t('preview.statProducts')}
           </span>
-          <p className="mt-0.5 text-xl font-black text-[color:var(--ink)]">
+          <p className="mt-0.5 text-xl font-black text-white">
             {productCount}
           </p>
         </div>
-        <div className="hard-2 rounded-xl bg-white p-3 text-start">
-          <span className="text-xs font-bold text-[color:var(--ink)]/60">
+        <div className="rounded-xl bg-[#141414] border border-white/10 p-3.5 text-start">
+          <span className="text-xs font-bold text-[#A3A3A3]">
             {t('preview.statOptions')}
           </span>
-          <p className="mt-0.5 text-xl font-black text-[color:var(--ink)]">
+          <p className="mt-0.5 text-xl font-black text-white">
             {optionCount}
           </p>
         </div>
         <div
           onClick={() => setFilterMode(missingImagesCount > 0 ? 'noImages' : 'all')}
-          className={`hard-2 lift cursor-pointer rounded-xl p-3 text-start transition ${
-            missingImagesCount > 0 ? 'bg-[color:var(--warning-tint)]' : 'bg-white'
+          className={`cursor-pointer rounded-xl p-3.5 text-start transition border ${
+            missingImagesCount > 0
+              ? 'border-[#FF6B50]/40 bg-[#FF6B50]/10 text-[#FF856E]'
+              : 'border-white/10 bg-[#141414] text-white hover:border-white/20'
           }`}
         >
-          <span className="text-xs font-bold text-[color:var(--ink)]/60">
+          <span className="text-xs font-bold text-[#A3A3A3]">
             {t('preview.statNoImages')}
           </span>
-          <p className="mt-0.5 text-xl font-black text-[color:var(--ink)]">
+          <p className="mt-0.5 text-xl font-black text-white">
             {missingImagesCount}
           </p>
         </div>
         <div
           onClick={() => setFilterMode(missingCategoryCount > 0 ? 'noCategory' : 'all')}
-          className={`hard-2 lift cursor-pointer rounded-xl p-3 text-start transition ${
-            missingCategoryCount > 0 ? 'bg-[color:var(--warning-tint)]' : 'bg-white'
+          className={`cursor-pointer rounded-xl p-3.5 text-start transition border ${
+            missingCategoryCount > 0
+              ? 'border-[#FF6B50]/40 bg-[#FF6B50]/10 text-[#FF856E]'
+              : 'border-white/10 bg-[#141414] text-white hover:border-white/20'
           }`}
         >
-          <span className="text-xs font-bold text-[color:var(--ink)]/60">
+          <span className="text-xs font-bold text-[#A3A3A3]">
             {t('preview.statNoCategory')}
           </span>
-          <p className="mt-0.5 text-xl font-black text-[color:var(--ink)]">
+          <p className="mt-0.5 text-xl font-black text-white">
             {missingCategoryCount}
           </p>
         </div>
@@ -195,9 +199,9 @@ export default function OutputPreview({
 
       {/* 2. Bulk Category Tool */}
       {productCount > 0 && (
-        <div className="hard-2 flex flex-wrap items-end gap-3 rounded-xl bg-white p-3.5">
+        <div className="flex flex-wrap items-end gap-3 rounded-xl bg-[#141414] border border-white/10 p-4">
           <div className="w-64">
-            <label className="mb-1 block text-xs font-bold text-[color:var(--ink)]">
+            <label className="mb-1 block text-xs font-bold text-white">
               {t('preview.applyAllLabel')}
             </label>
             <CategoryPicker
@@ -206,7 +210,7 @@ export default function OutputPreview({
               onChange={setBulkCategory}
             />
           </div>
-          <Button onClick={handleApplyBulkCategory} disabled={!bulkCategory}>
+          <Button onClick={handleApplyBulkCategory} disabled={!bulkCategory} variant="coral">
             {t('preview.applyAllBtn')}
           </Button>
         </div>
@@ -233,17 +237,12 @@ export default function OutputPreview({
                   setFilterMode(tab.key)
                   setPage(1)
                 }}
-                className={`hard-2 lift flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition ${
-                  active
-                    ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-                    : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                className={`step-chip step-chip--clickable !py-1 text-xs ${
+                  active ? 'step-chip--current' : ''
                 }`}
-                style={{ borderRadius: 'var(--r-pill)' }}
               >
                 <span>{tab.label}</span>
-                <span className="rounded-full bg-black/10 px-1 text-[10px]">
-                  {tab.count}
-                </span>
+                <span className="step-badge font-mono !text-[10px]">{tab.count}</span>
               </button>
             )
           })}
@@ -277,40 +276,40 @@ export default function OutputPreview({
 
       {/* 4. Restores banner if rows excluded */}
       {(excludedCount > 0 || removedOptionCount > 0) && (
-        <div className="hard-2 flex items-center justify-between gap-3 rounded-xl bg-[color:var(--mustard)]/20 p-3 text-xs font-bold text-[color:var(--ink)]">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFB020]/15 border border-[#FFB020]/30 p-3 text-xs font-bold text-[#FFD166]">
           <span>
             {excludedCount > 0 && t('preview.deletedInfo', { n: excludedCount })}
             {excludedCount > 0 && removedOptionCount > 0 && ' '}
             {removedOptionCount > 0 && t('preview.optRemovedInfo', { n: removedOptionCount })}
           </span>
-          <Button variant="ghost" onClick={handleRestore} className="!py-1 !px-2.5 text-xs">
+          <Button variant="ghost" onClick={handleRestore} className="!py-1 !px-2.5 text-xs text-white">
             {t('preview.restoreAll')}
           </Button>
         </div>
       )}
 
       {/* 5. Main Preview Table */}
-      <div className="scroll-thin overflow-x-auto rounded-xl border-2 border-[color:var(--ink)] bg-white shadow-xs">
+      <div className="scroll-thin overflow-x-auto rounded-xl border border-white/10 bg-[#111111] shadow-xl">
         <table className="min-w-full border-collapse text-xs">
-          <thead className="bg-[color:var(--cream)] border-b-2 border-[color:var(--ink)]">
+          <thead className="bg-[#181818] border-b border-white/10">
             <tr>
-              <th className="px-3 py-2.5 text-start font-black text-[color:var(--ink)]">
+              <th className="px-3 py-2.5 text-start font-black text-white">
                 {t('preview.action')}
               </th>
               {PREVIEW_COLS.map((c) => (
                 <th
                   key={c.header}
-                  className="whitespace-nowrap px-3 py-2.5 text-start font-black text-[color:var(--ink)]"
+                  className="whitespace-nowrap px-3 py-2.5 text-start font-black text-white"
                 >
                   {t(c.labelKey)}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-black/10">
+          <tbody className="divide-y divide-white/5">
             {currentIndices.length === 0 ? (
               <tr>
-                <td colSpan={PREVIEW_COLS.length + 1} className="py-8 text-center text-sm font-bold text-[color:var(--ink)]/50">
+                <td colSpan={PREVIEW_COLS.length + 1} className="py-8 text-center text-sm font-bold text-white/40">
                   {t('qv.empty')}
                 </td>
               </tr>
@@ -323,19 +322,19 @@ export default function OutputPreview({
 
                 return (
                   <Fragment key={i}>
-                    <tr className={isProduct ? 'bg-white hover:bg-black/[0.01]' : 'bg-[color:var(--cream)]/30 hover:bg-[color:var(--cream)]/50'}>
+                    <tr className={isProduct ? 'bg-[#141414] hover:bg-white/5 transition-colors' : 'bg-[#0D0D0D] hover:bg-white/5 transition-colors'}>
                       <td className="px-2 py-1.5 align-middle">
                         {isProduct && rowMeta ? (
                           <button
                             type="button"
                             onClick={() => handleDelete(rowMeta.sourceIndex)}
                             title={t('preview.deleteTitle')}
-                            className="rounded-md border border-[color:var(--coral)] px-2 py-0.5 text-[11px] font-bold text-[color:var(--coral)] transition hover:bg-[color:var(--error-tint)]"
+                            className="rounded-md border border-[#FF6B50]/40 px-2 py-0.5 text-[11px] font-bold text-[#FF6B50] transition hover:bg-[#FF6B50]/15"
                           >
                             {t('btn.delete')}
                           </button>
                         ) : (
-                          <span className="text-[10px] text-[color:var(--ink)]/30 font-bold">—</span>
+                          <span className="text-[10px] text-white/30 font-bold">—</span>
                         )}
                       </td>
                       {PREVIEW_COLS.map((c) => {
@@ -518,7 +517,11 @@ export default function OutputPreview({
       {pageSize > 0 && totalPages > 1 && (
         <div className="flex items-center justify-between gap-2 pt-2">
           <span className="text-xs font-bold text-[color:var(--ink)]/60">
-            صفحة {currentPage} من {totalPages} ({totalFiltered} صف)
+            {t('preview.pageOf', {
+              page: currentPage,
+              total: totalPages,
+              rows: totalFiltered,
+            })}
           </span>
           <div className="flex items-center gap-1.5">
             <Button
@@ -527,7 +530,7 @@ export default function OutputPreview({
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="!py-1 !px-2.5 text-xs"
             >
-              السابق
+              {t('preview.prevPage')}
             </Button>
             <Button
               variant="ghost"
@@ -535,7 +538,7 @@ export default function OutputPreview({
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               className="!py-1 !px-2.5 text-xs"
             >
-              التالي
+              {t('preview.nextPage')}
             </Button>
           </div>
         </div>

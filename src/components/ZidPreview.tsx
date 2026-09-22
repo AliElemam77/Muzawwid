@@ -68,9 +68,9 @@ export default function ZidPreview({
         </div>
       )}
 
-      <div className="scroll-thin overflow-x-auto rounded-xl border border-slate-200">
+      <div className="scroll-thin overflow-x-auto rounded-xl border border-white/10 bg-[#111111] shadow-xl">
         <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-[#181818] border-b border-white/10">
             <tr>
               {[
                 t('preview.action'),
@@ -85,31 +85,31 @@ export default function ZidPreview({
               ].map((h) => (
                 <th
                   key={h}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700"
+                  className="whitespace-nowrap border-b border-white/10 px-3 py-2 text-start font-black text-white"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-white/5">
             {shown.map((p) => {
               const opts = p.options.filter((o) => o.values.length > 0)
               return (
-                <tr key={p.sourceIndex} className="odd:bg-white even:bg-slate-50/50">
-                  <td className="border-b border-slate-100 px-2 py-1">
+                <tr key={p.sourceIndex} className="odd:bg-[#141414] even:bg-[#101010] hover:bg-white/5 transition-colors">
+                  <td className="px-2 py-1">
                     <button
                       onClick={() => onDeleteItem(p.sourceIndex)}
                       title={t('preview.deleteTitle')}
-                      className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      className="rounded-md border border-[#FF6B50]/40 px-2 py-1 text-xs font-bold text-[#FF6B50] transition hover:bg-[#FF6B50]/15"
                     >
                       {t('btn.delete')}
                     </button>
                   </td>
-                  <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600">
+                  <td className="whitespace-nowrap px-3 py-2 text-[#D4D4D4]">
                     {p.sku}
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-1">
+                  <td className="px-2 py-1">
                     <TextInput
                       value={p.nameAr}
                       placeholder={t('col.name')}
@@ -117,7 +117,7 @@ export default function ZidPreview({
                       onChange={(e) => onEditField(p.sourceIndex, F.name, e.target.value)}
                     />
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-1">
+                  <td className="px-2 py-1">
                     <TextInput
                       value={p.price}
                       inputMode="decimal"
@@ -126,7 +126,7 @@ export default function ZidPreview({
                       onChange={(e) => onEditField(p.sourceIndex, F.price, e.target.value)}
                     />
                   </td>
-                  <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600">
+                  <td className="whitespace-nowrap px-3 py-2 text-[#D4D4D4]">
                     {(p.weight || '1') + ' ' + (p.weightUnit || 'kg')}
                   </td>
                   <td className="border-b border-slate-100 px-2 py-1">

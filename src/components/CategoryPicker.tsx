@@ -105,10 +105,10 @@ export default function CategoryPicker({
         onClick={() => setOpen((o) => !o)}
         title={selected.join('\n') || t('preview.catPick')}
         className={
-          'w-full truncate border bg-white px-2 py-1 text-start text-xs transition ' +
+          'w-full truncate border bg-[#1A1A1A] px-2 py-1 text-start text-xs transition ' +
           (selected.length
-            ? 'border-[color:var(--ink)]/40 font-semibold'
-            : 'border-[color:var(--ink)]/20 text-[color:var(--ink)]/50')
+            ? 'border-white/25 font-semibold text-[color:var(--ink)]'
+            : 'border-white/10 text-[color:var(--ink)]/55 hover:text-[color:var(--ink)]/80')
         }
         style={{ borderRadius: 'var(--r-input)' }}
       >
@@ -117,7 +117,7 @@ export default function CategoryPicker({
 
       {open && (
         <div
-          className="scroll-thin absolute z-30 mt-1 max-h-64 w-64 overflow-y-auto border border-[color:var(--ink)]/30 bg-white p-1 shadow-lg"
+          className="scroll-thin absolute z-30 mt-1 max-h-64 w-64 overflow-y-auto border border-white/15 bg-[#1A1A1A] p-1 text-[color:var(--ink)] shadow-2xl"
           style={{ borderRadius: 'var(--r-input)' }}
         >
           {nodes.length === 0 && unlisted.length === 0 && (
@@ -136,7 +136,7 @@ export default function CategoryPicker({
                   'flex items-center gap-2 rounded px-2 py-1 text-xs ' +
                   (covered
                     ? 'cursor-not-allowed opacity-40'
-                    : 'cursor-pointer hover:bg-[color:var(--ink)]/5')
+                    : 'cursor-pointer hover:bg-white/10')
                 }
                 style={{ paddingInlineStart: `${0.5 + n.depth * 0.9}rem` }}
               >
@@ -157,7 +157,7 @@ export default function CategoryPicker({
           {unlisted.map((p) => (
             <label
               key={p}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-[color:var(--ink)]/5"
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-white/10"
             >
               <input type="checkbox" checked onChange={() => toggle(p)} />
               <span className="text-[color:var(--ink)]/60">
@@ -170,7 +170,7 @@ export default function CategoryPicker({
             <button
               type="button"
               onClick={() => onChange('')}
-              className="mt-1 w-full rounded px-2 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50"
+              className="mt-1 w-full rounded px-2 py-1 text-xs font-bold text-[#FF856E] transition hover:bg-[#FF6B50]/15 hover:text-white"
             >
               {t('preview.catClear')}
             </button>

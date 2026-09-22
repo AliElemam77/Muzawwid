@@ -1,8 +1,12 @@
+import { Check } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
 
 /**
- * Memphis stepper. `current` is 1-based.
+ * Modern editorial stepper. `current` is 1-based.
  * Supports interactive navigation when `onStepClick` is provided.
+ *
+ * Colours come from the `.step-chip` system in tokens.css, shared with the
+ * Map sub-stepper, so the two rows of steps on screen always match.
  */
 export default function Stepper({
   current,
@@ -24,38 +28,16 @@ export default function Stepper({
         const active = n === current
         const isClickable = canNavigate && onStepClick != null && (done || active)
 
-        // Chip fill/text by state (ink on teal for AA; white only on violet).
-        const chip = done
-          ? 'bg-[color:var(--teal)] text-[color:var(--on-teal)]'
-          : active
-            ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-            : 'bg-white text-[color:var(--ink)] opacity-75'
-
-        const badge = done
-          ? 'bg-[color:var(--white)] text-[color:var(--ink)]'
-          : active
-            ? 'bg-[color:var(--white)] text-[color:var(--violet)]'
-            : 'bg-[color:var(--cream)] text-[color:var(--ink)]'
-
         const content = (
           <div
-            className={`hard-3 flex items-center gap-2 px-3.5 py-1.5 transition-transform ${
-              isClickable ? 'lift cursor-pointer hover:scale-102' : ''
-            } ${chip}`}
-            style={{ borderRadius: 'var(--r-pill)' }}
+            className={`step-chip text-xs ${
+              active ? 'step-chip--current' : done ? 'step-chip--done' : ''
+            } ${isClickable ? 'step-chip--clickable' : ''}`}
           >
-            <span
-              className={`flex h-6 w-6 items-center justify-center border-2 border-[color:var(--ink)] text-[13px] font-extrabold shadow-xs ${badge}`}
-              style={{ borderRadius: 'var(--r-pill)' }}
-            >
-              {done ? '✓' : n}
+            <span className="step-badge">
+              {done ? <Check className="size-3 stroke-[3]" /> : n}
             </span>
-            <span
-              className="font-bold whitespace-nowrap"
-              style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-label)' }}
-            >
-              {label}
-            </span>
+            <span style={{ fontFamily: 'var(--font-display)' }}>{label}</span>
           </div>
         )
 
@@ -65,7 +47,7 @@ export default function Stepper({
               <button
                 type="button"
                 onClick={() => onStepClick(n)}
-                className="appearance-none p-0 border-0 bg-transparent text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--violet)] rounded-full"
+                className="appearance-none p-0 border-0 bg-transparent text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--coral-accent)] rounded-full"
                 aria-current={active ? 'step' : undefined}
                 title={label}
               >
@@ -76,12 +58,7 @@ export default function Stepper({
             )}
 
             {n < steps.length && (
-              <span
-                aria-hidden
-                className={`hidden h-1 w-6 sm:block sm:w-8 transition-colors ${
-                  done ? 'bg-[color:var(--teal)]' : 'bg-[color:var(--ink)]/30'
-                }`}
-              />
+              <span aria-hidden className={`step-line ${done ? 'step-line--done' : ''}`} />
             )}
           </li>
         )

@@ -1,74 +1,73 @@
 /* =============================================================================
-   Muzawwid design tokens — SINGLE SOURCE OF TRUTH.
-   Flat Memphis / neo-brutalist. No gradients, no blur, no soft shadows.
-   Zero inline hex anywhere else in the app: reference these vars only.
+   Muzawwid design tokens — Midnight Editorial System.
+   Strict Palette: #050505 (Ground), #FF6B50 (Coral Accent), #FFFFFF (Primary Text),
+   and curated high-contrast greys for hierarchy.
    ========================================================================== */
 
 :root {
-  /* --- Palette ------------------------------------------------------------ */
-  --cream: #f5efe2; /* page ground */
-  --ink: #17140d; /* text + every outline */
-  --teal: #12b3a4; /* primary action */
-  --violet: #6b5be6; /* secondary, active/selected state */
-  --mustard: #ffc531; /* accent + warning */
+  /* --- Strict Midnight Editorial Palette ---------------------------------- */
+  --cream: #050505; /* page ground — strictly #050505, never pure black */
+  --ink: #FFFFFF; /* primary text + high contrast lines */
+  --grey-text: #FFFFFF;
+  --grey-muted: #D4D4D4; /* high-contrast secondary text */
+  --grey-dim: #A3A3A3; /* tertiary labels & captions */
+  --grey-surface: #1A1A1A;
+  --grey-card: #111111;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-dark: #333333;
+
+  /* Primary Accent: Coral #FF6B50 */
+  --coral-accent: #FF6B50;
+  --on-coral-accent: #050505; /* high-contrast black bold on coral */
+  --coral: #FF6B50;
+  --on-coral: #050505;
+
+  /* Functional Accents */
+  --teal: #12b3a4; /* success / ready chips */
+  --violet: #8B5CF6; /* secondary accent */
+  --mustard: #ffc531; /* warning */
   --sky: #3aa0ff; /* info */
-  /* Coral is the ERROR colour — never a CTA, and never decoration INSIDE the
-     UI. The one sanctioned exception is the purely decorative confetti layer
-     (.confetti), which carries no state and is aria-hidden. */
-  --coral: #ff5b57;
-  --white: #ffffff; /* cards, data surfaces */
+  --white: #111111; /* cards & main container surfaces */
 
-  /* Dead / disabled surface — must read as inert, not dim. */
-  --dead: #d9d3c6;
-  --dead-ink: #8a8578;
+  /* Dead / disabled surface */
+  --dead: #161616;
+  --dead-ink: #666666;
 
-  /* --- Semantic state aliases (the grid + validation speak these) -------- */
-  --error: var(--coral);
+  /* Semantic state aliases */
+  --error: #FF6B50;
   --warning: var(--mustard);
   --success: var(--teal);
   --info: var(--sky);
 
-  /* Tints for data-grid rows (12% over white). Precomputed — no rgba blur. */
-  --error-tint: #ffeceb;
-  --warning-tint: #fff6dd;
+  /* Tints for data-grid rows in dark mode */
+  --error-tint: rgba(255, 107, 80, 0.15);
+  --warning-tint: rgba(255, 197, 49, 0.15);
 
-  /* --- Ink-on-fill pairing (AA-safe) -------------------------------------
-     teal/mustard/sky/coral fills are LIGHT → ink text.
-     violet is dark enough → white text. Bake this in so no caller gets it
-     wrong and trips the contrast floor. */
-  --on-teal: var(--ink);
-  --on-mustard: var(--ink);
-  --on-sky: var(--ink);
-  --on-coral: var(--ink);
-  --on-violet: var(--white);
+  --on-teal: #050505;
+  --on-mustard: #050505;
+  --on-sky: #050505;
+  --on-violet: #ffffff;
 
-  /* --- Type --------------------------------------------------------------- */
-  /* Latin-first, then an Arabic face with real glyphs. The browser uses the
-     first family that actually has the glyph, so headings auto-pair:
-     Latin → Bricolage/DM Sans, Arabic → Cairo/Tajawal. */
-  --font-display: 'Bricolage Grotesque', 'Cairo', system-ui, sans-serif;
-  --font-body: 'DM Sans', 'Tajawal', system-ui, sans-serif;
+  /* --- Typography --------------------------------------------------------- */
+  --font-display: 'Inter', 'Bricolage Grotesque', 'Cairo', system-ui, sans-serif;
+  --font-body: 'Inter', 'DM Sans', 'Tajawal', system-ui, sans-serif;
 
-  --fs-page: 40px; /* page title */
-  --fs-section: 26px; /* section title */
-  --fs-body: 15px; /* body */
-  --fs-label: 13px; /* label */
-  --fs-table: 13px; /* table */
+  --fs-page: 44px;
+  --fs-section: 24px;
+  --fs-body: 15px;
+  --fs-label: 13px;
+  --fs-table: 13px;
 
   /* --- Radii -------------------------------------------------------------- */
-  --r-card: 18px;
-  --r-drop: 22px;
+  --r-card: 20px;
+  --r-drop: 24px;
   --r-pill: 999px;
   --r-input: 12px;
 
-  /* --- Hard-shadow system ------------------------------------------------
-     One direction variable flips EVERY shadow for RTL. In LTR the light
-     comes from the top-inline-start; RTL mirrors it. Any shadowed element
-     uses calc(<x> * var(--sh-dir)) for its horizontal offset — never a
-     hardcoded left/right offset. */
+  /* Outline system: sleek 1px dark borders */
   --sh-dir: 1;
-  --ol-3: 1.5px; /* outline: buttons, cards, pills, dropzone, modals */
-  --ol-2: 1.25px; /* outline: inputs, selects */
+  --ol-3: 1px;
+  --ol-2: 1px;
 }
 
 [dir='rtl'] {
@@ -76,35 +75,134 @@
 }
 
 /* =============================================================================
-   Hard-shadow / outline utilities
+   Refined Dark Surface Utilities (Compatible with legacy hard-2 / hard-3)
    ========================================================================== */
 
 .hard-3 {
-  border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
 }
 .hard-2 {
-  border: var(--ol-2) solid var(--ink);
-  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.35);
 }
 
-/* Interactive lift: press the "key" in on hover, bottom out on active. */
+/* Global mappings to prevent white-on-white or dark-on-dark in legacy classes */
+.bg-white {
+  background-color: #111111 !important;
+  color: #FFFFFF;
+}
+.bg-slate-50,
+.bg-slate-100 {
+  background-color: #161616 !important;
+  color: #FFFFFF !important;
+}
+.bg-slate-200 {
+  background-color: #222222 !important;
+  color: #FFFFFF !important;
+}
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: #D4D4D4 !important;
+}
+.text-slate-400 {
+  color: #A3A3A3 !important;
+}
+.border-slate-100,
+.border-slate-200,
+.border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.divide-slate-100,
+.divide-black\/10 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Table and preview data grid dark styles */
+table {
+  color: #EBEBEB;
+}
+table th {
+  background-color: #161616 !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+table td {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #D4D4D4 !important;
+}
+table tbody tr {
+  background-color: #111111;
+}
+table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+table tr.odd\:bg-white {
+  background-color: #111111 !important;
+}
+table tr.even\:bg-slate-50\/50 {
+  background-color: #151515 !important;
+}
+
+/* High contrast alert / validation status callouts */
+.bg-red-50 {
+  background-color: rgba(255, 107, 80, 0.12) !important;
+  border-color: rgba(255, 107, 80, 0.35) !important;
+  color: #FF856E !important;
+}
+.text-red-600,
+.text-red-700,
+.text-red-800 {
+  color: #FF856E !important;
+}
+.bg-red-100 {
+  background-color: rgba(255, 107, 80, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
+.bg-amber-50 {
+  background-color: rgba(255, 197, 49, 0.12) !important;
+  border-color: rgba(255, 197, 49, 0.35) !important;
+  color: #FDE047 !important;
+}
+.text-amber-600,
+.text-amber-700,
+.text-amber-800 {
+  color: #FDE047 !important;
+}
+.bg-amber-100 {
+  background-color: rgba(255, 197, 49, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
+.bg-emerald-50 {
+  background-color: rgba(18, 179, 164, 0.12) !important;
+  border-color: rgba(18, 179, 164, 0.35) !important;
+  color: #2FE0CF !important;
+}
+.text-emerald-700,
+.text-emerald-800 {
+  color: #2FE0CF !important;
+}
+
+/* Interactive lift with smooth cubic-bezier */
 .lift {
-  transition:
-    transform 0.06s ease,
-    box-shadow 0.06s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .lift:hover:not(:disabled):not([aria-disabled='true']) {
-  transform: translate(calc(1.5px * var(--sh-dir)), 1.5px);
-  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.6);
 }
 .lift:active:not(:disabled):not([aria-disabled='true']) {
-  transform: translate(calc(3.5px * var(--sh-dir)), 3.5px);
-  box-shadow: 0 0 0 0 var(--ink);
+  transform: translateY(0);
 }
 
 /* =============================================================================
-   Button
+   Button System
    ========================================================================== */
 
 .btn {
@@ -113,52 +211,83 @@
   justify-content: center;
   gap: 0.5rem;
   border-radius: var(--r-pill);
-  padding: 0.6rem 1.15rem;
+  padding: 0.65rem 1.25rem;
   font-family: var(--font-body);
   font-size: var(--fs-body);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
-  transition:
-    transform 0.06s ease,
-    box-shadow 0.06s ease;
+  border: 1px solid #333333;
+  background: #1A1A1A;
+  color: #FFFFFF;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
 .btn:hover:not(:disabled) {
-  transform: translate(calc(1.5px * var(--sh-dir)), 1.5px);
-  box-shadow: calc(2px * var(--sh-dir)) 2px 0 var(--ink);
+  transform: translateY(-1.5px);
+  background: #FFFFFF;
+  color: #050505;
+  border-color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.15);
 }
 .btn:active:not(:disabled) {
-  transform: translate(calc(3.5px * var(--sh-dir)), 3.5px);
-  box-shadow: 0 0 0 0 var(--ink);
+  transform: translateY(0);
 }
 .btn:focus-visible {
-  outline: var(--ol-3) solid var(--violet);
+  outline: 2px solid var(--coral-accent);
   outline-offset: 2px;
 }
 
+.btn--coral,
 .btn--primary {
-  background: var(--teal);
-  color: var(--on-teal);
+  background: var(--coral-accent);
+  color: #050505;
+  border: 1px solid var(--coral-accent);
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
-.btn--secondary {
-  background: var(--violet);
-  color: var(--on-violet);
-}
-.btn--ghost {
-  background: var(--white);
-  color: var(--ink);
-}
-/* Destructive: NOT coral (coral is reserved for error state, and a CTA is not
-   an error). Reads as a plain outlined control; intent is in the label/icon. */
-.btn--danger {
-  background: var(--white);
-  color: var(--ink);
+.btn--coral:hover:not(:disabled),
+.btn--primary:hover:not(:disabled) {
+  background: #ff856e;
+  border-color: #ff856e;
+  color: #000000;
+  box-shadow: 0 8px 24px rgba(255, 107, 80, 0.35);
+  transform: translateY(-2px);
 }
 
-/* Disabled = dead, not dim: flat gray, NO outline, NO shadow. */
+.btn--secondary {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.btn--secondary:hover:not(:disabled) {
+  background: #252525;
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: #D4D4D4;
+  border: 1px solid transparent;
+}
+.btn--ghost:hover:not(:disabled) {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  border-color: #333333;
+}
+
+.btn--danger {
+  background: #1A1A1A;
+  color: #FF6B50;
+  border: 1px solid rgba(255, 107, 80, 0.3);
+}
+.btn--danger:hover:not(:disabled) {
+  background: #FF6B50;
+  color: #050505;
+  border-color: #FF6B50;
+}
+
 .btn:disabled {
   cursor: not-allowed;
   background: var(--dead);
@@ -166,6 +295,7 @@
   border-color: transparent;
   box-shadow: none;
   transform: none;
+  opacity: 0.6;
 }
 
 /* =============================================================================
@@ -173,10 +303,11 @@
    ========================================================================== */
 
 .card {
-  background: var(--white);
+  background: #111111;
   border-radius: var(--r-card);
-  border: var(--ol-3) solid var(--ink);
-  box-shadow: calc(3.5px * var(--sh-dir)) 3.5px 0 var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.5);
+  color: var(--ink);
 }
 
 /* =============================================================================
@@ -188,46 +319,156 @@
   align-items: center;
   gap: 0.35rem;
   border-radius: var(--r-pill);
-  padding: 0.2rem 0.7rem;
+  padding: 0.25rem 0.75rem;
   font-family: var(--font-body);
   font-size: var(--fs-label);
   font-weight: 700;
   line-height: 1.4;
-  border: var(--ol-2) solid var(--ink);
-  background: var(--white);
-  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1A1A1A;
+  color: #FFFFFF;
 }
 .pill--teal {
-  background: var(--teal);
-  color: var(--on-teal);
+  background: rgba(18, 179, 164, 0.15);
+  color: #2fe0cf;
+  border-color: rgba(18, 179, 164, 0.35);
 }
 .pill--violet {
-  background: var(--violet);
-  color: var(--on-violet);
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.35);
 }
 .pill--mustard {
-  background: var(--mustard);
-  color: var(--on-mustard);
+  background: rgba(255, 197, 49, 0.15);
+  color: #fde047;
+  border-color: rgba(255, 197, 49, 0.35);
 }
 .pill--coral {
-  background: var(--coral);
-  color: var(--on-coral);
+  background: rgba(255, 107, 80, 0.15);
+  color: #FF6B50;
+  border-color: rgba(255, 107, 80, 0.35);
 }
 .pill--solid {
-  box-shadow: calc(3px * var(--sh-dir)) 3px 0 var(--ink);
+  background: #1A1A1A;
+  border-color: #333333;
 }
 
 /* =============================================================================
-   Description-template editor + preview.
-
-   The app's global reset flattens list markers and heading sizes, which is
-   right everywhere else — but here the user is authoring the HTML that lands
-   in Salla's الوصف column, so what they type must look like what they get.
-   Scoped to .tpl-editor so nothing else in the app inherits it.
+   Special Components (Midnight Editorial Spec)
    ========================================================================== */
 
+/* Floating Gaming Badge */
+.floating-badge {
+  background-color: #FF6B50;
+  color: #050505;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-weight: 900;
+  font-style: italic;
+  transform: skewX(-12deg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: badge-float 4s ease-in-out infinite;
+  box-shadow: 0 10px 25px -3px rgba(255, 107, 80, 0.35);
+  letter-spacing: -0.02em;
+}
+
+@keyframes badge-float {
+  0%, 100% {
+    transform: skewX(-12deg) translateY(0);
+  }
+  50% {
+    transform: skewX(-12deg) translateY(-10px);
+  }
+}
+
+/* Glassmorphic Dock */
+.glass-dock {
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
+}
+
+.dock-btn {
+  padding: 12px;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #D4D4D4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  cursor: pointer;
+}
+.dock-btn:hover {
+  background: #222222;
+  color: #FFFFFF;
+  transform: scale(1.08);
+}
+
+/* Editorial Typography Helpers */
+.editorial-title {
+  letter-spacing: -0.05em;
+  line-height: 0.88;
+}
+
+/* Image 16:9 hover grayscale reveal */
+.editorial-img-container {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.editorial-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+  filter: grayscale(100%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.editorial-img-container:hover .editorial-img {
+  opacity: 1;
+  filter: grayscale(0%);
+  transform: scale(1.05);
+}
+
+/* 56px circular social / contact icons */
+.circle-social-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  border: 1px solid #333333;
+  background: #111111;
+  color: #CCCCCC;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.circle-social-btn:hover {
+  transform: translateY(-8px);
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #050505;
+  box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+}
+
+/* Description template editor */
 .tpl-editor {
   line-height: 1.7;
+  color: #EBEBEB;
 }
 .tpl-editor p {
   margin: 0 0 0.5rem;
@@ -239,6 +480,7 @@
   font-weight: 800;
   font-size: var(--fs-body);
   margin: 0.75rem 0 0.35rem;
+  color: #FFFFFF;
 }
 .tpl-editor ul,
 .tpl-editor ol {
@@ -259,40 +501,19 @@
 }
 .tpl-editor:empty::before {
   content: attr(data-placeholder);
-  color: var(--dead-ink);
+  color: #888888;
 }
-
-/* =============================================================================
-   Full-bleed — break a shape out of the centred container to the viewport edge.
-
-   Margin-based, so the element stays IN FLOW. The `position:relative; left:50%;
-   transform:translateX(-50%)` variant looks identical but keeps its static box
-   at the container's edge, widening the document by ~1 gutter — which in RTL
-   moves the scroll origin and clips the whole page. Do not reintroduce it.
-   ========================================================================== */
 
 .full-bleed {
   width: 100vw;
   margin-inline: calc(50% - 50vw);
 }
 
-/* =============================================================================
-   Marker highlight — a flat bar swiped behind a headline word.
-
-   `position:relative` + `z-index:0` on the span makes it its OWN stacking
-   context, so the z-index:-1 bar sits behind the text but still paints ABOVE
-   any ancestor background. Without that, the bar vanishes under a section fill.
-   Sized in `em` so it tracks the headline's font-size at every breakpoint.
-   ========================================================================== */
-
 .marker {
   position: relative;
   z-index: 0;
   white-space: nowrap;
 }
-/* Sits UNDER the word, not through it: Arabic glyphs hang lower than Latin
-   ones, so a Latin-tuned bar (bottom .06em / height .36em) cuts the letterforms
-   in half. Kept low and thin so it reads as a swipe beneath the baseline. */
 .marker::before {
   content: '';
   position: absolute;
@@ -300,22 +521,12 @@
   inset-inline: -0.12em;
   bottom: -0.05em;
   height: 0.24em;
-  background: var(--mustard);
+  background: var(--coral-accent);
+  opacity: 0.35;
   transform: rotate(-1.5deg);
 }
-.marker--teal::before {
-  background: var(--teal);
-}
 
-/* =============================================================================
-   Confetti — the decorative Memphis shape layer.
-
-   Purely ornamental: never carries state, never takes a pointer event, and is
-   aria-hidden at the container. Animations are CSS-only (no JS), so a frame is
-   always paintable. The rotate() directions are NOT mirrored for RTL — these
-   are free-floating ornaments, not directional affordances.
-   ========================================================================== */
-
+/* Confetti */
 .confetti-layer {
   position: absolute;
   inset: 0;
@@ -330,8 +541,7 @@
 }
 
 @keyframes confetti-drift {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
@@ -347,8 +557,7 @@
   }
 }
 @keyframes confetti-bob {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0);
   }
   50% {
@@ -356,8 +565,7 @@
   }
 }
 @keyframes confetti-sway {
-  0%,
-  100% {
+  0%, 100% {
     transform: rotate(-6deg);
   }
   50% {
@@ -379,10 +587,6 @@
   transform-origin: top center;
 }
 
-/* =============================================================================
-   Motion: freeze everything for users who ask for it.
-   ========================================================================== */
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -392,7 +596,185 @@
     transition-duration: 0.001ms !important;
   }
   .btn:hover,
-  .lift:hover:not(:disabled) {
+  .lift:hover:not(:disabled),
+  .floating-badge {
     transform: none;
   }
+}
+
+/* =============================================================================
+   Step system — ONE source of truth for every stepper and tab strip.
+
+   Before this, Stepper, MappingPanel's SubStepper and the two filter tab
+   strips each hard-coded their own greys (#161616 vs #181818), their own
+   "done" teal and their own count badge, so the three rows of steps on screen
+   never matched and the active count badge rendered near-black on coral.
+   Anything that draws a step, a sub-step or a filter tab uses these classes.
+   ========================================================================== */
+
+:root {
+  --step-todo-bg: #1A1A1A;
+  --step-todo-border: rgba(255, 255, 255, 0.12);
+  --step-todo-ink: #D4D4D4;
+
+  --step-done-bg: rgba(18, 179, 164, 0.16);
+  --step-done-border: rgba(18, 179, 164, 0.45);
+  --step-done-ink: #2fe0cf;
+
+  --step-current-bg: var(--coral-accent);
+  --step-current-ink: #050505;
+
+  /* Badge/counter sitting INSIDE a chip — never a translucent dark wash on
+     coral, which is what made the active counters unreadable. */
+  --step-badge-todo-bg: #2E2E2E;
+  --step-badge-todo-ink: #E5E5E5;
+  --step-badge-done-bg: #12b3a4;
+  --step-badge-done-ink: #050505;
+  --step-badge-current-bg: #050505;
+  --step-badge-current-ink: var(--coral-accent);
+
+  --step-line: rgba(255, 255, 255, 0.16);
+  --step-line-done: #12b3a4;
+}
+
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--step-todo-border);
+  background: var(--step-todo-bg);
+  color: var(--step-todo-ink);
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.step-chip--done {
+  background: var(--step-done-bg);
+  border-color: var(--step-done-border);
+  color: var(--step-done-ink);
+}
+.step-chip--current {
+  background: var(--step-current-bg);
+  border-color: var(--step-current-bg);
+  color: var(--step-current-ink);
+  font-weight: 900;
+  box-shadow: 0 6px 18px -6px rgba(255, 107, 80, 0.55);
+}
+.step-chip--clickable {
+  cursor: pointer;
+}
+.step-chip--clickable:hover {
+  transform: translateY(-1.5px);
+}
+/* A not-yet-reached step lifts to readable white instead of staying dim. */
+.step-chip--clickable:hover:not(.step-chip--current):not(.step-chip--done) {
+  background: #262626;
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+/* The numeral / tick / counter carried inside a chip. */
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--step-badge-todo-bg);
+  color: var(--step-badge-todo-ink);
+}
+.step-chip--done .step-badge {
+  background: var(--step-badge-done-bg);
+  color: var(--step-badge-done-ink);
+}
+.step-chip--current .step-badge {
+  background: var(--step-badge-current-bg);
+  color: var(--step-badge-current-ink);
+}
+
+/* Connector between two steps. */
+.step-line {
+  display: none;
+  height: 2px;
+  width: 1.5rem;
+  border-radius: var(--r-pill);
+  background: var(--step-line);
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.step-line--done {
+  background: var(--step-line-done);
+}
+@media (min-width: 640px) {
+  .step-line {
+    display: block;
+    width: 2rem;
+  }
+}
+
+/* =============================================================================
+   Safety net for legacy light-theme utility classes.
+
+   These are a backstop only — components should carry real dark tokens. Kept
+   (and widened) so that any class missed here cannot render ink-on-ink.
+   ========================================================================== */
+
+.text-slate-800,
+.text-slate-900,
+.text-slate-950,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900,
+.text-zinc-700,
+.text-zinc-800,
+.text-zinc-900,
+.text-neutral-700,
+.text-neutral-800,
+.text-neutral-900,
+.text-black {
+  color: #ffffff !important;
+}
+
+.text-indigo-600,
+.text-indigo-700,
+.text-indigo-800,
+.text-blue-600,
+.text-blue-700,
+.text-blue-800,
+.text-violet-600,
+.text-violet-700 {
+  color: #b9a7ff !important;
+}
+
+.bg-indigo-50,
+.bg-blue-50,
+.bg-violet-50 {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+}
+
+.bg-emerald-100,
+.bg-green-100,
+.bg-teal-100 {
+  background-color: rgba(18, 179, 164, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.bg-gray-50,
+.bg-gray-100,
+.bg-zinc-50,
+.bg-zinc-100,
+.bg-neutral-50,
+.bg-neutral-100 {
+  background-color: #161616 !important;
+  color: #ffffff !important;
 }

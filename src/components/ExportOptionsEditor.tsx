@@ -44,8 +44,8 @@ export default function ExportOptionsEditor({
     <div className="space-y-6">
       {/* Quantity */}
       {showQuantity && (
-        <div className="hard-2 rounded-xl bg-white p-4 space-y-2">
-          <label className="block text-xs font-black text-[color:var(--ink)]">
+        <div className="rounded-xl bg-[#141414] border border-white/10 p-4 space-y-2">
+          <label className="block text-xs font-black text-white">
             {t('qty.label')}
           </label>
           <div className="flex flex-wrap items-center gap-3">
@@ -71,25 +71,25 @@ export default function ExportOptionsEditor({
               />
             )}
           </div>
-          <p className="text-xs font-medium text-[color:var(--ink)]/60">{t('qty.hint')}</p>
+          <p className="text-xs font-medium text-[#A3A3A3]">{t('qty.hint')}</p>
         </div>
       )}
 
       {/* Price rules */}
       <div className="space-y-3">
-        <label className="block text-xs font-black text-[color:var(--ink)]">
+        <label className="block text-xs font-black text-white">
           {t('price.label')}
         </label>
-        <p className="text-xs font-medium text-[color:var(--ink)]/70">{t('price.hint')}</p>
+        <p className="text-xs font-medium text-[#D4D4D4]">{t('price.hint')}</p>
 
         {priceRules.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[color:var(--ink)]/20 p-4 text-center text-xs font-bold text-[color:var(--ink)]/50">
+          <div className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs font-bold text-[#A3A3A3]">
             {t('price.empty')}
           </div>
         ) : (
           <div className="space-y-3">
             {priceRules.map((rule, i) => (
-              <div key={i} className="hard-2 rounded-xl bg-white p-3.5 space-y-2">
+              <div key={i} className="rounded-xl bg-[#141414] border border-white/10 p-3.5 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
                     className="max-w-[9.5rem] !py-1.5 !text-xs font-bold"
@@ -102,7 +102,7 @@ export default function ExportOptionsEditor({
                       </option>
                     ))}
                   </Select>
-                  <span className="font-black text-sm text-[color:var(--ink)]">=</span>
+                  <span className="font-black text-sm text-white">=</span>
                   <Select
                     className="max-w-[9.5rem] !py-1.5 !text-xs font-bold"
                     value={rule.source}
@@ -135,7 +135,7 @@ export default function ExportOptionsEditor({
                     {t('price.remove')}
                   </Button>
                 </div>
-                <div className="rounded-md bg-[color:var(--cream)]/60 p-2 font-mono text-xs font-bold text-[color:var(--ink)] border border-black/5" dir="ltr">
+                <div className="rounded-md bg-[#1A1A1A] p-2 font-mono text-xs font-bold text-[#FF6B50] border border-white/10" dir="ltr">
                   {formula(rule)}
                 </div>
               </div>
@@ -144,7 +144,7 @@ export default function ExportOptionsEditor({
         )}
 
         <div>
-          <Button variant="ghost" onClick={addRule} className="!py-1.5 !px-3 text-xs">
+          <Button variant="ghost" onClick={addRule} className="!py-1.5 !px-3 text-xs !border-white/15 !text-white hover:!bg-white/10">
             {t('price.add')}
           </Button>
         </div>

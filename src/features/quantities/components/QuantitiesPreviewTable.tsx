@@ -211,7 +211,7 @@ export default function QuantitiesPreviewTable({
 
       {/* --- Header ------------------------------------------------------- */}
       <div
-        className="grid items-center gap-2 border-2 border-[color:var(--ink)] bg-[color:var(--teal)] px-3 py-2 font-extrabold text-[color:var(--ink)]"
+        className="grid items-center gap-2 border-1 border-[color:var(--ink)] bg-[color:var(--teal)] px-3 py-2 font-extrabold text-[color:var(--ink)]"
         style={{ gridTemplateColumns: COLUMNS, fontSize: 'var(--fs-label)' }}
       >
         <span />
@@ -266,7 +266,7 @@ export default function QuantitiesPreviewTable({
                     value={row.unlimited}
                     onChange={(e) => patch(index, { unlimited: e.target.value as Unlimited })}
                     aria-label={`${QUANTITY_HEADERS[4]} — ${row.name}`}
-                    className="w-full border-2 border-[color:var(--ink)] bg-white px-1 py-1 font-bold text-[color:var(--ink)] outline-none"
+                    className="w-full border-1 border-[color:var(--ink)] bg-white px-1 py-1 font-bold text-[color:var(--ink)] outline-none"
                     style={{ borderRadius: 'var(--r-input)' }}
                   >
                     <option value={UNLIMITED}>{UNLIMITED}</option>
@@ -281,7 +281,7 @@ export default function QuantitiesPreviewTable({
                     disabled={unlimited}
                     onChange={(e) => setQuantity(index, e.target.value)}
                     title={unlimited ? t('qty.unlimitedNoNumber') : undefined}
-                    className="w-full border-2 border-[color:var(--ink)] bg-white px-2 py-1 text-[color:var(--ink)] outline-none disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent"
+                    className="w-full border-1 border-[color:var(--ink)] bg-white px-2 py-1 text-[color:var(--ink)] outline-none disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent"
                     style={{ borderRadius: 'var(--r-input)' }}
                   />
                   <button

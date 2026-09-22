@@ -1,3 +1,4 @@
+import { Lightbulb, ChevronRight } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
 
 /**
@@ -15,14 +16,12 @@ export default function StepTips({ tips }: { tips: string[] }) {
   return (
     <details className="group">
       <summary
-        className="inline-flex cursor-pointer list-none items-center gap-1.5 font-bold text-[color:var(--ink)]/55 transition hover:text-[color:var(--ink)]"
+        className="inline-flex cursor-pointer list-none items-center gap-1.5 font-bold text-[color:var(--ink)]/60 transition hover:text-[color:var(--ink)]"
         style={{ fontSize: 'var(--fs-label)' }}
       >
-        <span aria-hidden>💡</span>
-        {t('tips.toggle')}
-        <span aria-hidden className="transition group-open:rotate-90">
-          ›
-        </span>
+        <Lightbulb className="size-3.5 text-[color:var(--mustard)]" />
+        <span>{t('tips.toggle')}</span>
+        <ChevronRight className="size-3.5 transition group-open:rotate-90 rtl:rotate-180 rtl:group-open:rotate-90" />
       </summary>
       <ul
         className="mt-2 space-y-1 border-s-2 border-[color:var(--ink)]/20 ps-3 text-[color:var(--ink)]/70"

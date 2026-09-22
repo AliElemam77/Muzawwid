@@ -94,7 +94,7 @@ export default function DescriptionTemplateEditor({
     <div className="space-y-4">
       {/* --- The switch. Everything below it is conditional on it. ----------- */}
       <label
-        className="flex cursor-pointer items-start gap-3 border-2 border-[color:var(--ink)] bg-white p-3"
+        className="flex cursor-pointer items-start gap-3 border border-white/12 bg-[#161616] p-3 transition hover:border-white/25"
         style={{ borderRadius: 'var(--r-input)' }}
       >
         <input
@@ -137,11 +137,11 @@ export default function DescriptionTemplateEditor({
             aria-hidden
           >
             <p>
-              <strong>{'{{أسم المنتج}}'}</strong>
+              <strong>{t('tpl.sampleTitle')}</strong>
             </p>
             <ul>
-              <li>{'الخامة: {{الخامة}}'}</li>
-              <li>{'الماركة: {{الماركة}}'}</li>
+              <li>{t('tpl.sampleLine1')}</li>
+              <li>{t('tpl.sampleLine2')}</li>
             </ul>
           </div>
           <div className="mt-4">
@@ -190,7 +190,7 @@ export default function DescriptionTemplateEditor({
                   className={`hard-2 lift flex items-center gap-1 px-2.5 py-1 text-xs font-bold transition ${
                     v.source === 'field'
                       ? 'bg-[color:var(--teal)]/20 text-[color:var(--ink)]'
-                      : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                      : 'border border-white/12 bg-[#1A1A1A] text-[color:var(--ink)] hover:border-white/30 hover:bg-[#262626]'
                   }`}
                   style={{ borderRadius: 'var(--r-pill)' }}
                 >

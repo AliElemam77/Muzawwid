@@ -18,6 +18,20 @@ import { loadCategories, saveCategories } from './lib/categories'
 import { loadPlatform, savePlatform, PLATFORMS, type PlatformId } from './lib/platforms'
 import { LINKS } from './lib/links'
 import { useI18n } from './lib/i18n'
+import {
+  FolderArchive,
+  FlaskConical,
+  Languages,
+  Lightbulb,
+  FileSpreadsheet,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  ArrowRight,
+  Download,
+  ExternalLink,
+} from 'lucide-react'
 
 import Logo from './components/Logo'
 import MadeBy from './components/MadeBy'
@@ -38,7 +52,7 @@ import Modal from './components/Modal'
 import ExportSaveDialog from './components/ExportSaveDialog'
 import StepTips from './components/StepTips'
 import { Card, Button } from './components/ui'
-import ModeSelector, { type Mode } from './features/quantities/components/ModeSelector'
+import type { Mode } from './features/quantities/components/ModeSelector'
 import QuantitiesStandalone from './features/quantities/components/QuantitiesStandalone'
 import SavedSheets from './components/SavedSheets'
 import ToastContainer from './components/Toast'
@@ -67,10 +81,10 @@ export default function App() {
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   // Open while asking whether to keep a copy of this export on the device.
   const [exportPrompt, setExportPrompt] = useState(false)
-  // Which of Salla's two files the merchant came here for. `null` until they
-  // choose — products and quantities are different jobs, not different tabs.
-  const [mode, setMode] = useState<Mode | null>(null)
+  // Which of Salla's two files the merchant came here for. Default to 'products'.
+  const [mode, setMode] = useState<Mode>('products')
   const [showScraperHint, setShowScraperHint] = useState(true)
+  const [showQuickTester, setShowQuickTester] = useState(false)
 
   const sheet = useMemo(
     () => workbook?.sheets.find((s) => s.name === sheetName) ?? null,
@@ -336,90 +350,133 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-full">
-      <header className="border-b-[3px] border-[color:var(--ink)] bg-[color:var(--cream)]">
-        <div className="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-6 py-3">
-          <Logo />
-            <div className="flex shrink-0 items-center gap-2">
-            {/* Saved sheets live in the header, not on a floating blob — it is
-                navigation, and the export count belongs where you can see it. */}
+    <div className="min-h-full bg-[#050505] text-[#EBEBEB]">
+      {/* Fixed Top Navigation */}
+      <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-[#050505]/85 border-b border-white/10">
+        <div className="mx-auto flex max-w-[80rem] items-center justify-between gap-4 px-6 py-3.5">
+          <div className="flex items-center gap-6">
+            <Logo />
+            <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-[#D4D4D4]">
+              <span
+                className="cursor-pointer hover:text-white transition-colors"
+                onClick={scrollToTool}
+              >
+                {t('nav.converter')}
+              </span>
+              <span className="size-1 rounded-full bg-white/20" />
+              <span
+                className="cursor-pointer hover:text-white transition-colors"
+                onClick={() => setShowQuickTester(true)}
+              >
+                {t('scrape.quickTest')}
+              </span>
+              <span className="size-1 rounded-full bg-white/20" />
+              <a
+                href={LINKS.wepix}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white transition-colors flex items-center gap-1"
+              >
+                <span>Wepix</span>
+                <ExternalLink className="size-3" />
+              </a>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setShowSidebar(true)}
               title={t('sidebar.open')}
               aria-label={t('sidebar.open')}
-              className="hard-2 lift flex items-center gap-2 bg-white px-3 py-1.5 font-bold text-[color:var(--ink)]"
-              style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
+              className="btn !py-1.5 !px-3 text-xs font-bold"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" className="size-4" aria-hidden="true">
-                <path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h4l2 2.5h7A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5Z" strokeLinejoin="round" />
-              </svg>
+              <FolderArchive className="size-3.5" />
               <span className="hidden sm:inline">{t('history.title')}</span>
               {history.length > 0 && (
-                <span
-                  className="inline-flex min-w-5 items-center justify-center bg-[color:var(--violet)] px-1.5 text-[color:var(--on-violet)]"
-                  style={{ borderRadius: 'var(--r-pill)', fontSize: '11px' }}
-                >
+                <span className="inline-flex min-w-4 items-center justify-center bg-[#FF6B50] px-1.5 text-[#050505] font-black rounded-full text-[10px]">
                   {history.length}
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-              className="hard-2 lift bg-white px-3 py-1.5 font-bold text-[color:var(--ink)]"
-              style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
+              type="button"
+              onClick={() => setShowQuickTester(true)}
+              title={t('scrape.testerTitle')}
+              aria-label={t('scrape.testerTitle')}
+              className="btn !py-1.5 !px-3 text-xs font-bold"
             >
-              {t('lang.other')}
+              <FlaskConical className="size-3.5 text-[#FF6B50]" />
+              <span className="hidden sm:inline">{t('scrape.quickTest')}</span>
             </button>
-            {!workbook && <Button onClick={scrollToTool}>{t('lp.cta.primary')}</Button>}
+
+            <button
+              type="button"
+              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+              className="btn !py-1.5 !px-3 text-xs font-bold"
+            >
+              <Languages className="size-3.5" />
+              <span>{t('lang.other')}</span>
+            </button>
+
+            {!workbook && (
+              <Button
+                variant="coral"
+                onClick={scrollToTool}
+                className="hidden sm:inline-flex !py-1.5 !px-3.5 text-xs font-black"
+              >
+                {t('lp.cta.primary')}
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[80rem] px-6 py-6">
-        {/* The landing only exists before a file is loaded — once you are
-            mapping, it would just be noise between you and your data. */}
-        {!workbook && <Landing onStart={scrollToTool} />}
-
-        {/* Which of Salla's two files are we here for? The products flow below
-            is the original one, unchanged — only gated behind the choice. */}
-        <div ref={toolRef}>
-          <QuickScraperTester />
-          {mode === null && <ModeSelector onPick={setMode} />}
-          {mode === 'quantities' && <QuantitiesStandalone onBack={() => setMode(null)} />}
-        </div>
-
-        {mode === 'products' && (
+      <div className="mx-auto max-w-[80rem] px-6 pt-20 sm:pt-24 pb-28" ref={toolRef}>
+        {!workbook ? (
+          mode === 'quantities' ? (
+            <div className="py-2">
+              <QuantitiesStandalone onBack={() => setMode('products')} />
+            </div>
+          ) : (
+            <Landing
+              onLoaded={handleLoaded}
+              mode={mode}
+              onPickMode={setMode}
+              platform={platform}
+              onPlatformChange={handlePlatformChange}
+              historyCount={history.length}
+              onOpenHistory={() => setShowSidebar(true)}
+            />
+          )
+        ) : (
           <>
-        <div className="mb-4 flex justify-end">
-          <Button variant="ghost" onClick={() => setMode(null)}>
-            {t('mode.back')}
-          </Button>
-        </div>
+            <div className="mb-4 flex items-center justify-between">
+              <Button variant="ghost" onClick={handleReset} className="text-xs">
+                ← {t('btn.uploadAnother')}
+              </Button>
+              <PlatformSwitcher value={platform} onChange={handlePlatformChange} />
+            </div>
 
-        {/* One dismissible line for scraping tip */}
-        {showScraperHint && (
-          <div
-            className="mb-5 flex items-start gap-2 text-[color:var(--ink)]/65"
-            style={{ fontSize: 'var(--fs-label)' }}
-          >
-            <span aria-hidden>💡</span>
-            <p className="flex-1">{t('hint.scraper.body')}</p>
-            <button
-              type="button"
-              onClick={() => setShowScraperHint(false)}
-              aria-label={t('hint.dismiss')}
-              className="font-extrabold text-[color:var(--ink)]/40 transition hover:text-[color:var(--ink)]"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        <div className="mb-8">
-          <PlatformSwitcher value={platform} onChange={handlePlatformChange} />
-        </div>
+            {/* One dismissible line for scraping tip */}
+            {showScraperHint && (
+              <div
+                className="mb-5 flex items-start gap-2 text-[color:var(--ink)]/65"
+                style={{ fontSize: 'var(--fs-label)' }}
+              >
+                <Lightbulb className="size-4 shrink-0 text-[color:var(--mustard)] mt-0.5" />
+                <p className="flex-1">{t('hint.scraper.body')}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowScraperHint(false)}
+                  aria-label={t('hint.dismiss')}
+                  className="font-extrabold text-[color:var(--ink)]/40 transition hover:text-[color:var(--ink)]"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
         {platform !== 'salla' && !adapter ? (
           <PlatformComingSoon
@@ -483,18 +540,20 @@ export default function App() {
               {step === 2 && workbook && sheet && config && (
                 <>
                   {/* Compact active file summary */}
-                  <div className="hard-2 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">📄</span>
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#111111] border border-white/10 p-4 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-[#FF6B50]/10 border border-[#FF6B50]/20 flex items-center justify-center text-[#FF6B50]">
+                        <FileSpreadsheet className="size-5" />
+                      </div>
                       <div>
-                        <p className="text-xs font-bold text-[color:var(--ink)]/60">
+                        <p className="text-xs font-bold text-[#888888]">
                           {t('step.activeFile')}
                         </p>
-                        <p className="text-sm font-black text-[color:var(--ink)]">
+                        <p className="text-sm font-black text-[#EBEBEB]">
                           {workbook.fileName}
                         </p>
                       </div>
-                      <span className="rounded-full bg-[color:var(--cream)] px-2.5 py-0.5 text-xs font-bold border border-[color:var(--ink)]/20">
+                      <span className="rounded-full bg-[#1A1A1A] px-3 py-1 text-xs font-black text-[#FF6B50] border border-white/10">
                         {sheetName}
                       </span>
                     </div>
@@ -503,16 +562,21 @@ export default function App() {
                       <Button
                         variant="ghost"
                         onClick={() => setActiveStep(1)}
-                        className="!py-1 !px-2.5 text-xs"
+                        className="!py-1.5 !px-3 text-xs"
                       >
                         {t('step.backToSource')}
                       </Button>
                       <Button
                         variant="ghost"
                         onClick={() => setShowCategories((v) => !v)}
-                        className="!py-1 !px-2.5 text-xs"
+                        className="!py-1.5 !px-3 text-xs flex items-center gap-1"
                       >
-                        {showCategories ? '▲ ' : '▼ '} {t('categories.collapsibleTitle')}
+                        {showCategories ? (
+                          <ChevronUp className="size-3.5" />
+                        ) : (
+                          <ChevronDown className="size-3.5" />
+                        )}
+                        <span>{t('categories.collapsibleTitle')}</span>
                       </Button>
                     </div>
                   </div>
@@ -646,13 +710,9 @@ export default function App() {
             onClick={() => setQuickViewOpen(true)}
             title={t('preview.quickView')}
             aria-label={t('preview.quickView')}
-            className="fixed end-4 top-1/2 z-30 -translate-y-1/2 hard-3 lift bg-[color:var(--violet)] p-3 text-[color:var(--on-violet)]"
-            style={{ borderRadius: 'var(--r-pill)' }}
+            className="fixed end-6 top-1/2 z-30 -translate-y-1/2 flex items-center justify-center p-3 rounded-full bg-[#1A1A1A] border border-white/15 text-white hover:border-[#FF6B50] hover:text-[#FF6B50] shadow-2xl transition-all duration-300"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" className="size-6" aria-hidden="true">
-              <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
-              <circle cx="12" cy="12" r="2.75" />
-            </svg>
+            <Eye className="size-6" />
           </button>
         )}
 
@@ -697,40 +757,111 @@ export default function App() {
           </Modal>
         )}
 
-        {/* Outside the platform branch: the credits and the Salla note belong
-            on every screen, including "coming soon". */}
-        <footer className="mt-12 border-t-[3px] border-[color:var(--ink)] pt-7 pb-10 text-center">
-          {/* Under-development note — sets expectations and gives a direct line
-              for problems (mustard = the app's "warning/heads-up" tone). */}
-          <div className="mx-auto mb-7 max-w-xl">
-            <span className="pill pill--mustard pill--solid">{t('footer.betaBadge')}</span>
-            <p
-              className="mt-3 leading-relaxed text-[color:var(--ink)]/75"
-              style={{ fontSize: 'var(--fs-body)' }}
-            >
-              {t('footer.betaBody')}{' '}
-              <a
-                href={LINKS.linkedin}
-                target="_blank"
-                rel="noreferrer"
-                className="font-extrabold text-[color:var(--ink)] underline decoration-2 underline-offset-2"
-              >
-                {t('footer.betaCta')}
-              </a>
-            </p>
-          </div>
+        {showQuickTester && (
+          <Modal title={t('scrape.testerTitle')} onClose={() => setShowQuickTester(false)}>
+            <div className="p-2">
+              <QuickScraperTester />
+            </div>
+          </Modal>
+        )}
 
-          <div className="flex flex-col items-center justify-center gap-4 ">
-            <AuthorCredit />
-            <MadeBy />
-          </div>
-          <p
-            className="mx-auto mt-5 max-w-2xl text-[color:var(--ink)]/50"
-            style={{ fontSize: 'var(--fs-label)' }}
+        {/* Workflow Bottom Footer (Only rendered when inside workbook conversion) */}
+        {workbook && (
+          <footer className="mt-16 border-t border-white/10 pt-8 pb-12 text-center text-[#888888]">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <AuthorCredit />
+              <MadeBy />
+            </div>
+            <p className="mx-auto mt-4 max-w-2xl text-[11px] text-[#666666]">
+              {t('app.footer')} <span dir="ltr">s.salla.sa/import/products</span>
+            </p>
+          </footer>
+        )}
+
+        {/* Floating Bottom Dock (Midnight Editorial Spec) */}
+        <div className="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 p-1.5 glass-dock shadow-2xl select-none">
+          <button
+            type="button"
+            onClick={() => setShowSidebar(true)}
+            title={t('sidebar.open')}
+            className="dock-btn relative"
+            aria-label={t('sidebar.open')}
           >
-            {t('app.footer')} <span dir="ltr">s.salla.sa/import/products</span>
-          </p>
-        </footer>
+            <FolderArchive className="size-5" />
+            {history.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF6B50] text-[10px] font-black text-[#050505] px-1">
+                {history.length}
+              </span>
+            )}
+          </button>
+
+          <div className="h-6 w-px bg-[#333333]" />
+
+          <button
+            type="button"
+            onClick={() => setShowQuickTester(true)}
+            title={t('scrape.testerTitle')}
+            className="dock-btn"
+            aria-label={t('scrape.testerTitle')}
+          >
+            <FlaskConical className="size-5 text-[#FF6B50]" />
+          </button>
+
+          <div className="h-6 w-px bg-[#333333]" />
+
+          <button
+            type="button"
+            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            title={t('lang.other')}
+            className="dock-btn"
+            aria-label={t('lang.other')}
+          >
+            <Languages className="size-5" />
+          </button>
+
+          <div className="h-6 w-px bg-[#333333]" />
+
+          {/* Primary CTA button in #FF6B50 with black bold text */}
+          {!workbook ? (
+            <button
+              type="button"
+              onClick={scrollToTool}
+              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105 active:scale-95"
+            >
+              <Sparkles className="size-4" />
+              <span>{t('lp.cta.primary')}</span>
+            </button>
+          ) : step === 1 ? (
+            <button
+              type="button"
+              onClick={() => setActiveStep(2)}
+              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105"
+            >
+              <span>{t('step.nextToMapping')}</span>
+              <ArrowRight className="size-4" />
+            </button>
+          ) : step === 2 ? (
+            <button
+              type="button"
+              onClick={handleFinishMapping}
+              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105"
+            >
+              <span>{t('step.nextToExport')}</span>
+              <ArrowRight className="size-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={!validation?.ok}
+              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105 disabled:opacity-50"
+            >
+              <Download className="size-4" />
+              <span>{t('btn.download')}</span>
+            </button>
+          )}
+        </div>
+
         {/* Global Toast Notifications */}
         <ToastContainer />
       </div>

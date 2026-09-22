@@ -22,8 +22,8 @@ export default function PromoTitleEditor({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-      <p className="mb-3 text-sm text-slate-500">{t('promo.note')}</p>
+    <div className="rounded-xl border border-white/10 bg-[#161616] p-4">
+      <p className="mb-3 text-xs text-[#A3A3A3]">{t('promo.note')}</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label>{t('promo.fallbackLabel')}</Label>
@@ -40,10 +40,10 @@ export default function PromoTitleEditor({
         </div>
         <div>
           <Label>{t('promo.truncateLabel')}</Label>
-          <label className="flex cursor-pointer items-center gap-2 py-2 text-sm text-slate-700">
+          <label className="flex cursor-pointer items-center gap-2 py-2 text-xs text-[#D4D4D4]">
             <input
               type="checkbox"
-              className="accent-indigo-600"
+              className="accent-[#FF6B50]"
               checked={promoTitle.truncate}
               onChange={(e) => onChange({ ...promoTitle, truncate: e.target.checked })}
             />
