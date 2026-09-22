@@ -67,8 +67,10 @@ export default function RecentExports({
           setDragging(false)
           void handleImport(e.dataTransfer.files[0])
         }}
-        className={`hard-2 lift w-full cursor-pointer px-4 py-3 font-extrabold text-(--ink) ${
-          dragging ? 'bg-(--mustard)' : 'bg-white'
+        className={`lift w-full cursor-pointer border px-4 py-3 font-extrabold transition ${
+          dragging
+            ? 'border-[color:var(--mustard)] bg-[color:var(--mustard)] text-[color:var(--on-mustard)]'
+            : 'border-white/12 bg-[#1A1A1A] text-[color:var(--ink)] hover:border-white/30 hover:bg-[#262626]'
         }`}
         style={{ borderRadius: 'var(--r-card)', fontSize: 'var(--fs-body)' }}
       >
@@ -189,7 +191,7 @@ function Entry({
     .join(' · ')
 
   return (
-    <li className="hard-2 bg-white px-3 py-2.5" style={{ borderRadius: 'var(--r-card)' }}>
+    <li className="border border-white/10 bg-[#141414] px-3 py-2.5" style={{ borderRadius: 'var(--r-card)' }}>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -257,8 +259,10 @@ function IconButton({
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`flex h-8 w-8 items-center justify-center border-2 border-(--ink) bg-white font-extrabold text-(--ink) transition disabled:cursor-not-allowed disabled:border-transparent disabled:text-(--ink)/25 ${
-        danger ? 'hover:bg-(--error) hover:text-white' : 'hover:bg-(--teal)'
+      className={`flex h-8 w-8 items-center justify-center border border-white/15 bg-[#1A1A1A] font-extrabold text-[color:var(--ink)] transition disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[color:var(--dead)] disabled:text-[color:var(--dead-ink)] ${
+        danger
+          ? 'hover:border-[color:var(--error)] hover:bg-[color:var(--error)] hover:text-[#050505]'
+          : 'hover:border-[color:var(--teal)] hover:bg-[color:var(--teal)] hover:text-[color:var(--on-teal)]'
       }`}
       style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
     >

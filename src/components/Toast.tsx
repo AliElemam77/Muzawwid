@@ -51,13 +51,13 @@ export default function ToastContainer() {
             className={`hard-2 flex items-center gap-2.5 px-4 py-2.5 font-bold shadow-lg pointer-events-auto transition-all transform animate-bounce-short ${bg}`}
             style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-body)' }}
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs font-black text-[color:var(--ink)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#050505]/85 text-xs font-black text-white">
               {toast.type === 'warning' ? (
-                <AlertTriangle className="size-3 text-[color:var(--ink)]" />
+                <AlertTriangle className="size-3" />
               ) : toast.type === 'info' ? (
-                <Info className="size-3 text-[color:var(--ink)]" />
+                <Info className="size-3" />
               ) : (
-                <Check className="size-3 text-[color:var(--ink)] stroke-[3]" />
+                <Check className="size-3 stroke-[3]" />
               )}
             </span>
             <span>{toast.text}</span>

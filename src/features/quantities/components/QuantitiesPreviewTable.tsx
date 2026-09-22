@@ -211,7 +211,7 @@ export default function QuantitiesPreviewTable({
 
       {/* --- Header ------------------------------------------------------- */}
       <div
-        className="grid items-center gap-2 border-1 border-[color:var(--ink)] bg-[color:var(--teal)] px-3 py-2 font-extrabold text-[color:var(--ink)]"
+        className="grid items-center gap-2 border border-white/12 bg-[#1D1D1D] px-3 py-2 font-extrabold text-white"
         style={{ gridTemplateColumns: COLUMNS, fontSize: 'var(--fs-label)' }}
       >
         <span />
@@ -227,7 +227,7 @@ export default function QuantitiesPreviewTable({
       <div
         ref={viewportRef}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        className="scroll-thin overflow-auto border-x-2 border-b-2 border-[color:var(--ink)] bg-white"
+        className="scroll-thin overflow-auto border-x border-b border-white/12 bg-[#111111]"
         style={{ height: VIEWPORT_HEIGHT }}
       >
         <div style={{ height: visible.length * ROW_HEIGHT, position: 'relative' }}>
@@ -239,12 +239,16 @@ export default function QuantitiesPreviewTable({
               return (
                 <div
                   key={index}
-                  className="grid items-center gap-2 border-b border-[color:var(--ink)]/15 px-3"
+                  className="grid items-center gap-2 border-b border-white/8 px-3"
                   style={{
                     gridTemplateColumns: COLUMNS,
                     height: ROW_HEIGHT,
                     fontSize: 'var(--fs-label)',
-                    background: isParent ? 'color-mix(in srgb, var(--teal) 18%, white)' : undefined,
+                    // Mixed into the dark ground, not into white — mixing to
+                    // white left a pale row carrying white text.
+                    background: isParent
+                      ? 'color-mix(in srgb, var(--teal) 18%, #111111)'
+                      : undefined,
                   }}
                 >
                   <input
@@ -266,7 +270,7 @@ export default function QuantitiesPreviewTable({
                     value={row.unlimited}
                     onChange={(e) => patch(index, { unlimited: e.target.value as Unlimited })}
                     aria-label={`${QUANTITY_HEADERS[4]} — ${row.name}`}
-                    className="w-full border-1 border-[color:var(--ink)] bg-white px-1 py-1 font-bold text-[color:var(--ink)] outline-none"
+                    className="w-full border border-white/15 bg-[#1A1A1A] px-1 py-1 font-bold text-[color:var(--ink)] outline-none transition focus:border-[color:var(--coral-accent)]"
                     style={{ borderRadius: 'var(--r-input)' }}
                   >
                     <option value={UNLIMITED}>{UNLIMITED}</option>
@@ -281,7 +285,7 @@ export default function QuantitiesPreviewTable({
                     disabled={unlimited}
                     onChange={(e) => setQuantity(index, e.target.value)}
                     title={unlimited ? t('qty.unlimitedNoNumber') : undefined}
-                    className="w-full border-1 border-[color:var(--ink)] bg-white px-2 py-1 text-[color:var(--ink)] outline-none disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent"
+                    className="w-full border border-white/15 bg-[#1A1A1A] px-2 py-1 text-[color:var(--ink)] outline-none transition focus:border-[color:var(--coral-accent)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent disabled:text-[color:var(--dead-ink)]"
                     style={{ borderRadius: 'var(--r-input)' }}
                   />
                   <button

@@ -53,7 +53,7 @@ export default function RichTextEditor({
 
   return (
     <div
-      className="overflow-hidden border-1 border-[color:var(--ink)] bg-white"
+      className="overflow-hidden border border-white/12 bg-[#141414]"
       style={{ borderRadius: 'var(--r-input)' }}
     >
       <div className="flex flex-wrap items-center gap-1 border-b-2 border-[color:var(--ink)]/15 p-1.5">

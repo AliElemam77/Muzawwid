@@ -165,10 +165,13 @@ export default function ImageScraper({
           >
             <span
               aria-hidden="true"
-              className={`pointer-events-none inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-white text-[11px] font-black shadow-md transition duration-200 ease-in-out ${
+              // Knob colour is inline: the `bg-white` utility is rewritten to a
+              // dark surface by tokens.css, which hid the glyph on its track.
+              style={{ background: '#FFFFFF' }}
+              className={`pointer-events-none inline-flex h-6 w-6 transform items-center justify-center rounded-full text-[11px] font-black shadow-md transition duration-200 ease-in-out ${
                 enabled
-                  ? 'translate-x-7 text-[#12b3a4]'
-                  : 'translate-x-0 text-[#666666]'
+                  ? 'translate-x-7 text-[#0E7C72]'
+                  : 'translate-x-0 text-[#555555]'
               }`}
             >
               {enabled ? <Check className="size-3.5 stroke-[3]" /> : <X className="size-3.5 stroke-[3]" />}

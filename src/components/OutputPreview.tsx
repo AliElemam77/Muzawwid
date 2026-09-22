@@ -453,7 +453,7 @@ export default function OutputPreview({
                                   'whitespace-nowrap rounded-md border px-2 py-1 text-xs font-bold transition ' +
                                   (editingImages
                                     ? 'border-[color:var(--violet)] bg-[color:var(--violet)] text-white'
-                                    : 'border-black/20 bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]')
+                                    : 'border-white/15 bg-[#1A1A1A] text-[color:var(--ink)] hover:border-white/30 hover:bg-[#262626]')
                                 }
                               >
                                 {t('preview.imagesBtn', { n: count })}

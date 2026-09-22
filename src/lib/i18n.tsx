@@ -18,6 +18,41 @@ const MESSAGES: Record<Lang, Dict> = {
   ar: {
     'lang.other': 'English',
 
+    'btn.close': 'إغلاق',
+
+    // --- Quick URL scraper tester (was hard-coded Arabic only) ------------
+    'tester.title': 'فاحص الروابط المباشر',
+    'tester.subtitle': 'ضع رابط أي منتج لاستخراج كل صوره بجودتها الأصلية بدون شيت.',
+    'tester.urlPlaceholder': 'https://example.com/product/123...',
+    'tester.running': 'جارٍ الفحص…',
+    'tester.fetch': 'جلب الصور',
+    'tester.runningNote': 'جارٍ فحص الرابط واستخراج بيانات المعرض والـ JSON-LD… يرجى الانتظار ثوانٍ.',
+    'tester.errorTitle': 'تعذّر استخراج الصور:',
+    'tester.errorHint': 'تأكد أن الرابط يعمل في المتصفح ويشير مباشرة إلى صفحة منتج عامة.',
+    'tester.noImages': 'لم نتمكن من العثور على صور لهذا المنتج في الصفحة.',
+    'tester.found': 'تم العثور على {n} صورة',
+    'tester.copyAll': 'نسخ كل الروابط',
+    'tester.copiedAll': 'تم نسخ جميع الروابط!',
+    'tester.view': 'عرض',
+    'tester.copy': 'نسخ',
+    'tester.copied': 'نُسخ',
+    'tester.imageAlt': 'صورة {n}',
+    'tester.imageUnavailable': 'صورة غير متاحة',
+
+    'scrape.showTester': 'تجربة رابط',
+    'scrape.hideTester': 'إخفاء المجرّب',
+
+    'preview.pageOf': 'صفحة {page} من {total} ({rows} صف)',
+    'preview.prevPage': 'السابق',
+    'preview.nextPage': 'التالي',
+
+    'opt.visual.stepNo': '{n})',
+
+    'tpl.sampleTitle': '{{اسم المنتج}}',
+    'tpl.sampleLine1': 'الخامة: {{الخامة}}',
+    'tpl.sampleLine2': 'الماركة: {{الماركة}}',
+
+
     'hint.dismiss': 'إخفاء',
     'history.rows': '{n} صف',
     'saved.count': '{n} منتج',
@@ -637,6 +672,41 @@ const MESSAGES: Record<Lang, Dict> = {
   en: {
     'lang.other': 'العربية',
 
+    'btn.close': 'Close',
+
+    // --- Quick URL scraper tester (was hard-coded Arabic only) ------------
+    'tester.title': 'Live scraper tester',
+    'tester.subtitle': 'Paste any product URL to pull every image at full quality — no sheet needed.',
+    'tester.urlPlaceholder': 'https://example.com/product/123...',
+    'tester.running': 'Scanning…',
+    'tester.fetch': 'Fetch images',
+    'tester.runningNote': 'Scanning the URL and reading the gallery and JSON-LD data… this takes a few seconds.',
+    'tester.errorTitle': 'Could not extract the images:',
+    'tester.errorHint': 'Check that the URL opens in a browser and points straight at a public product page.',
+    'tester.noImages': 'We could not find any images for this product on the page.',
+    'tester.found': 'Found {n} images',
+    'tester.copyAll': 'Copy all links',
+    'tester.copiedAll': 'All links copied!',
+    'tester.view': 'Open',
+    'tester.copy': 'Copy',
+    'tester.copied': 'Copied',
+    'tester.imageAlt': 'Image {n}',
+    'tester.imageUnavailable': 'Image unavailable',
+
+    'scrape.showTester': 'Test a URL',
+    'scrape.hideTester': 'Hide the tester',
+
+    'preview.pageOf': 'Page {page} of {total} ({rows} rows)',
+    'preview.prevPage': 'Previous',
+    'preview.nextPage': 'Next',
+
+    'opt.visual.stepNo': '{n})',
+
+    'tpl.sampleTitle': '{{Product name}}',
+    'tpl.sampleLine1': 'Material: {{Material}}',
+    'tpl.sampleLine2': 'Brand: {{Brand}}',
+
+
     'hint.dismiss': 'Dismiss',
     'history.rows': '{n} rows',
     'saved.count': '{n} products',
@@ -996,15 +1066,15 @@ const MESSAGES: Record<Lang, Dict> = {
     'qty.setAll': 'Set for all',
     'qty.setSelected': 'Set for selected ({n})',
     'qty.showing': 'Showing {shown} of {total} rows',
-    'qty.unlimitedNoNumber': 'The quantity is locked while “unlimited” is نعم.',
+    'qty.unlimitedNoNumber': 'The quantity is locked while “unlimited” is set to نعم (yes).',
     'qty.deleteRow': 'Delete row',
     'qty.deleteProduct': 'Delete product and its options ({n} rows)',
     'qty.deleteSelected': '🗑 Delete selected ({n} rows)',
     'qty.undoDelete': '↩ Undo delete',
-    'qty.allUnlimited': 'All نعم',
-    'qty.allLimited': 'All لا',
-    'qty.selectedUnlimited': 'Selected نعم ({n})',
-    'qty.selectedLimited': 'Selected لا ({n})',
+    'qty.allUnlimited': 'All unlimited',
+    'qty.allLimited': 'All limited',
+    'qty.selectedUnlimited': 'Selected unlimited ({n})',
+    'qty.selectedLimited': 'Selected limited ({n})',
 
     'images.note': 'Pick image columns — non-empty URLs are merged (de-duplicated) into the product image field.',
 
