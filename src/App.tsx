@@ -42,6 +42,7 @@ import ModeSelector, { type Mode } from './features/quantities/components/ModeSe
 import QuantitiesStandalone from './features/quantities/components/QuantitiesStandalone'
 import SavedSheets from './components/SavedSheets'
 import ToastContainer from './components/Toast'
+import QuickScraperTester from './components/QuickScraperTester'
 import type { HistoryItem } from './lib/types'
 
 export default function App() {
@@ -384,6 +385,7 @@ export default function App() {
         {/* Which of Salla's two files are we here for? The products flow below
             is the original one, unchanged — only gated behind the choice. */}
         <div ref={toolRef}>
+          <QuickScraperTester />
           {mode === null && <ModeSelector onPick={setMode} />}
           {mode === 'quantities' && <QuantitiesStandalone onBack={() => setMode(null)} />}
         </div>
