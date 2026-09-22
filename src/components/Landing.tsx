@@ -495,10 +495,11 @@ export default function Landing({
               </svg>
             </a>
             <a
-              href={LINKS.wepix}
+              href={LINKS.portfolio}
               target="_blank"
               rel="noreferrer"
-              title="Wepix"
+              title={t('links.portfolio')}
+              aria-label={t('links.portfolio')}
               className="circle-social-btn"
             >
               <ExternalLink className="size-5" />

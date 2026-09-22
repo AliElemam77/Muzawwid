@@ -17,6 +17,7 @@ type Dict = Record<string, string>
 const MESSAGES: Record<Lang, Dict> = {
   ar: {
     'lang.other': 'English',
+    'links.portfolio': 'معرض الأعمال',
 
     'btn.close': 'إغلاق',
 
@@ -238,7 +239,8 @@ const MESSAGES: Record<Lang, Dict> = {
     'step.upload': 'رفع الملف',
     'step.map': 'مطابقة الأعمدة',
     'step.export': 'تصدير',
-    'step.nextToMapping': 'متابعة إلى مطابقة الأعمدة ←',
+    'step.nextToMapping': 'متابعة إلى مطابقة الأعمدة',
+    'step.nextToExport': 'معاينة وتصدير',
     'step.backToMapping': '← عودة لتعديل المطابقة',
     'step.backToSource': 'مراجعة الملف الأصلي',
     'step.activeFile': 'الملف الحالي:',
@@ -254,10 +256,11 @@ const MESSAGES: Record<Lang, Dict> = {
     'field.requiredBadge': 'مطلوب',
     'field.sample': 'مثال: {v}',
     'field.searchPlaceholder': 'ابحث في الحقول…',
+    'field.hide': 'شيل الحقل ده من القائمة',
     'field.moreTitle': 'حقول إضافية',
     'field.moreHint':
-      'الحقول فوق هي الأهم. اضغط على أي حقل هنا عشان يظهر وتقدر تربطه — واضغط تاني عشان تخفيه.',
-    'field.moreLocked': 'الحقل ده مربوط بالفعل — مش هيتخفي',
+      'اضغط على أي حقل عشان يظهر أو يختفي. تقدر كمان تشيل أي كارت من علامة × اللي عليه — الحقل المربوط لازم تحطه «بدون» الأول.',
+    'field.moreLocked': 'الحقل ده مربوط بالفعل — حطه «بدون» الأول عشان تقدر تشيله',
     'field.moreCount': 'ظاهر {shown} من {total}',
     'field.filterAll': 'كل الحقول',
     'field.filterRequired': 'الإلزامية',
@@ -670,6 +673,7 @@ const MESSAGES: Record<Lang, Dict> = {
 
   en: {
     'lang.other': 'العربية',
+    'links.portfolio': 'Portfolio',
 
     'btn.close': 'Close',
 
@@ -891,7 +895,8 @@ const MESSAGES: Record<Lang, Dict> = {
     'step.upload': 'Upload',
     'step.map': 'Map columns',
     'step.export': 'Export',
-    'step.nextToMapping': 'Continue to Column Mapping →',
+    'step.nextToMapping': 'Continue to column mapping',
+    'step.nextToExport': 'Preview and export',
     'step.backToMapping': '← Back to Mapping',
     'step.backToSource': 'Review source file',
     'step.activeFile': 'Active file:',
@@ -907,10 +912,11 @@ const MESSAGES: Record<Lang, Dict> = {
     'field.requiredBadge': 'Required',
     'field.sample': 'e.g. {v}',
     'field.searchPlaceholder': 'Search fields…',
+    'field.hide': 'Remove this field from the grid',
     'field.moreTitle': 'More fields',
     'field.moreHint':
-      'The fields above are the essentials. Click any field here to show it and map it — click again to hide it.',
-    'field.moreLocked': 'This field is already mapped — it stays visible',
+      'Click any field to show or hide it. You can also remove a card with its × — a field that is still mapped must be set to «none» first.',
+    'field.moreLocked': 'This field is still mapped — set it to «none» before removing it',
     'field.moreCount': 'Showing {shown} of {total}',
     'field.filterAll': 'All Fields',
     'field.filterRequired': 'Required',

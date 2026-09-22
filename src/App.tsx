@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { readWorkbook, type SourceWorkbook } from './lib/reader'
 import type { MappingConfig } from './lib/types'
 import { autoMap } from './lib/automap'
@@ -347,6 +347,30 @@ export default function App() {
       downloadWorkbook(adapter.serialize(products), adapter.fileName)
     }
   }
+
+  /**
+   * The dock's single primary action, resolved from where the user is. Four
+   * near-identical buttons used to be inlined here; the only things that ever
+   * differed are below.
+   */
+  const dockCta: {
+    onClick: () => void
+    label: string
+    leadingIcon?: ReactNode
+    showArrow?: boolean
+    disabled?: boolean
+  } = !workbook
+    ? { onClick: scrollToTool, label: t('lp.cta.primary'), leadingIcon: <Sparkles className="size-4" /> }
+    : step === 1
+      ? { onClick: () => setActiveStep(2), label: t('step.nextToMapping'), showArrow: true }
+      : step === 2
+        ? { onClick: handleFinishMapping, label: t('step.nextToExport'), showArrow: true }
+        : {
+            onClick: handleExport,
+            label: t('btn.download'),
+            leadingIcon: <Download className="size-4" />,
+            disabled: !validation?.ok,
+          }
 
   return (
     <div className="min-h-full bg-[#050505] text-[#EBEBEB]">
@@ -770,9 +794,7 @@ export default function App() {
           >
             <FolderArchive className="size-5" />
             {history.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF6B50] text-[10px] font-black text-[#050505] px-1">
-                {history.length}
-              </span>
+              <span className="dock-badge">{history.length}</span>
             )}
           </button>
 
@@ -802,45 +824,21 @@ export default function App() {
 
           <div className="h-6 w-px bg-[#333333]" />
 
-          {/* Primary CTA button in #FF6B50 with black bold text */}
-          {!workbook ? (
-            <button
-              type="button"
-              onClick={scrollToTool}
-              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105 active:scale-95"
-            >
-              <Sparkles className="size-4" />
-              <span>{t('lp.cta.primary')}</span>
-            </button>
-          ) : step === 1 ? (
-            <button
-              type="button"
-              onClick={() => setActiveStep(2)}
-              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105"
-            >
-              <span>{t('step.nextToMapping')}</span>
-              <ArrowRight className="size-4" />
-            </button>
-          ) : step === 2 ? (
-            <button
-              type="button"
-              onClick={handleFinishMapping}
-              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105"
-            >
-              <span>{t('step.nextToExport')}</span>
-              <ArrowRight className="size-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={!validation?.ok}
-              className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-5 py-2.5 text-xs sm:text-sm font-black text-[#050505] tracking-wider uppercase shadow-lg shadow-[#FF6B50]/30 transition-all duration-300 hover:bg-[#ff856e] hover:scale-105 disabled:opacity-50"
-            >
-              <Download className="size-4" />
-              <span>{t('btn.download')}</span>
-            </button>
-          )}
+          {/* Primary CTA — one button whose job changes with the step. */}
+          <button
+            type="button"
+            onClick={dockCta.onClick}
+            disabled={dockCta.disabled}
+            title={dockCta.label}
+            className="dock-cta"
+          >
+            {dockCta.leadingIcon}
+            <span>{dockCta.label}</span>
+            {dockCta.showArrow && (
+              // Points the way the reader is going: flipped under dir="rtl".
+              <ArrowRight className="size-4 rtl:rotate-180" />
+            )}
+          </button>
         </div>
 
         {/* Global Toast Notifications */}

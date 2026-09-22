@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import type { FieldSource } from '../lib/types'
 import { useI18n } from '../lib/i18n'
 import { Select, TextInput } from './ui'
@@ -10,6 +11,7 @@ export default function FieldMapper({
   required,
   sampleValues,
   onChange,
+  onHide,
 }: {
   label: string
   columns: string[]
@@ -17,6 +19,9 @@ export default function FieldMapper({
   required?: boolean
   sampleValues?: Record<string, string>
   onChange: (next: FieldSource) => void
+  /** Present only when this card may be taken off the grid — the caller
+   *  withholds it for a required field, and for one that is still mapped. */
+  onHide?: () => void
 }) {
   const { t } = useI18n()
   const isMapped =
@@ -43,21 +48,34 @@ export default function FieldMapper({
         <span className="text-sm font-black text-white leading-tight">
           {label}
         </span>
-        {required ? (
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black border ${
-              isMapped
-                ? 'bg-[#12b3a4]/20 border-[#12b3a4]/40 text-[#2FE0CF]'
-                : 'bg-[#FF6B50]/20 border-[#FF6B50]/40 text-[#FF856E]'
-            }`}
-          >
-            {isMapped ? '✓ ' + t('field.requiredBadge') : t('field.requiredBadge') + ' *'}
-          </span>
-        ) : isMapped ? (
-          <span className="shrink-0 rounded-full bg-[#12b3a4]/20 border border-[#12b3a4]/40 px-2 py-0.5 text-[10px] font-bold text-[#2FE0CF]">
-            ✓
-          </span>
-        ) : null}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {required ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black border ${
+                isMapped
+                  ? 'bg-[#12b3a4]/20 border-[#12b3a4]/40 text-[#2FE0CF]'
+                  : 'bg-[#FF6B50]/20 border-[#FF6B50]/40 text-[#FF856E]'
+              }`}
+            >
+              {isMapped ? '✓ ' + t('field.requiredBadge') : t('field.requiredBadge') + ' *'}
+            </span>
+          ) : isMapped ? (
+            <span className="rounded-full bg-[#12b3a4]/20 border border-[#12b3a4]/40 px-2 py-0.5 text-[10px] font-bold text-[#2FE0CF]">
+              ✓
+            </span>
+          ) : null}
+          {onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              title={t('field.hide')}
+              aria-label={t('field.hide')}
+              className="flex size-5 items-center justify-center rounded-full text-[#888888] transition hover:bg-[#FF6B50]/15 hover:text-[#FF856E]"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </span>
       </div>
 
       {/* Controls */}

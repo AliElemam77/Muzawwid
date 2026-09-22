@@ -97,7 +97,8 @@ const SIMPLE_FIELDS: {
   { header: F.taxExemptReason, labelKey: 'f.taxExemptReason' },
 ]
 
-const EXTRA_FIELDS = SIMPLE_FIELDS.filter((f) => !f.core)
+/** Everything the user may take off the grid — a required field never can. */
+const PICKABLE_FIELDS = SIMPLE_FIELDS.filter((f) => !f.required)
 
 /** Linear stepper for the Map sub-sections with completion indicators. */
 function SubStepper({
@@ -218,31 +219,56 @@ export default function MappingPanel({
   }
 
   const [fieldFilter, setFieldFilter] = useState<'all' | 'required' | 'mapped' | 'unmapped'>('all')
-  /** Non-core fields the user revealed from the "more fields" picker. */
+  /** Fields the user pulled onto the grid, and ones they took off it. */
   const [shownExtras, setShownExtras] = useState<Set<string>>(new Set())
+  const [hiddenFields, setHiddenFields] = useState<Set<string>>(new Set())
 
   const isMappedField = (header: string) => {
     const src = config.fields[header]
     return !!src && (src.kind === 'column' || src.kind === 'constant')
   }
 
-  /** Core + anything already mapped + anything the user asked to see. */
+  /**
+   * Required first, then anything still mapped — a card carrying a real
+   * mapping is never hidden, which is why the × is withheld until the field is
+   * set to «بدون». Past that: core by default, plus whatever was pulled in,
+   * minus whatever was dismissed.
+   */
   const visibleFields = useMemo(
     () =>
-      SIMPLE_FIELDS.filter(
-        (f) => f.core || isMappedField(f.header) || shownExtras.has(f.header),
-      ),
+      SIMPLE_FIELDS.filter((f) => {
+        if (f.required || isMappedField(f.header)) return true
+        if (hiddenFields.has(f.header)) return false
+        return f.core || shownExtras.has(f.header)
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [config.fields, shownExtras],
+    [config.fields, shownExtras, hiddenFields],
   )
 
-  function toggleExtra(header: string) {
+  const isFieldVisible = (header: string) =>
+    visibleFields.some((f) => f.header === header)
+
+  /** Take a card off the grid. Only ever called for unmapped, optional fields. */
+  function hideField(header: string) {
     setShownExtras((prev) => {
       const next = new Set(prev)
-      if (next.has(header)) next.delete(header)
-      else next.add(header)
+      next.delete(header)
       return next
     })
+    setHiddenFields((prev) => new Set(prev).add(header))
+  }
+
+  function toggleExtra(header: string) {
+    if (isFieldVisible(header)) {
+      hideField(header)
+      return
+    }
+    setHiddenFields((prev) => {
+      const next = new Set(prev)
+      next.delete(header)
+      return next
+    })
+    setShownExtras((prev) => new Set(prev).add(header))
   }
 
   const fieldCounts = useMemo(() => {
@@ -335,6 +361,11 @@ export default function MappingPanel({
                   sampleValues={sampleValues}
                   source={config.fields[f.header] ?? { kind: 'none' }}
                   onChange={(source) => setField(f.header, source)}
+                  onHide={
+                    f.required || isMappedField(f.header)
+                      ? undefined
+                      : () => hideField(f.header)
+                  }
                 />
               ))}
             </div>
@@ -356,9 +387,9 @@ export default function MappingPanel({
                   {t('field.moreHint')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {EXTRA_FIELDS.map((f) => {
+                  {PICKABLE_FIELDS.map((f) => {
                     const mapped = isMappedField(f.header)
-                    const on = mapped || shownExtras.has(f.header)
+                    const on = isFieldVisible(f.header)
                     return (
                       <button
                         key={f.header}
