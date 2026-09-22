@@ -21,6 +21,7 @@ import { classifyUrl, isImageUrl } from './urls'
 import type { SourceRow, SourceSheet } from './reader'
 import type { MappingConfig } from './types'
 import { F } from './salla'
+import { gunzipSync, strFromU8 } from 'fflate'
 
 // --- HTML parsing -----------------------------------------------------------
 // Regex rather than DOMParser on purpose: this module is unit-tested under the
@@ -246,19 +247,98 @@ function findNextImages(obj: unknown, urls: string[], depth = 0): void {
 }
 
 /**
- * Product images embedded in Next.js / React SSR hydration payloads.
+ * Decompress any Next.js App Router RSC chunks encoded as base64 gzip ("H4sI...").
+ */
+function decompressNextChunks(html: string): string {
+  let decompressedAll = ''
+  const b64Regex = /"H4sI([A-Za-z0-9+/=]+)"/g
+  let match
+  while ((match = b64Regex.exec(html)) !== null) {
+    try {
+      const b64 = 'H4sI' + match[1]
+      const binary = atob(b64)
+      const u8 = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) {
+        u8[i] = binary.charCodeAt(i)
+      }
+      decompressedAll += strFromU8(gunzipSync(u8)) + '\n'
+    } catch {
+      /* ignore decompression failure */
+    }
+  }
+  return decompressedAll
+}
+
+function extractImagesFromRscText(text: string, urls: string[]): void {
+  // 1. "productImages": [ { "imageUrl": "..." }, ... ]
+  const piRegex = /\\?"productImages\\?"\s*:\s*(\[[^\]]+\])/g
+  let m
+  while ((m = piRegex.exec(text)) !== null) {
+    try {
+      const cleanJson = m[1].replace(/\\"/g, '"')
+      const arr = JSON.parse(cleanJson)
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          const u = item?.imageUrl || item?.url || item?.src || item
+          if (typeof u === 'string' && !isJunkImage(u)) urls.push(u)
+        }
+      }
+    } catch {
+      const urlMatches = m[1].match(/(?:https?:)?\/\/[^"'\s\\]+/gi) || []
+      for (const u of urlMatches) {
+        if (!isJunkImage(u)) urls.push(u)
+      }
+    }
+  }
+
+  // 2. "gallery": [ ... ] or "images": [ ... ] or "media": [ ... ]
+  const galleryRegex = /\\?"(?:images|gallery|media)\\?"\s*:\s*(\[[^\]]+\])/g
+  while ((m = galleryRegex.exec(text)) !== null) {
+    try {
+      const cleanJson = m[1].replace(/\\"/g, '"')
+      const arr = JSON.parse(cleanJson)
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          const u = typeof item === 'string' ? item : item?.url || item?.src || item?.imageUrl
+          if (typeof u === 'string' && !isJunkImage(u)) urls.push(u)
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Product images embedded in Next.js / React SSR hydration payloads (Pages & App Router).
  */
 function extractNextDataImages(html: string): string[] {
   const urls: string[] = []
-  const match = html.match(/<script\b[^>]*id\s*=\s*["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
-  if (!match || !match[1]) return urls
 
-  try {
-    const data = JSON.parse(match[1])
-    findNextImages(data, urls)
-  } catch {
-    /* ignore JSON parse errors */
+  // 1. Next.js Pages router: <script id="__NEXT_DATA__">
+  const match = html.match(/<script\b[^>]*id\s*=\s*["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+  if (match && match[1]) {
+    try {
+      const data = JSON.parse(match[1])
+      findNextImages(data, urls)
+    } catch {
+      /* ignore JSON parse errors */
+    }
   }
+
+  // 2. Next.js App Router: compressed RSC chunks ("H4sI...")
+  const decompressed = decompressNextChunks(html)
+  if (decompressed) {
+    extractImagesFromRscText(decompressed, urls)
+  }
+
+  // 3. Next.js App Router: uncompressed self.__next_f.push chunks
+  const pushRegex = /self\.__next_f\.push\(\[1,"([\s\S]*?)"\]\)/g
+  let pushMatch
+  while ((pushMatch = pushRegex.exec(html)) !== null) {
+    extractImagesFromRscText(pushMatch[1], urls)
+  }
+
   return dedupe(urls)
 }
 
@@ -317,25 +397,24 @@ export function hasGallery(html: string): boolean {
 
 /**
  * Extract all product gallery images from any storefront page.
- * Uses a tiered approach:
+ * Chooses the source that provides the most complete product gallery:
  * 1. Salla slider (when present on Salla stores)
- * 2. JSON-LD Schema.org Product schema (Zid, Shopify, WooCommerce, modern stores)
- * 3. Next.js / React hydration state (__NEXT_DATA__)
- * 4. Dedicated DOM gallery containers
- * 5. OpenGraph fallback (primary product photo)
+ * 2. Compares JSON-LD, Next.js / React RSC data, and DOM gallery to pick the richest set
+ * 3. OpenGraph fallback (primary product photo)
  */
 export function extractImageUrls(html: string): string[] {
   const salla = extractSallaImages(html)
   if (salla.length > 0) return salla
 
   const jsonLd = extractJsonLdImages(html)
-  if (jsonLd.length > 0) return jsonLd
-
   const nextData = extractNextDataImages(html)
-  if (nextData.length > 0) return nextData
-
   const domGallery = extractDomGalleryImages(html)
-  if (domGallery.length > 0) return domGallery
+
+  // Pick the richest gallery source
+  const candidates = [jsonLd, nextData, domGallery]
+  candidates.sort((a, b) => b.length - a.length)
+  const best = candidates[0]
+  if (best && best.length > 0) return best
 
   const og = extractOpenGraphImages(html).filter((u) => !isJunkImage(u))
   if (og.length > 0) return og

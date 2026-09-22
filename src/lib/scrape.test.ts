@@ -239,6 +239,28 @@ describe('extractImageUrls', () => {
     expect(hasGallery(html)).toBe(true)
     expect(extractImageUrls(html)).toEqual(['https://mystore.test/products/hero.jpg'])
   })
+
+  it('prefers richer Next.js RSC gallery over a single-image JSON-LD (e.g. Marks & Spencer)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Wide Leg Joggers",
+        "image": "https://cdn.test/files/single-img-1"
+      }
+      </script>
+    </head><body>
+      <script>self.__next_f.push([1,"{\\"productImages\\":[{\\"imageUrl\\":\\"https://cdn.test/files/img-1\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-2\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-3\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-4\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-5\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-6\\"}]}"])</script>
+    </body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://cdn.test/files/img-1',
+      'https://cdn.test/files/img-2',
+      'https://cdn.test/files/img-3',
+      'https://cdn.test/files/img-4',
+      'https://cdn.test/files/img-5',
+      'https://cdn.test/files/img-6',
+    ])
+  })
 })
 
 // --- Reading the sheet ------------------------------------------------------

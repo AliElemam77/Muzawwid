@@ -11,9 +11,8 @@ const URL_RE = /^https?:\/\/\S+$/i
 const IMAGE_EXT_RE =
   /\.(jpe?g|jfif|pjpeg|pjp|png|apng|webp|gif|avif|svg|bmp|ico|heic|heif)(\?|#|$)/i
 
-/** CDNs that serve images from extension-less paths (…/image/upload/abc123). */
 const IMAGE_HOST_RE =
-  /(^|\.)(cdn\.salla\.sa|cdn\.shopify\.com|res\.cloudinary\.com|images\.unsplash\.com|imagedelivery\.net|i\.imgur\.com|ibb\.co|images-na\.ssl-images-amazon\.com|m\.media-amazon\.com)$/i
+  /(^|\.)(cdn\.salla\.sa|cdn\.shopify\.com|res\.cloudinary\.com|images\.unsplash\.com|imagedelivery\.net|i\.imgur\.com|ibb\.co|images-na\.ssl-images-amazon\.com|m\.media-amazon\.com|kibocommerce\.com|scene7\.com|dam\.alfuttaim\.com|zid\.store)$/i
 
 /** `?format=webp` / `?fm=jpg` / `?output=png` — an image behind a resizer. */
 const IMAGE_QUERY_RE = /[?&](format|fm|output|ext)=(jpe?g|png|webp|gif|avif)\b/i
