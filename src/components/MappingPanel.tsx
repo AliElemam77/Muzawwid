@@ -337,14 +337,12 @@ export default function MappingPanel({
               selected={config.imageColumns}
               onChange={(imageColumns) => onChange({ ...config, imageColumns })}
             />
-            {isSalla && (
-              <ImageScraper
-                sheet={sheet}
-                config={config}
-                alreadyFilled={filledImageRows}
-                onFilled={onFillImages}
-              />
-            )}
+            <ImageScraper
+              sheet={sheet}
+              config={config}
+              alreadyFilled={filledImageRows}
+              onFilled={onFillImages}
+            />
           </>
         )
       case 'sku':

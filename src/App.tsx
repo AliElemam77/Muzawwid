@@ -396,8 +396,8 @@ export default function App() {
           </Button>
         </div>
 
-        {/* One dismissible line for Salla scraping tip */}
-        {platform === 'salla' && showScraperHint && (
+        {/* One dismissible line for scraping tip */}
+        {showScraperHint && (
           <div
             className="mb-5 flex items-start gap-2 text-[color:var(--ink)]/65"
             style={{ fontSize: 'var(--fs-label)' }}

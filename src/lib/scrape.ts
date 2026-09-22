@@ -84,9 +84,15 @@ function lightboxUrls(block: string): string[] {
   return out
 }
 
-/** Cheap check that a response really is a Salla product page. */
-export function hasGallery(html: string): boolean {
-  return /<salla-slider\b/i.test(html)
+/** Common noise terms in image URLs or tags that should never be in a product gallery */
+const NOISE_RE =
+  /(logo|icon|badge|avatar|payment|banner|flag|visa|mada|mastercard|apple[-_]?pay|tabby|tamara|stc[-_]?pay|placeholder|spinner|loader|empty)/i
+
+function isJunkImage(url: string): boolean {
+  if (NOISE_RE.test(url)) return true
+  if (/\.svg(\?|#|$)/i.test(url)) return true
+  if (PLACEHOLDER_RE.test(url)) return true
+  return false
 }
 
 /**
@@ -109,16 +115,9 @@ function gallerySlider(html: string): string {
 }
 
 /**
- * Every gallery image on a Salla product page, in the order the store shows
- * them. Returns [] for a page with no product slider.
- *
- * Two slots hold the same pictures. `thumbs` is preferred — its `src` is
- * always the real URL — while `items` (the big slider) lazy-loads everything
- * past the first slide behind a placeholder. We keep whichever slot yields
- * MORE images, so a theme that renders only the first few thumbnails still
- * produces the complete list.
+ * Gallery images on a Salla storefront page.
  */
-export function extractImageUrls(html: string): string[] {
+function extractSallaImages(html: string): string[] {
   const slider = gallerySlider(html)
   if (!slider) return []
 
@@ -129,14 +128,219 @@ export function extractImageUrls(html: string): string[] {
     itemsAt === -1 ? '' : slider.slice(itemsAt, thumbsAt > itemsAt ? thumbsAt : undefined)
 
   const thumbs = dedupe(imgUrls(thumbsBlock))
-
-  // Inside `items`, prefer the lightbox hrefs (always the full-size original,
-  // never a placeholder) and fall back to the <img> tags.
   const hrefs = dedupe(lightboxUrls(itemsBlock))
   const imgs = dedupe(imgUrls(itemsBlock))
   const items = hrefs.length >= imgs.length ? hrefs : imgs
 
   return thumbs.length >= items.length ? thumbs : items
+}
+
+function findProductImagesInJson(obj: unknown, urls: string[]): void {
+  if (!obj || typeof obj !== 'object') return
+  if (Array.isArray(obj)) {
+    for (const item of obj) findProductImagesInJson(item, urls)
+    return
+  }
+
+  const record = obj as Record<string, unknown>
+  const type = record['@type']
+
+  const isProduct =
+    typeof type === 'string'
+      ? type.toLowerCase() === 'product'
+      : Array.isArray(type)
+        ? type.some((t) => typeof t === 'string' && t.toLowerCase() === 'product')
+        : false
+
+  if (isProduct && record.image) {
+    collectJsonImages(record.image, urls)
+  }
+
+  if (Array.isArray(record['@graph'])) {
+    for (const item of record['@graph']) {
+      findProductImagesInJson(item, urls)
+    }
+  }
+}
+
+function collectJsonImages(val: unknown, urls: string[]): void {
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (trimmed && !isJunkImage(trimmed) && /^https?:\/\//i.test(trimmed)) urls.push(trimmed)
+  } else if (Array.isArray(val)) {
+    for (const item of val) collectJsonImages(item, urls)
+  } else if (val && typeof val === 'object') {
+    const rec = val as Record<string, unknown>
+    if (typeof rec.url === 'string') {
+      collectJsonImages(rec.url, urls)
+    } else if (typeof rec.contentUrl === 'string') {
+      collectJsonImages(rec.contentUrl, urls)
+    }
+  }
+}
+
+/**
+ * Standard JSON-LD Schema.org Product image extraction.
+ * Works across Zid, Shopify, WooCommerce, Magento, and most modern stores.
+ */
+function extractJsonLdImages(html: string): string[] {
+  const urls: string[] = []
+  const scriptRegex = /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  for (let match = scriptRegex.exec(html); match; match = scriptRegex.exec(html)) {
+    const content = match[1]?.trim()
+    if (!content) continue
+    try {
+      const raw = content
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&#0?39;/g, "'")
+      const parsed = JSON.parse(raw)
+      findProductImagesInJson(parsed, urls)
+    } catch {
+      if (/["']@type["']\s*:\s*["']Product["']/i.test(content)) {
+        const imgMatches = content.match(/["']image["']\s*:\s*(?:\[([^\]]+)\]|["']([^"']+)["'])/i)
+        if (imgMatches) {
+          const list = imgMatches[1] ? imgMatches[1].split(',') : [imgMatches[2]]
+          for (const item of list) {
+            const clean = item?.replace(/["'\s]/g, '')
+            if (clean && /^https?:\/\//i.test(clean) && !isJunkImage(clean)) urls.push(clean)
+          }
+        }
+      }
+    }
+  }
+  return dedupe(urls)
+}
+
+function findNextImages(obj: unknown, urls: string[], depth = 0): void {
+  if (depth > 8 || !obj || typeof obj !== 'object') return
+  if (Array.isArray(obj)) {
+    for (const item of obj) findNextImages(item, urls, depth + 1)
+    return
+  }
+
+  const record = obj as Record<string, unknown>
+  for (const [key, val] of Object.entries(record)) {
+    const lower = key.toLowerCase()
+    if (
+      (lower === 'images' || lower === 'gallery' || lower === 'media' || lower === 'photos') &&
+      Array.isArray(val)
+    ) {
+      for (const item of val) {
+        if (typeof item === 'string') {
+          if (/^https?:\/\//i.test(item) && isImageUrl(item) && !isJunkImage(item)) {
+            urls.push(item)
+          }
+        } else if (item && typeof item === 'object') {
+          const rec = item as Record<string, unknown>
+          const src = String(rec.url || rec.src || rec.original || rec.image || '')
+          if (src && /^https?:\/\//i.test(src) && isImageUrl(src) && !isJunkImage(src)) {
+            urls.push(src)
+          }
+        }
+      }
+    } else if (typeof val === 'object' && val !== null) {
+      findNextImages(val, urls, depth + 1)
+    }
+  }
+}
+
+/**
+ * Product images embedded in Next.js / React SSR hydration payloads.
+ */
+function extractNextDataImages(html: string): string[] {
+  const urls: string[] = []
+  const match = html.match(/<script\b[^>]*id\s*=\s*["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+  if (!match || !match[1]) return urls
+
+  try {
+    const data = JSON.parse(match[1])
+    findNextImages(data, urls)
+  } catch {
+    /* ignore JSON parse errors */
+  }
+  return dedupe(urls)
+}
+
+/**
+ * DOM gallery containers with standard e-commerce classnames or schema itemprop.
+ */
+function extractDomGalleryImages(html: string): string[] {
+  const urls: string[] = []
+
+  const galleryRegex =
+    /<(?:div|section|ul)\b[^>]*class\s*=\s*["'][^"']*\b(product[_-]gallery|product[_-]images|product[_-]media|product[_-]carousel|woocommerce-product-gallery|image-gallery)\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:div|section|ul)>/gi
+
+  for (let m = galleryRegex.exec(html); m; m = galleryRegex.exec(html)) {
+    const block = m[2]
+    for (const link of lightboxUrls(block)) {
+      if (!isJunkImage(link)) urls.push(link)
+    }
+    for (const img of imgUrls(block)) {
+      if (!isJunkImage(img)) urls.push(img)
+    }
+  }
+
+  const itempropRegex = /<(?:img|a)\b[^>]*itemprop\s*=\s*["']image["'][^>]*>/gi
+  for (let m = itempropRegex.exec(html); m; m = itempropRegex.exec(html)) {
+    const tag = m[0]
+    const candidate =
+      attr(tag, 'href') || attr(tag, 'src') || attr(tag, 'data-src') || attr(tag, 'data-lazy-src')
+    if (candidate && !isJunkImage(candidate)) urls.push(candidate)
+  }
+
+  return dedupe(urls)
+}
+
+/**
+ * OpenGraph meta tags fallback (og:image).
+ */
+function extractOpenGraphImages(html: string): string[] {
+  const urls: string[] = []
+  const og1 =
+    /<meta\b[^>]*property\s*=\s*["']og:image(?::secure_url)?["'][^>]*content\s*=\s*["']([^"']+)["']/gi
+  for (let m = og1.exec(html); m; m = og1.exec(html)) {
+    if (m[1]) urls.push(m[1])
+  }
+  const og2 =
+    /<meta\b[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:image(?::secure_url)?["']/gi
+  for (let m = og2.exec(html); m; m = og2.exec(html)) {
+    if (m[1]) urls.push(m[1])
+  }
+  return dedupe(urls)
+}
+
+/** Check that a response really is a product page with extractable images. */
+export function hasGallery(html: string): boolean {
+  return extractImageUrls(html).length > 0
+}
+
+/**
+ * Extract all product gallery images from any storefront page.
+ * Uses a tiered approach:
+ * 1. Salla slider (when present on Salla stores)
+ * 2. JSON-LD Schema.org Product schema (Zid, Shopify, WooCommerce, modern stores)
+ * 3. Next.js / React hydration state (__NEXT_DATA__)
+ * 4. Dedicated DOM gallery containers
+ * 5. OpenGraph fallback (primary product photo)
+ */
+export function extractImageUrls(html: string): string[] {
+  const salla = extractSallaImages(html)
+  if (salla.length > 0) return salla
+
+  const jsonLd = extractJsonLdImages(html)
+  if (jsonLd.length > 0) return jsonLd
+
+  const nextData = extractNextDataImages(html)
+  if (nextData.length > 0) return nextData
+
+  const domGallery = extractDomGalleryImages(html)
+  if (domGallery.length > 0) return domGallery
+
+  const og = extractOpenGraphImages(html).filter((u) => !isJunkImage(u))
+  if (og.length > 0) return og
+
+  return []
 }
 
 // --- Fetching ---------------------------------------------------------------
@@ -312,11 +516,12 @@ export async function fetchProductImages(
           break
         }
         const html = await res.text()
-        if (!hasGallery(html)) {
-          lastError = `${proxy.id}: not a product page`
+        const images = extractImageUrls(html)
+        if (!images.length) {
+          lastError = `${proxy.id}: not a product page or no images found`
           break
         }
-        return extractImageUrls(html)
+        return images
       } catch (err) {
         if (signal?.aborted) throw err
         lastError = `${proxy.id}: ${err instanceof Error ? err.message : String(err)}`

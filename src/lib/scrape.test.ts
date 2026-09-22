@@ -140,6 +140,105 @@ describe('extractImageUrls', () => {
     expect(hasGallery('<html><body>404</body></html>')).toBe(false)
     expect(extractImageUrls('<html><body><img src="https://x.test/a.jpg"></body></html>')).toEqual([])
   })
+
+  it('extracts images from JSON-LD Product schema (Zid / Shopify / generic stores)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": "قميص كاجوال",
+        "image": [
+          "https://media.zid.store/abc/image1.jpg",
+          "https://media.zid.store/abc/image2.jpg"
+        ]
+      }
+      </script>
+    </head><body><h1>منتج تجريبي</h1></body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual([
+      'https://media.zid.store/abc/image1.jpg',
+      'https://media.zid.store/abc/image2.jpg',
+    ])
+  })
+
+  it('extracts images from JSON-LD with @graph and ImageObject (WooCommerce / Yoast)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "name": "Page"
+          },
+          {
+            "@type": "Product",
+            "name": "Sneakers",
+            "image": [
+              { "@type": "ImageObject", "url": "https://store.test/wp-content/shoe1.jpg" },
+              { "@type": "ImageObject", "contentUrl": "https://store.test/wp-content/shoe2.jpg" }
+            ]
+          }
+        ]
+      }
+      </script>
+    </head><body></body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/wp-content/shoe1.jpg',
+      'https://store.test/wp-content/shoe2.jpg',
+    ])
+  })
+
+  it('extracts images from Next.js / React SSR hydration payload (__NEXT_DATA__)', () => {
+    const html = `<!DOCTYPE html><html><head></head><body>
+      <div id="__next"><div>React App</div></div>
+      <script id="__NEXT_DATA__" type="application/json">
+      {
+        "props": {
+          "pageProps": {
+            "product": {
+              "id": "123",
+              "title": "Smart Watch",
+              "gallery": [
+                { "src": "https://cdn.reactstore.com/watch-front.webp" },
+                { "src": "https://cdn.reactstore.com/watch-back.webp" }
+              ]
+            }
+          }
+        }
+      }
+      </script>
+    </body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual([
+      'https://cdn.reactstore.com/watch-front.webp',
+      'https://cdn.reactstore.com/watch-back.webp',
+    ])
+  })
+
+  it('extracts images from standard DOM gallery with noise filtration', () => {
+    const html = `<!DOCTYPE html><html><body>
+      <div class="product-gallery">
+        <img src="https://store.test/images/logo.png" alt="logo">
+        <img src="https://store.test/images/product-main.jpg" alt="main">
+        <a data-fslightbox="gallery" href="https://store.test/images/product-detail.jpg">Zoom</a>
+        <img src="https://store.test/icons/visa-payment.svg" alt="visa">
+      </div>
+    </body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/images/product-detail.jpg',
+      'https://store.test/images/product-main.jpg',
+    ])
+  })
+
+  it('falls back to og:image when no slider or JSON-LD is present', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:image" content="https://mystore.test/products/hero.jpg">
+    </head><body><h1>My Product</h1></body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual(['https://mystore.test/products/hero.jpg'])
+  })
 })
 
 // --- Reading the sheet ------------------------------------------------------
