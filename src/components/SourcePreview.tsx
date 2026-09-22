@@ -4,6 +4,8 @@ import { useI18n } from '../lib/i18n'
 import StepTips from './StepTips'
 
 const PREVIEW_ROWS = 10
+/** A review pane has the whole panel to itself, so it can show far more. */
+const REVIEW_ROWS = 50
 
 /** Any http(s) URL token (stops at whitespace / comma / pipe). */
 const URL_RE = /https?:\/\/[^\s,،|]+/gi
@@ -18,7 +20,14 @@ function displayCell(value: string, placeholder: string): string {
   return value.replace(URL_RE, (u) => (isImageUrl(u) ? u : placeholder))
 }
 
-/** Sheet picker (if multiple) + a preview table of the first ~10 source rows. */
+/**
+ * Sheet picker (if multiple) + a preview table of the first source rows.
+ *
+ * Omitting `onPickSheet` makes it read-only: the sheet names become plain
+ * chips and the tips are dropped. That is the shape used by the review modal,
+ * where switching sheets would silently re-run autoMap and throw away the
+ * mapping the user is in the middle of.
+ */
 export default function SourcePreview({
   workbook,
   sheet,
@@ -26,29 +35,35 @@ export default function SourcePreview({
 }: {
   workbook: SourceWorkbook
   sheet: SourceSheet
-  onPickSheet: (name: string) => void
+  onPickSheet?: (name: string) => void
 }) {
   const { t } = useI18n()
-  const rows = sheet.rows.slice(0, PREVIEW_ROWS)
+  const readOnly = onPickSheet == null
+  const rows = sheet.rows.slice(0, readOnly ? REVIEW_ROWS : PREVIEW_ROWS)
   const linkPlaceholder = t('source.hiddenLink')
 
   return (
     <div>
-      <div className="mb-4">
-        <StepTips tips={[t('tips.source.1'), t('tips.source.2'), t('tips.source.3')]} />
-      </div>
+      {!readOnly && (
+        <div className="mb-4">
+          <StepTips tips={[t('tips.source.1'), t('tips.source.2'), t('tips.source.3')]} />
+        </div>
+      )}
       {workbook.sheets.length > 1 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[#D4D4D4]">{t('source.pick')}</span>
           {workbook.sheets.map((s) => (
             <button
               key={s.name}
-              onClick={() => onPickSheet(s.name)}
+              type="button"
+              disabled={readOnly}
+              onClick={() => onPickSheet?.(s.name)}
               className={
                 'rounded-lg px-3 py-1.5 text-xs font-bold transition ' +
                 (s.name === sheet.name
                   ? 'bg-[#FF6B50] text-[#050505]'
-                  : 'bg-[#181818] border border-white/10 text-[#D4D4D4] hover:text-white hover:bg-white/5')
+                  : 'bg-[#181818] border border-white/10 text-[#D4D4D4]') +
+                (readOnly ? ' cursor-default' : ' hover:text-white hover:bg-white/5')
               }
             >
               {s.name}

@@ -159,7 +159,13 @@ export default function Landing({
       {/* =========================================================================
           HERO SECTION (Full Impact with Radial Gradient & Immediate Above-the-Fold Uploader)
           ========================================================================== */}
-      <section className="relative pt-6 pb-12 sm:pt-10 sm:pb-16">
+      {/* Fills the screen below the fixed header and centres itself in what is
+          left, so the hero breathes instead of crowding the top.
+          `100svh` (not `vh`) so a phone's collapsing URL bar cannot push the
+          uploader off-screen. `min-h`, not `h`: on a short or zoomed viewport
+          the content grows past it rather than being clipped. The 5rem / 6rem
+          subtracted are the page container's own pt-20 / sm:pt-24 header gap. */}
+      <section className="relative flex min-h-[calc(100svh-5rem)] flex-col justify-center pt-6 pb-12 sm:min-h-[calc(100svh-6rem)] sm:pt-10 sm:pb-16">
         {/* Subtle dark radial background */}
         <div
           className="pointer-events-none absolute inset-x-0 -top-10 h-[650px] -z-10"
@@ -187,10 +193,6 @@ export default function Landing({
               {t('lp.hero.title1')}
               <span className="block text-[#FF6B50]">{t('lp.hero.title2')}</span>
             </h1>
-
-            <p className="mt-5 max-w-lg font-medium text-[#D4D4D4] text-base sm:text-lg leading-relaxed">
-              {t('lp.lead')}
-            </p>
 
             {/* Quick Benefits Pills */}
             <div className="mt-6 flex flex-wrap items-center gap-2.5">

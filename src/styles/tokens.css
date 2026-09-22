@@ -266,15 +266,20 @@ table tr.even\:bg-slate-50\/50 {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Ghost is the low-emphasis button, not an invisible one. It used to rest on a
+   transparent border, so a row of ghost buttons with no filled button beside
+   them read as plain words — several call sites had started patching a border
+   back on by hand. It keeps the transparent BACKGROUND that distinguishes it
+   from `--secondary`, and gains a resting outline so it reads as pressable. */
 .btn--ghost {
   background: transparent;
   color: #D4D4D4;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .btn--ghost:hover:not(:disabled) {
-  background: #1A1A1A;
+  background: #262626;
   color: #FFFFFF;
-  border-color: #333333;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .btn--danger {
@@ -777,4 +782,85 @@ table tr.even\:bg-slate-50\/50 {
 .bg-neutral-100 {
   background-color: #161616 !important;
   color: #ffffff !important;
+}
+
+/* =============================================================================
+   Modal — one flat panel, nothing competing with the content inside it.
+   ========================================================================== */
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: modal-fade 0.18s ease-out;
+}
+
+.modal-panel {
+  background: #101010;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-card);
+  box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.85);
+  animation: modal-rise 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+/* =============================================================================
+   Floating side rail — the stacked round actions pinned to the page edge.
+   ========================================================================== */
+
+.rail {
+  position: fixed;
+  inset-inline-end: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1a1a1a;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.8);
+  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rail-btn:hover {
+  background: #262626;
+  border-color: var(--coral-accent);
+  color: var(--coral-accent);
+  transform: scale(1.06);
+}
+.rail-btn:focus-visible {
+  outline: 2px solid var(--coral-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-panel {
+    animation: none;
+  }
+  .rail-btn:hover {
+    transform: none;
+  }
 }

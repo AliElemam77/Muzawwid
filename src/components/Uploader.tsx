@@ -1,11 +1,8 @@
 import { useRef, useState } from 'react'
-import { UploadCloud, AlertCircle, Sparkles, FileSpreadsheet } from 'lucide-react'
+import { UploadCloud, AlertCircle, FileSpreadsheet } from 'lucide-react'
 import { readWorkbook, type SourceWorkbook } from '../lib/reader'
-import { createSampleWorkbook } from '../lib/sampleSheet'
-import { showToast } from './Toast'
 import { useI18n } from '../lib/i18n'
 import StepTips from './StepTips'
-import { Button } from './ui'
 
 /** Drag & drop / file-picker for .xlsx/.xls/.csv → parsed SourceWorkbook. */
 export default function Uploader({
@@ -39,12 +36,6 @@ export default function Uploader({
     } finally {
       setBusy(false)
     }
-  }
-
-  function handleLoadDemo() {
-    const demoWb = createSampleWorkbook()
-    onLoaded(demoWb)
-    showToast(t('toast.demoLoaded'), 'success')
   }
 
   return (
@@ -123,21 +114,6 @@ export default function Uploader({
           <span>{error}</span>
         </div>
       )}
-
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="text-xs font-bold text-[#D4D4D4]">
-          {t('uploader.demo')}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={handleLoadDemo}
-          className="!py-1.5 !px-3 text-xs !border-white/10 hover:!border-white/30"
-        >
-          <Sparkles className="size-3.5 text-[#FF6B50]" />
-          <span>{t('uploader.demoBtn')}</span>
-        </Button>
-      </div>
     </div>
   )
 }

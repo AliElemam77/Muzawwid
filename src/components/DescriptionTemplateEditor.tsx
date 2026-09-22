@@ -9,13 +9,14 @@ import {
   type TemplateConfig,
 } from '../lib/template'
 import {
-  TEMPLATE_STARTERS,
   loadTemplates,
   saveTemplate,
   deleteTemplate,
+  TEMPLATE_STARTERS,
   starterConfig,
   type SavedTemplate,
 } from '../lib/templatePresets'
+import { FileText } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
 import { TextInput, Button } from './ui'
 import RichTextEditor from './RichTextEditor'
@@ -154,7 +155,11 @@ export default function DescriptionTemplateEditor({
 
       {tpl.enabled && (
         <>
-          {/* --- Ready-made starting points ------------------------------- */}
+          {/* --- Ready-made starting points -------------------------------
+              These sat on a ghost button that rested on a transparent border,
+              so three of them in a row with no filled button nearby read as
+              plain words. Fixed in tokens.css — ghost now carries a resting
+              outline — and given an icon so the intent is unmistakable. */}
           <div>
             <p
               className="mb-2 font-bold text-[color:var(--ink)]/70"
@@ -163,9 +168,16 @@ export default function DescriptionTemplateEditor({
               {t('tpl.startersLabel')}
             </p>
             <div className="flex flex-wrap gap-2">
-              {TEMPLATE_STARTERS.map((s) => (
-                <Button key={s.labelKey} variant="ghost" onClick={() => setHtml(s.html)}>
-                  {t(s.labelKey)}
+              {TEMPLATE_STARTERS.map((starter) => (
+                <Button
+                  key={starter.labelKey}
+                  variant="ghost"
+                  onClick={() => setHtml(starter.html)}
+                  title={t('tpl.starterApply')}
+                  className="!py-1.5 !px-3.5 text-xs"
+                >
+                  <FileText className="size-3.5 text-[color:var(--coral-accent)]" />
+                  <span>{t(starter.labelKey)}</span>
                 </Button>
               ))}
             </div>

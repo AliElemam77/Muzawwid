@@ -25,10 +25,10 @@ function relevantColumns(section: SectionKey, config: MappingConfig): Set<string
   if (section === 'fields') {
     for (const src of Object.values(config.fields))
       if (src.kind === 'column') set.add(src.column)
+    // The SKU editor lives in this section, so its column highlights with it.
+    if (config.sku.mode === 'column' || config.sku.mode === 'regex') set.add(config.sku.column)
   } else if (section === 'images') {
     config.imageColumns.forEach((c) => set.add(c))
-  } else if (section === 'sku') {
-    if (config.sku.mode === 'column' || config.sku.mode === 'regex') set.add(config.sku.column)
   } else if (section === 'options') {
     config.options.forEach((o) => {
       set.add(o.column)
@@ -200,12 +200,14 @@ function Snippet({
 
   if (section === 'fields') {
     const mapped = Object.entries(config.fields).filter(([, s]) => s.kind !== 'none')
-    if (mapped.length === 0) return <Empty />
+    const sku = skuSample(config, row)
+    if (mapped.length === 0 && !sku) return <Empty />
     return (
       <>
         {mapped.slice(0, 8).map(([header, src]) => (
           <SnippetRow key={header} label={header} value={fieldVal(src, row)} />
         ))}
+        {sku && <SnippetRow label={t('qv.skuSample')} value={sku} />}
       </>
     )
   }
@@ -223,10 +225,6 @@ function Snippet({
         ))}
       </>
     )
-  }
-
-  if (section === 'sku') {
-    return <SnippetRow label={t('qv.skuSample')} value={skuSample(config, row)} />
   }
 
   if (section === 'options') {

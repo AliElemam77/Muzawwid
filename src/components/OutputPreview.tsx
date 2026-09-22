@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { F, optionGroupCols, ROW_PRODUCT, type SallaRow } from '../lib/salla'
-import type { RowMeta } from '../lib/build'
+import { isNumericPrice, type RowMeta } from '../lib/build'
 import { useI18n } from '../lib/i18n'
 import { TextInput, Button, Select } from './ui'
 import CategoryPicker from './CategoryPicker'
@@ -464,13 +464,24 @@ export default function OutputPreview({
 
                         // Editable Name / price
                         if (EDITABLE_TEXT_FIELDS.has(c.header) && isProduct && rowMeta) {
+                          // Salla imports the price as a number, so flag an
+                          // unparsable one right on the cell instead of leaving
+                          // it to the validation list at the bottom.
+                          const badPrice =
+                            c.header === F.price && !isNumericPrice(row[c.header] ?? '')
                           return (
                             <td key={c.header} className="px-2 py-1">
                               <TextInput
                                 value={row[c.header] ?? ''}
                                 inputMode={c.header === F.price ? 'decimal' : undefined}
                                 placeholder={t(c.labelKey)}
-                                className="min-w-32 px-2 py-1 text-xs font-bold"
+                                aria-invalid={badPrice || undefined}
+                                title={badPrice ? t('val.priceNotNumber') : undefined}
+                                className={`min-w-32 px-2 py-1 text-xs font-bold ${
+                                  badPrice
+                                    ? '!border-[#FF6B50] !bg-[#FF6B50]/10 !text-[#FF856E]'
+                                    : ''
+                                }`}
                                 onChange={(e) =>
                                   onEditField(rowMeta.sourceIndex, c.header, e.target.value)
                                 }

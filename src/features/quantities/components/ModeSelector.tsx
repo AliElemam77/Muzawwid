@@ -58,8 +58,7 @@ export default function ModeSelector({ onPick }: { onPick: (mode: Mode) => void 
             key={card.mode}
             type="button"
             onClick={() => onPick(card.mode)}
-            className="card lift p-5 text-start transition group"
-            style={{ borderColor: 'var(--ink)' }}
+            className="card lift p-5 text-start transition group hover:border-white/25"
           >
             <span
               aria-hidden

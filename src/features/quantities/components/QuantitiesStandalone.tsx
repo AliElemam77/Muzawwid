@@ -105,11 +105,8 @@ export default function QuantitiesStandalone({ onBack }: { onBack: () => void })
           <Card title={t('qty.editTitle')} subtitle={fileName}>
             {/* Inline, not a popup: it is a standing limit of this path, not
                 an error the merchant just caused. */}
-            <div
-              className="mb-4 card p-3"
-              style={{ borderColor: 'var(--ink)', background: 'var(--mustard)' }}
-            >
-              <p className="text-[color:var(--ink)]" style={{ fontSize: 'var(--fs-label)' }}>
+            <div className="mb-4 rounded-xl border border-[color:var(--mustard)]/40 bg-[color:var(--mustard)]/12 p-3">
+              <p className="text-[#ffd666]" style={{ fontSize: 'var(--fs-label)' }}>
                 {t('qty.noNewOptions')}
               </p>
             </div>
@@ -157,7 +154,7 @@ export default function QuantitiesStandalone({ onBack }: { onBack: () => void })
 function MergeSummary({ report }: { report: MergeReport }) {
   const { t } = useI18n()
   return (
-    <div className="mb-4 card p-3" style={{ borderColor: 'var(--ink)' }}>
+    <div className="mb-4 card p-3">
       <p className="font-bold text-[color:var(--ink)]" style={{ fontSize: 'var(--fs-label)' }}>
         {t('qty.merge.matched', { n: report.matched })}
       </p>

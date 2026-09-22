@@ -16,7 +16,6 @@ import { getAdapter } from './lib/adapters'
 import { loadHistory, saveHistory, deleteHistory, clearHistory } from './lib/history'
 import { loadCategories, saveCategories } from './lib/categories'
 import { loadPlatform, savePlatform, PLATFORMS, type PlatformId } from './lib/platforms'
-import { LINKS } from './lib/links'
 import { useI18n } from './lib/i18n'
 import {
   FolderArchive,
@@ -30,9 +29,9 @@ import {
   Sparkles,
   ArrowRight,
   Download,
-  ExternalLink,
 } from 'lucide-react'
 
+import QuickScraperTester from './components/QuickScraperTester'
 import Logo from './components/Logo'
 import MadeBy from './components/MadeBy'
 import AuthorCredit from './components/AuthorCredit'
@@ -56,7 +55,6 @@ import type { Mode } from './features/quantities/components/ModeSelector'
 import QuantitiesStandalone from './features/quantities/components/QuantitiesStandalone'
 import SavedSheets from './components/SavedSheets'
 import ToastContainer from './components/Toast'
-import QuickScraperTester from './components/QuickScraperTester'
 import type { HistoryItem } from './lib/types'
 
 export default function App() {
@@ -66,6 +64,7 @@ export default function App() {
   const [config, setConfig] = useState<MappingConfig | null>(null)
   const [history, setHistory] = useState(() => loadHistory())
   const [showSidebar, setShowSidebar] = useState(false)
+  const [showQuickTester, setShowQuickTester] = useState(false)
   // Manual per-product edits (name / price / category), keyed by source row index.
   const [rowOverrides, setRowOverrides] = useState<RowOverrides>({})
   // Manual per-product option edits (rename an axis/value, drop a value).
@@ -79,12 +78,12 @@ export default function App() {
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
   const [showCategories, setShowCategories] = useState(false)
   const [quickViewOpen, setQuickViewOpen] = useState(false)
+  const [sourceViewOpen, setSourceViewOpen] = useState(false)
   // Open while asking whether to keep a copy of this export on the device.
   const [exportPrompt, setExportPrompt] = useState(false)
   // Which of Salla's two files the merchant came here for. Default to 'products'.
   const [mode, setMode] = useState<Mode>('products')
   const [showScraperHint, setShowScraperHint] = useState(true)
-  const [showQuickTester, setShowQuickTester] = useState(false)
 
   const sheet = useMemo(
     () => workbook?.sheets.find((s) => s.name === sheetName) ?? null,
@@ -363,23 +362,6 @@ export default function App() {
               >
                 {t('nav.converter')}
               </span>
-              <span className="size-1 rounded-full bg-white/20" />
-              <span
-                className="cursor-pointer hover:text-white transition-colors"
-                onClick={() => setShowQuickTester(true)}
-              >
-                {t('scrape.quickTest')}
-              </span>
-              <span className="size-1 rounded-full bg-white/20" />
-              <a
-                href={LINKS.wepix}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white transition-colors flex items-center gap-1"
-              >
-                <span>Wepix</span>
-                <ExternalLink className="size-3" />
-              </a>
             </div>
           </div>
 
@@ -398,17 +380,6 @@ export default function App() {
                   {history.length}
                 </span>
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowQuickTester(true)}
-              title={t('scrape.testerTitle')}
-              aria-label={t('scrape.testerTitle')}
-              className="btn !py-1.5 !px-3 text-xs font-bold"
-            >
-              <FlaskConical className="size-3.5 text-[#FF6B50]" />
-              <span className="hidden sm:inline">{t('scrape.quickTest')}</span>
             </button>
 
             <button
@@ -561,13 +532,6 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
-                        onClick={() => setActiveStep(1)}
-                        className="!py-1.5 !px-3 text-xs"
-                      >
-                        {t('step.backToSource')}
-                      </Button>
-                      <Button
-                        variant="ghost"
                         onClick={() => setShowCategories((v) => !v)}
                         className="!py-1.5 !px-3 text-xs flex items-center gap-1"
                       >
@@ -705,15 +669,26 @@ export default function App() {
           )}
 
         {workbook && sheet && config && validation && step === 2 && (
-          <button
-            type="button"
-            onClick={() => setQuickViewOpen(true)}
-            title={t('preview.quickView')}
-            aria-label={t('preview.quickView')}
-            className="fixed end-6 top-1/2 z-30 -translate-y-1/2 flex items-center justify-center p-3 rounded-full bg-[#1A1A1A] border border-white/15 text-white hover:border-[#FF6B50] hover:text-[#FF6B50] shadow-2xl transition-all duration-300"
-          >
-            <Eye className="size-6" />
-          </button>
+          <div className="rail">
+            <button
+              type="button"
+              onClick={() => setQuickViewOpen(true)}
+              title={t('preview.quickView')}
+              aria-label={t('preview.quickView')}
+              className="rail-btn"
+            >
+              <Eye className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSourceViewOpen(true)}
+              title={t('step.backToSource')}
+              aria-label={t('step.backToSource')}
+              className="rail-btn"
+            >
+              <FileSpreadsheet className="size-5" />
+            </button>
+          </div>
         )}
 
         {exportPrompt && (
@@ -722,6 +697,12 @@ export default function App() {
             onConfirm={runExport}
             onClose={() => setExportPrompt(false)}
           />
+        )}
+
+        {sourceViewOpen && workbook && sheet && (
+          <Modal title={workbook.fileName} onClose={() => setSourceViewOpen(false)}>
+            <SourcePreview workbook={workbook} sheet={sheet} />
+          </Modal>
         )}
 
         {quickViewOpen && workbook && sheet && config && validation && (
