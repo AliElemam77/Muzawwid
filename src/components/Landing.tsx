@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react'
 import { PLATFORMS, type PlatformId } from '../lib/platforms'
+import { useReveal } from '../lib/useReveal'
 import { LINKS } from '../lib/links'
 import { useI18n } from '../lib/i18n'
 import type { SourceWorkbook } from '../lib/reader'
@@ -154,6 +155,15 @@ export default function Landing({
 }: LandingProps) {
   const { t } = useI18n()
 
+  // The hero is above the fold, so it plays on mount rather than on scroll;
+  // the rest arrive as the user reaches them.
+  const heroCopyRef = useReveal<HTMLDivElement>({ children: '> *', y: 28, stagger: 0.1, start: 'top bottom' })
+  const heroCardRef = useReveal<HTMLDivElement>({ y: 32, delay: 0.15, duration: 0.8, start: 'top bottom' })
+  const bentoRef = useReveal<HTMLDivElement>({ children: '> *', y: 36, stagger: 0.12 })
+  const featHeadRef = useReveal<HTMLDivElement>({ children: '> *', y: 20, stagger: 0.08 })
+  const featGridRef = useReveal<HTMLDivElement>({ children: '> *', y: 40, stagger: 0.14 })
+  const footerRef = useReveal<HTMLElement>({ children: '> *', y: 24, stagger: 0.1 })
+
   return (
     <div className="pb-16 text-[#FFFFFF]">
       {/* =========================================================================
@@ -188,7 +198,7 @@ export default function Landing({
         {/* Massive Editorial Headline & Hero Grid */}
         <div className="grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
           {/* Left Column: Oversized Typography & Value Proposition */}
-          <div>
+          <div ref={heroCopyRef}>
             <h1 className="editorial-title text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-[-0.05em] leading-[0.9]">
               {t('lp.hero.title1')}
               <span className="block text-[#FF6B50]">{t('lp.hero.title2')}</span>
@@ -244,7 +254,7 @@ export default function Landing({
           </div>
 
           {/* Right Column: Integrated Hero Converter Box (Above the Fold) */}
-          <div className="relative">
+          <div ref={heroCardRef} className="relative">
             <div className="card p-5 sm:p-7 bg-[#111111] border border-white/15 rounded-3xl shadow-2xl backdrop-blur-xl">
               {/* Platform Selector Header */}
               <div className="flex items-center justify-between gap-3 mb-5 border-b border-white/10 pb-4">
@@ -308,7 +318,7 @@ export default function Landing({
           BENEFITS BENTO GRID (2-Column Spec)
           ========================================================================== */}
       <section className="py-12 border-t border-white/10">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div ref={bentoRef} className="grid gap-6 md:grid-cols-2">
           {/* Column 1: #111111 rounded-3xl card with oversized typography */}
           <div className="card p-8 sm:p-10 bg-[#111111] border border-white/10 rounded-3xl flex flex-col justify-between">
             <div>
@@ -369,7 +379,7 @@ export default function Landing({
           STAGGERED WORK / FEATURE GALLERY (2-Column Staggered Spec)
           ========================================================================== */}
       <section className="py-12 border-t border-white/10">
-        <div className="mb-8">
+        <div ref={featHeadRef} className="mb-8">
           <span className="text-[11px] font-black uppercase text-[#FF6B50] tracking-[0.2em] block mb-2">
             {t('lp.feat.sectionEyebrow')}
           </span>
@@ -378,7 +388,7 @@ export default function Landing({
           </h2>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div ref={featGridRef} className="grid gap-8 md:grid-cols-2">
           {/* Project 1: Image Scraper Engine */}
           <div className="group">
             <div className="editorial-img-container mb-4 flex items-center justify-center p-8 bg-[#111111] border border-white/15">
@@ -449,7 +459,7 @@ export default function Landing({
       {/* =========================================================================
           IMPACT FOOTER (Typographic & 56px Circular Social Icons)
           ========================================================================== */}
-      <footer className="mt-20 pt-12 border-t border-white/10">
+      <footer ref={footerRef} className="mt-20 pt-12 border-t border-white/10">
         {/* Massive Editorial Typographic Block */}
         <div className="mb-12 overflow-hidden select-none">
           <div className="editorial-title text-6xl sm:text-8xl lg:text-9xl font-black text-[#3A3A3A] hover:text-[#4D4D4D] transition-colors tracking-[-0.05em] leading-[0.85] flex items-baseline">

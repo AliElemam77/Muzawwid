@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { SourceSheet } from '../lib/reader'
 import type { MappingConfig } from '../lib/types'
 import {
@@ -8,17 +8,10 @@ import {
   EMPTY_TEMPLATE,
   type TemplateConfig,
 } from '../lib/template'
-import {
-  loadTemplates,
-  saveTemplate,
-  deleteTemplate,
-  TEMPLATE_STARTERS,
-  starterConfig,
-  type SavedTemplate,
-} from '../lib/templatePresets'
+import { TEMPLATE_STARTERS, starterConfig } from '../lib/templatePresets'
 import { FileText } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
-import { TextInput, Button } from './ui'
+import { Button } from './ui'
 import RichTextEditor from './RichTextEditor'
 
 /**
@@ -42,8 +35,6 @@ export default function DescriptionTemplateEditor({
 }) {
   const { t } = useI18n()
   const tpl = config.descriptionTemplate ?? EMPTY_TEMPLATE
-  const [saved, setSaved] = useState<SavedTemplate[]>(() => loadTemplates())
-  const [saveName, setSaveName] = useState('')
   /** Caret position inside the editor, so an inserted variable lands there. */
   const savedRange = useRef<Range | null>(null)
 
@@ -84,11 +75,6 @@ export default function DescriptionTemplateEditor({
     // exactly what the document is now.
     const host = range.startContainer.parentElement?.closest('.tpl-editor')
     if (host) setHtml(host.innerHTML)
-  }
-
-  function applySaved(name: string) {
-    const found = saved.find((s) => s.name === name)
-    if (found) onChange({ enabled: true, html: found.html })
   }
 
   return (
@@ -244,57 +230,6 @@ export default function DescriptionTemplateEditor({
             </div>
           </div>
 
-          {/* --- Save / reuse ---------------------------------------------- */}
-          <div className="space-y-2 border-t border-[color:var(--ink)]/15 pt-4">
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-48 flex-1">
-                <TextInput
-                  value={saveName}
-                  placeholder={t('tpl.savePlaceholder')}
-                  onChange={(e) => setSaveName(e.target.value)}
-                />
-              </div>
-              <Button
-                variant="secondary"
-                disabled={!saveName.trim() || !tpl.html.trim()}
-                onClick={() => {
-                  setSaved(saveTemplate(saveName, tpl.html))
-                  setSaveName('')
-                }}
-              >
-                {t('tpl.saveBtn')}
-              </Button>
-            </div>
-
-            {saved.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {saved.map((s) => (
-                  <span
-                    key={s.name}
-                    className="inline-flex items-center gap-2 border border-[color:var(--ink)]/25 px-3 py-1"
-                    style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => applySaved(s.name)}
-                      className="font-bold"
-                      title={t('tpl.applyTitle')}
-                    >
-                      {s.name}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSaved(deleteTemplate(s.name))}
-                      title={t('tpl.deleteTitle')}
-                      className="text-[color:var(--ink)]/40 transition hover:text-red-600"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
         </>
       )}
     </div>

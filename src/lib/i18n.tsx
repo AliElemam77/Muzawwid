@@ -317,10 +317,6 @@ const MESSAGES: Record<Lang, Dict> = {
     'tpl.editorPlaceholder': 'اكتب الوصف هنا، وأدرج المتغيّرات من فوق…',
     'tpl.previewLabel': 'معاينة على أول منتج في ملفك',
     'tpl.previewEmpty': 'القالب فاضي، أو كل متغيّراته فاضية في هذا الصف.',
-    'tpl.savePlaceholder': 'اسم القالب لحفظه',
-    'tpl.saveBtn': 'حفظ القالب',
-    'tpl.applyTitle': 'تطبيق هذا القالب',
-    'tpl.deleteTitle': 'حذف القالب',
 
     'rte.bold': 'عريض',
     'rte.italic': 'مائل',
@@ -973,10 +969,6 @@ const MESSAGES: Record<Lang, Dict> = {
     'tpl.editorPlaceholder': 'Write the description here, and insert variables from above…',
     'tpl.previewLabel': 'Preview on the first product in your file',
     'tpl.previewEmpty': 'The template is empty, or all of its variables are empty on this row.',
-    'tpl.savePlaceholder': 'Name to save this template as',
-    'tpl.saveBtn': 'Save template',
-    'tpl.applyTitle': 'Apply this template',
-    'tpl.deleteTitle': 'Delete template',
 
     'rte.bold': 'Bold',
     'rte.italic': 'Italic',

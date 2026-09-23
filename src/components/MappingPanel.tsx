@@ -5,6 +5,7 @@ import type { FieldSource, MappingConfig, PriceField } from '../lib/types'
 import type { SourceSheet } from '../lib/reader'
 import type { PlatformId } from '../lib/platforms'
 import { useI18n } from '../lib/i18n'
+import { useReveal } from '../lib/useReveal'
 import { Card, Button, TextInput } from './ui'
 import FieldMapper from './FieldMapper'
 import ImageMerge from './ImageMerge'
@@ -289,6 +290,15 @@ export default function MappingPanel({
     return { all: visibleFields.length, required, mapped, unmapped }
   }, [config.fields, visibleFields])
 
+  // The Card stays mounted while its body swaps, so the active section drives
+  // the replay rather than a remount.
+  const editorRef = useReveal<HTMLDivElement>({
+    y: 14,
+    duration: 0.45,
+    start: 'top bottom',
+    replayKey: section.key,
+  })
+
   const filteredSimpleFields = useMemo(() => {
     const q = searchField.toLowerCase().trim()
     // Searching is an explicit lookup, so it reaches hidden fields too —
@@ -491,7 +501,7 @@ export default function MappingPanel({
           <div className="mb-3">
             <StepTips tips={SECTION_TIP_KEYS[section.key].map((key) => t(key))} />
           </div>
-          {editor()}
+          <div ref={editorRef}>{editor()}</div>
         </Card>
 
         <nav className="flex items-center justify-between gap-3">

@@ -17,6 +17,7 @@ import { loadHistory, saveHistory, deleteHistory, clearHistory } from './lib/his
 import { loadCategories, saveCategories } from './lib/categories'
 import { loadPlatform, savePlatform, PLATFORMS, type PlatformId } from './lib/platforms'
 import { useI18n } from './lib/i18n'
+import { useReveal } from './lib/useReveal'
 import {
   FolderArchive,
   FlaskConical,
@@ -372,6 +373,16 @@ export default function App() {
             disabled: !validation?.ok,
           }
 
+  // Replays whenever the active step swaps its panel in.
+  const stepRef = useReveal<HTMLDivElement>({
+    children: '> *',
+    y: 18,
+    stagger: 0.07,
+    duration: 0.55,
+    start: 'top bottom',
+    replayKey: step,
+  })
+
   return (
     <div className="min-h-full bg-[#050505] text-[#EBEBEB]">
       {/* Fixed Top Navigation */}
@@ -498,7 +509,7 @@ export default function App() {
               />
             </div>
 
-            <div className="space-y-6">
+            <div ref={stepRef} className="space-y-6">
               {/* Step 1: Upload / Source inspect */}
               {step === 1 && (
                 <>
