@@ -21,7 +21,7 @@ export default function WepixUploadModal({ onClose }: { onClose: () => void }) {
             href={LINKS.wepixEmbed}
             target="_blank"
             rel="noreferrer"
-            className="hard-2 lift bg-white px-3 py-1.5 font-bold text-(--ink)"
+            className="lift border border-white/15 bg-[#1A1A1A] px-3 py-1.5 font-bold text-[color:var(--ink)] transition hover:border-[color:var(--coral-accent)] hover:text-[color:var(--coral-accent)]"
             style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
           >
             {t('wepix.openTab')}

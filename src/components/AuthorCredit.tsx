@@ -19,13 +19,15 @@ function LinkedinIcon() {
 export default function AuthorCredit() {
   const { t } = useI18n()
 
+  // `--ink` is white and `--white` a #111111 surface in this theme, so the old
+  // pairing drew a 2px white border plus a white offset shadow around a dark
+  // pill. Same dark-chip treatment as the rest of the UI instead.
   const link =
-    'lift inline-flex items-center gap-1.5 border-2 px-2.5 py-1 font-bold text-[color:var(--ink)]'
+    'lift inline-flex items-center gap-1.5 border px-3 py-1.5 font-bold ' +
+    'border-white/15 bg-[#1A1A1A] text-[color:var(--ink)] transition ' +
+    'hover:border-[color:var(--coral-accent)] hover:text-[color:var(--coral-accent)]'
   const linkStyle = {
     borderRadius: 'var(--r-pill)',
-    borderColor: 'var(--ink)',
-    background: 'var(--white)',
-    boxShadow: 'calc(3px * var(--sh-dir)) 3px 0 var(--ink)',
     fontSize: 'var(--fs-label)',
   } as const
 

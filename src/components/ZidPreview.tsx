@@ -37,14 +37,14 @@ export default function ZidPreview({
 
   return (
     <div>
-      <p className="mb-2 text-sm text-slate-500">
+      <p className="mb-2 text-sm text-[#A3A3A3]">
         {t('zid.stats', { count: products.length })} {t('preview.editNote')}
       </p>
 
       {products.length > 0 && (
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-white/10 bg-[#161616] p-3">
           <div className="w-56">
-            <label className="mb-1 block text-xs font-medium text-slate-500">
+            <label className="mb-1 block text-xs font-medium text-[#A3A3A3]">
               {t('preview.applyAllLabel')}
             </label>
             <CategoryPicker
@@ -60,7 +60,7 @@ export default function ZidPreview({
       )}
 
       {excludedCount > 0 && (
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#161616] px-3 py-2 text-sm text-[#D4D4D4]">
           <span>{t('preview.deletedInfo', { n: excludedCount })}</span>
           <Button variant="ghost" onClick={onRestoreAll}>
             {t('preview.restoreAll')}
@@ -68,9 +68,9 @@ export default function ZidPreview({
         </div>
       )}
 
-      <div className="scroll-thin overflow-x-auto rounded-xl border border-slate-200">
+      <div className="scroll-thin overflow-x-auto rounded-xl border border-white/10 bg-[#111111] shadow-xl">
         <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-[#181818] border-b border-white/10">
             <tr>
               {[
                 t('preview.action'),
@@ -85,31 +85,31 @@ export default function ZidPreview({
               ].map((h) => (
                 <th
                   key={h}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700"
+                  className="whitespace-nowrap border-b border-white/10 px-3 py-2 text-start font-black text-white"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-white/5">
             {shown.map((p) => {
               const opts = p.options.filter((o) => o.values.length > 0)
               return (
-                <tr key={p.sourceIndex} className="odd:bg-white even:bg-slate-50/50">
-                  <td className="border-b border-slate-100 px-2 py-1">
+                <tr key={p.sourceIndex} className="odd:bg-[#141414] even:bg-[#101010] hover:bg-white/5 transition-colors">
+                  <td className="px-2 py-1">
                     <button
                       onClick={() => onDeleteItem(p.sourceIndex)}
                       title={t('preview.deleteTitle')}
-                      className="rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                      className="rounded-md border border-[#FF6B50]/40 px-2 py-1 text-xs font-bold text-[#FF6B50] transition hover:bg-[#FF6B50]/15"
                     >
                       {t('btn.delete')}
                     </button>
                   </td>
-                  <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600">
+                  <td className="whitespace-nowrap px-3 py-2 text-[#D4D4D4]">
                     {p.sku}
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-1">
+                  <td className="px-2 py-1">
                     <TextInput
                       value={p.nameAr}
                       placeholder={t('col.name')}
@@ -117,7 +117,7 @@ export default function ZidPreview({
                       onChange={(e) => onEditField(p.sourceIndex, F.name, e.target.value)}
                     />
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-1">
+                  <td className="px-2 py-1">
                     <TextInput
                       value={p.price}
                       inputMode="decimal"
@@ -126,10 +126,10 @@ export default function ZidPreview({
                       onChange={(e) => onEditField(p.sourceIndex, F.price, e.target.value)}
                     />
                   </td>
-                  <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600">
+                  <td className="whitespace-nowrap px-3 py-2 text-[#D4D4D4]">
                     {(p.weight || '1') + ' ' + (p.weightUnit || 'kg')}
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-1">
+                  <td className="border-b border-white/8 px-2 py-1">
                     <CategoryPicker
                       value={p.categoriesAr}
                       categories={categories}
@@ -137,23 +137,23 @@ export default function ZidPreview({
                       onChange={(next) => onEditField(p.sourceIndex, F.category, next)}
                     />
                   </td>
-                  <td className="whitespace-nowrap border-b border-slate-100 px-3 py-2">
-                    <span className={opts.length ? 'font-semibold text-indigo-600' : 'text-slate-400'}>
+                  <td className="whitespace-nowrap border-b border-white/8 px-3 py-2">
+                    <span className={opts.length ? 'font-semibold text-[#c4b5fd]' : 'text-[#777777]'}>
                       {opts.length ? 'Yes' : 'No'}
                     </span>
                   </td>
                   <td
-                    className="max-w-64 truncate border-b border-slate-100 px-3 py-2 text-slate-500"
+                    className="max-w-64 truncate border-b border-white/8 px-3 py-2 text-[#A3A3A3]"
                     title={opts.map((o) => `${o.nameAr}: ${o.values.join(', ')}`).join(' · ')}
                   >
                     {opts.map((o) => `${o.nameAr}: ${o.values.join(', ')}`).join(' · ')}
                   </td>
                   <td
-                    className="max-w-48 truncate border-b border-slate-100 px-3 py-2 text-slate-500"
+                    className="max-w-48 truncate border-b border-white/8 px-3 py-2 text-[#A3A3A3]"
                     title={p.images.join(', ')}
                   >
                     {p.images.length ? (
-                      <span className="text-slate-600">
+                      <span className="text-[#D4D4D4]">
                         {p.images.length > 1 ? `${p.images.length} 🖼️ · ` : ''}
                         {p.images[0]}
                       </span>

@@ -44,9 +44,9 @@ export default function Sidebar({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex h-full w-full max-w-[28rem] flex-col border-s-[3px] border-(--ink) bg-(--cream)"
+        className="flex h-full w-full max-w-[28rem] flex-col border-s border-white/12 bg-[#0D0D0D]"
       >
-        <header className="flex items-center justify-between gap-3 border-b-2 border-(--ink) bg-white px-4 py-3">
+        <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#161616] px-4 py-3">
           <h2
             id={titleId}
             className="font-extrabold text-(--ink)"
@@ -58,7 +58,7 @@ export default function Sidebar({
             type="button"
             onClick={onClose}
             aria-label={t('sidebar.close')}
-            className="hard-2 lift bg-white px-3 py-1 font-bold text-(--ink)"
+            className="lift border border-white/15 bg-[#1A1A1A] px-3 py-1 font-bold text-[color:var(--ink)] transition hover:border-[color:var(--coral-accent)] hover:text-[color:var(--coral-accent)]"
             style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
           >
             ×

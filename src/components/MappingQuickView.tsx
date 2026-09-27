@@ -25,10 +25,10 @@ function relevantColumns(section: SectionKey, config: MappingConfig): Set<string
   if (section === 'fields') {
     for (const src of Object.values(config.fields))
       if (src.kind === 'column') set.add(src.column)
+    // The SKU editor lives in this section, so its column highlights with it.
+    if (config.sku.mode === 'column' || config.sku.mode === 'regex') set.add(config.sku.column)
   } else if (section === 'images') {
     config.imageColumns.forEach((c) => set.add(c))
-  } else if (section === 'sku') {
-    if (config.sku.mode === 'column' || config.sku.mode === 'regex') set.add(config.sku.column)
   } else if (section === 'options') {
     config.options.forEach((o) => {
       set.add(o.column)
@@ -130,14 +130,14 @@ export default function MappingQuickView({
           </p>
         ) : (
           <>
-            <div className="scroll-thin overflow-x-auto border border-[color:var(--ink)]" style={{ borderRadius: '10px' }}>
+            <div className="scroll-thin overflow-x-auto border border-white/12" style={{ borderRadius: '10px' }}>
               <table className="min-w-full border-collapse" style={{ fontSize: 'var(--fs-table)' }}>
                 <thead>
-                  <tr className="bg-[color:var(--ink)]">
+                  <tr className="bg-[#1D1D1D]">
                     {sheet.headers.map((h) => (
                       <th
                         key={h}
-                        className="whitespace-nowrap px-2 py-1.5 text-start font-bold text-[color:var(--cream)]"
+                        className="whitespace-nowrap px-2 py-1.5 text-start font-bold text-white"
                         style={
                           highlight.has(h)
                             ? { boxShadow: 'inset 0 -3px 0 var(--teal)' }
@@ -200,12 +200,14 @@ function Snippet({
 
   if (section === 'fields') {
     const mapped = Object.entries(config.fields).filter(([, s]) => s.kind !== 'none')
-    if (mapped.length === 0) return <Empty />
+    const sku = skuSample(config, row)
+    if (mapped.length === 0 && !sku) return <Empty />
     return (
       <>
         {mapped.slice(0, 8).map(([header, src]) => (
           <SnippetRow key={header} label={header} value={fieldVal(src, row)} />
         ))}
+        {sku && <SnippetRow label={t('qv.skuSample')} value={sku} />}
       </>
     )
   }
@@ -223,10 +225,6 @@ function Snippet({
         ))}
       </>
     )
-  }
-
-  if (section === 'sku') {
-    return <SnippetRow label={t('qv.skuSample')} value={skuSample(config, row)} />
   }
 
   if (section === 'options') {
@@ -250,10 +248,10 @@ function Snippet({
     const d = config.defaults
     return (
       <>
-        <SnippetRow label="نوع المنتج" value={d.productType} />
-        <SnippetRow label="الوزن" value={`${d.weight} ${d.weightUnit}`} />
-        <SnippetRow label="يتطلب شحن" value={d.requiresShipping} />
-        <SnippetRow label="خاضع للضريبة" value={d.taxable} />
+        <SnippetRow label={t('f.productType')} value={d.productType} />
+        <SnippetRow label={t('f.weight')} value={`${d.weight} ${d.weightUnit}`} />
+        <SnippetRow label={t('f.requiresShipping')} value={d.requiresShipping} />
+        <SnippetRow label={t('f.taxable')} value={d.taxable} />
       </>
     )
   }

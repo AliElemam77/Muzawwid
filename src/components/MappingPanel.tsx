@@ -1,14 +1,15 @@
 import { useMemo, useRef, useState } from 'react'
+import { Check } from 'lucide-react'
 import { F } from '../lib/salla'
 import type { FieldSource, MappingConfig, PriceField } from '../lib/types'
 import type { SourceSheet } from '../lib/reader'
 import type { PlatformId } from '../lib/platforms'
 import { useI18n } from '../lib/i18n'
+import { useReveal } from '../lib/useReveal'
 import { Card, Button, TextInput } from './ui'
 import FieldMapper from './FieldMapper'
 import ImageMerge from './ImageMerge'
 import ImageScraper from './ImageScraper'
-import SkuGenerator from './SkuGenerator'
 import OptionsEditor from './OptionsEditor'
 import PromoTitleEditor from './PromoTitleEditor'
 import DefaultsEditor from './DefaultsEditor'
@@ -21,7 +22,6 @@ export type SectionKey =
   | 'fields'
   | 'description'
   | 'images'
-  | 'sku'
   | 'options'
   | 'defaults'
   | 'export'
@@ -37,7 +37,6 @@ const BASE_SECTIONS: SectionDef[] = [
   { key: 'fields', shortKey: 'map.sec.fields', titleKey: 'map.fields.title', subtitleKey: 'map.fields.subtitle' },
   { key: 'description', shortKey: 'map.sec.description', titleKey: 'tpl.title', subtitleKey: 'tpl.subtitle' },
   { key: 'images', shortKey: 'map.sec.images', titleKey: 'map.images.title', subtitleKey: 'map.images.subtitle' },
-  { key: 'sku', shortKey: 'map.sec.sku', titleKey: 'map.sku.title' },
   { key: 'options', shortKey: 'map.sec.options', titleKey: 'map.options.title', subtitleKey: 'map.options.subtitle' },
   { key: 'defaults', shortKey: 'map.sec.defaults', titleKey: 'map.defaults.title' },
 ]
@@ -60,21 +59,34 @@ const SECTION_TIP_KEYS: Record<SectionKey, string[]> = {
   fields: ['tips.fields.1', 'tips.fields.2', 'tips.fields.3'],
   description: ['tips.description.1', 'tips.description.2', 'tips.description.3'],
   images: ['tips.images.1', 'tips.images.2', 'tips.images.3'],
-  sku: ['tips.sku.1', 'tips.sku.2', 'tips.sku.3'],
   options: ['tips.options.1', 'tips.options.2', 'tips.options.3'],
   defaults: ['tips.defaults.1', 'tips.defaults.2', 'tips.defaults.3'],
   export: ['tips.export.1', 'tips.export.2', 'tips.export.3'],
 }
 
-const SIMPLE_FIELDS: { header: string; labelKey: string; required?: boolean }[] = [
-  { header: F.name, labelKey: 'f.name', required: true },
-  { header: F.price, labelKey: 'f.price', required: true },
-  { header: F.category, labelKey: 'f.category' },
-  { header: F.brand, labelKey: 'f.brand' },
-  { header: F.description, labelKey: 'f.description' },
+/**
+ * `core` fields are the handful almost every import needs, and are the only
+ * ones on screen to begin with. The rest live behind the "more fields" picker
+ * under the grid — seventeen cards at once buried the two that are required.
+ *
+ * A non-core field is still shown automatically whenever it is already mapped
+ * (autoMap guessed it, or a preset carried it), so nothing a user mapped can
+ * hide itself.
+ */
+const SIMPLE_FIELDS: {
+  header: string
+  labelKey: string
+  required?: boolean
+  core?: boolean
+}[] = [
+  { header: F.name, labelKey: 'f.name', required: true, core: true },
+  { header: F.price, labelKey: 'f.price', required: true, core: true },
+  { header: F.category, labelKey: 'f.category', core: true },
+  { header: F.brand, labelKey: 'f.brand', core: true },
+  { header: F.description, labelKey: 'f.description', core: true },
+  { header: F.discountPrice, labelKey: 'f.discountPrice', core: true },
   { header: F.imageAlt, labelKey: 'f.imageAlt' },
   { header: F.cost, labelKey: 'f.cost' },
-  { header: F.discountPrice, labelKey: 'f.discountPrice' },
   { header: F.discountStart, labelKey: 'f.discountStart' },
   { header: F.discountEnd, labelKey: 'f.discountEnd' },
   { header: F.maxQty, labelKey: 'f.maxQty' },
@@ -85,6 +97,9 @@ const SIMPLE_FIELDS: { header: string; labelKey: string; required?: boolean }[] 
   { header: F.gtin, labelKey: 'f.gtin' },
   { header: F.taxExemptReason, labelKey: 'f.taxExemptReason' },
 ]
+
+/** Everything the user may take off the grid — a required field never can. */
+const PICKABLE_FIELDS = SIMPLE_FIELDS.filter((f) => !f.required)
 
 /** Linear stepper for the Map sub-sections with completion indicators. */
 function SubStepper({
@@ -104,32 +119,24 @@ function SubStepper({
       {sections.map((s, i) => {
         const isCurrent = i === active
         const isDone = completedMap[s.key]
-        const chip = isCurrent
-          ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-          : isDone
-            ? 'bg-[color:var(--teal)] text-[color:var(--on-teal)]'
-            : 'bg-white text-[color:var(--ink)]'
+
         return (
           <li key={s.key} className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => onPick(i)}
               aria-current={isCurrent ? 'step' : undefined}
-              className={`hard-2 lift flex items-center gap-1.5 px-3 py-1.5 ${chip}`}
-              style={{ borderRadius: 'var(--r-pill)' }}
+              className={`step-chip step-chip--clickable text-xs ${
+                isCurrent ? 'step-chip--current' : isDone ? 'step-chip--done' : ''
+              }`}
             >
-              <span
-                className="flex h-5 w-5 items-center justify-center border border-[color:var(--ink)] text-[11px] font-extrabold shadow-xs"
-                style={{ borderRadius: 'var(--r-pill)' }}
-              >
-                {isDone ? '✓' : i + 1}
+              <span className="step-badge">
+                {isDone ? <Check className="size-3 stroke-[3]" /> : i + 1}
               </span>
-              <span className="font-bold whitespace-nowrap" style={{ fontSize: 'var(--fs-label)' }}>
-                {t(s.shortKey)}
-              </span>
+              <span>{t(s.shortKey)}</span>
             </button>
             {i < sections.length - 1 && (
-              <span aria-hidden className="hidden h-0.5 w-2 bg-[color:var(--ink)]/30 sm:block" />
+              <span aria-hidden className={`step-line !w-2 ${isDone ? 'step-line--done' : ''}`} />
             )}
           </li>
         )
@@ -194,7 +201,6 @@ export default function MappingPanel({
       fields: Boolean(nameMapped && priceMapped),
       description: Boolean(config.descriptionTemplate?.enabled),
       images: config.imageColumns.length > 0 || filledImageRows.size > 0,
-      sku: config.sku.mode !== 'none',
       options: config.options.length > 0,
       defaults: true,
       export: config.priceRules.length > 0 || config.quantity.mode !== 'source',
@@ -214,12 +220,65 @@ export default function MappingPanel({
   }
 
   const [fieldFilter, setFieldFilter] = useState<'all' | 'required' | 'mapped' | 'unmapped'>('all')
+  /** Fields the user pulled onto the grid, and ones they took off it. */
+  const [shownExtras, setShownExtras] = useState<Set<string>>(new Set())
+  const [hiddenFields, setHiddenFields] = useState<Set<string>>(new Set())
+
+  const isMappedField = (header: string) => {
+    const src = config.fields[header]
+    return !!src && (src.kind === 'column' || src.kind === 'constant')
+  }
+
+  /**
+   * Required first, then anything still mapped — a card carrying a real
+   * mapping is never hidden, which is why the × is withheld until the field is
+   * set to «بدون». Past that: core by default, plus whatever was pulled in,
+   * minus whatever was dismissed.
+   */
+  const visibleFields = useMemo(
+    () =>
+      SIMPLE_FIELDS.filter((f) => {
+        if (f.required || isMappedField(f.header)) return true
+        if (hiddenFields.has(f.header)) return false
+        return f.core || shownExtras.has(f.header)
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [config.fields, shownExtras, hiddenFields],
+  )
+
+  const isFieldVisible = (header: string) =>
+    visibleFields.some((f) => f.header === header)
+
+  /** Take a card off the grid. Only ever called for unmapped, optional fields. */
+  function hideField(header: string) {
+    setShownExtras((prev) => {
+      const next = new Set(prev)
+      next.delete(header)
+      return next
+    })
+    setHiddenFields((prev) => new Set(prev).add(header))
+  }
+
+  function toggleExtra(header: string) {
+    if (isFieldVisible(header)) {
+      hideField(header)
+      return
+    }
+    setHiddenFields((prev) => {
+      const next = new Set(prev)
+      next.delete(header)
+      return next
+    })
+    setShownExtras((prev) => new Set(prev).add(header))
+  }
 
   const fieldCounts = useMemo(() => {
     let mapped = 0
     let unmapped = 0
     let required = 0
-    for (const f of SIMPLE_FIELDS) {
+    // Counted over what is ON SCREEN, so the tab numbers and the grid agree.
+    // The picker below carries the "X of Y in the whole schema" figure.
+    for (const f of visibleFields) {
       if (f.required) required++
       const src = config.fields[f.header]
       if (src && (src.kind === 'column' || src.kind === 'constant')) {
@@ -228,12 +287,24 @@ export default function MappingPanel({
         unmapped++
       }
     }
-    return { all: SIMPLE_FIELDS.length, required, mapped, unmapped }
-  }, [config.fields])
+    return { all: visibleFields.length, required, mapped, unmapped }
+  }, [config.fields, visibleFields])
+
+  // The Card stays mounted while its body swaps, so the active section drives
+  // the replay rather than a remount.
+  const editorRef = useReveal<HTMLDivElement>({
+    y: 14,
+    duration: 0.45,
+    start: 'top bottom',
+    replayKey: section.key,
+  })
 
   const filteredSimpleFields = useMemo(() => {
     const q = searchField.toLowerCase().trim()
-    return SIMPLE_FIELDS.filter((f) => {
+    // Searching is an explicit lookup, so it reaches hidden fields too —
+    // otherwise typing «باركود» would find nothing at all.
+    const pool = q ? SIMPLE_FIELDS : visibleFields
+    return pool.filter((f) => {
       const src = config.fields[f.header]
       const isMapped = src && (src.kind === 'column' || src.kind === 'constant')
 
@@ -244,7 +315,7 @@ export default function MappingPanel({
       if (!q) return true
       return t(f.labelKey).toLowerCase().includes(q) || f.header.toLowerCase().includes(q)
     })
-  }, [searchField, fieldFilter, config.fields, t])
+  }, [searchField, fieldFilter, config.fields, visibleFields, t])
 
   function editor() {
     switch (section.key) {
@@ -268,17 +339,12 @@ export default function MappingPanel({
                       key={tab.key}
                       type="button"
                       onClick={() => setFieldFilter(tab.key)}
-                      className={`hard-2 lift flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition ${
-                        active
-                          ? 'bg-[color:var(--violet)] text-[color:var(--on-violet)]'
-                          : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                      className={`step-chip step-chip--clickable !py-1 text-xs ${
+                        active ? 'step-chip--current' : ''
                       }`}
-                      style={{ borderRadius: 'var(--r-pill)' }}
                     >
                       <span>{tab.label}</span>
-                      <span className="rounded-full bg-black/10 px-1 text-[10px]">
-                        {tab.count}
-                      </span>
+                      <span className="step-badge font-mono !text-[10px]">{tab.count}</span>
                     </button>
                   )
                 })}
@@ -305,13 +371,60 @@ export default function MappingPanel({
                   sampleValues={sampleValues}
                   source={config.fields[f.header] ?? { kind: 'none' }}
                   onChange={(source) => setField(f.header, source)}
+                  onHide={
+                    f.required || isMappedField(f.header)
+                      ? undefined
+                      : () => hideField(f.header)
+                  }
                 />
               ))}
             </div>
 
+            {/* The rest of the schema, opt-in. A field that is already mapped
+                is locked on: hiding it would hide a real mapping. */}
+            {!searchField.trim() && (
+              <div className="rounded-xl border border-white/10 bg-[#111111] p-4">
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-black text-white text-xs">{t('field.moreTitle')}</h3>
+                  <span className="text-[10px] font-bold text-[#888888]">
+                    {t('field.moreCount', {
+                      shown: visibleFields.length,
+                      total: SIMPLE_FIELDS.length,
+                    })}
+                  </span>
+                </div>
+                <p className="mb-3 text-[11px] font-medium text-[#A3A3A3]">
+                  {t('field.moreHint')}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {PICKABLE_FIELDS.map((f) => {
+                    const mapped = isMappedField(f.header)
+                    const on = isFieldVisible(f.header)
+                    return (
+                      <button
+                        key={f.header}
+                        type="button"
+                        disabled={mapped}
+                        onClick={() => toggleExtra(f.header)}
+                        title={mapped ? t('field.moreLocked') : undefined}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-bold transition ${
+                          on
+                            ? 'border-[#12b3a4]/45 bg-[#12b3a4]/15 text-[#2FE0CF]'
+                            : 'border-white/12 bg-[#1A1A1A] text-[#D4D4D4] hover:border-white/30 hover:bg-[#262626] hover:text-white'
+                        } ${mapped ? 'cursor-default' : ''}`}
+                      >
+                        <span className="me-1 font-black">{on ? '✓' : '+'}</span>
+                        {t(f.labelKey)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Promo Title Special Block */}
-            <div className="mt-4 rounded-xl border-2 border-[color:var(--ink)] bg-[color:var(--cream)]/40 p-4">
-              <h3 className="mb-2 font-extrabold text-[color:var(--ink)]" style={{ fontSize: 'var(--fs-label)' }}>
+            <div className="mt-4 rounded-xl border border-white/10 bg-[#141414] p-4">
+              <h3 className="mb-2 font-black text-white text-xs">
                 {t('promo.title')}
               </h3>
               <PromoTitleEditor
@@ -337,23 +450,13 @@ export default function MappingPanel({
               selected={config.imageColumns}
               onChange={(imageColumns) => onChange({ ...config, imageColumns })}
             />
-            {isSalla && (
-              <ImageScraper
-                sheet={sheet}
-                config={config}
-                alreadyFilled={filledImageRows}
-                onFilled={onFillImages}
-              />
-            )}
+            <ImageScraper
+              sheet={sheet}
+              config={config}
+              alreadyFilled={filledImageRows}
+              onFilled={onFillImages}
+            />
           </>
-        )
-      case 'sku':
-        return (
-          <SkuGenerator
-            columns={columns}
-            sku={config.sku}
-            onChange={(sku) => onChange({ ...config, sku })}
-          />
         )
       case 'options':
         return (
@@ -398,7 +501,7 @@ export default function MappingPanel({
           <div className="mb-3">
             <StepTips tips={SECTION_TIP_KEYS[section.key].map((key) => t(key))} />
           </div>
-          {editor()}
+          <div ref={editorRef}>{editor()}</div>
         </Card>
 
         <nav className="flex items-center justify-between gap-3">
@@ -406,23 +509,31 @@ export default function MappingPanel({
             variant="ghost"
             onClick={() => changeSection(Math.max(0, clamped - 1))}
             disabled={clamped === 0}
+            className="!border-white/15 !text-white hover:!bg-white/10"
           >
             {t('map.nav.prev')}
           </Button>
-          <span className="font-bold text-[color:var(--ink)]/60" style={{ fontSize: 'var(--fs-label)' }}>
+          <span className="font-bold text-xs text-[#A3A3A3]">
             {t('map.nav.progress', { n: clamped + 1, total: sections.length })}
           </span>
           <Button
-            variant="secondary"
+            variant="ghost"
             onClick={() => changeSection(Math.min(sections.length - 1, clamped + 1))}
             disabled={clamped === sections.length - 1}
+            className="!border-white/15 !text-white hover:!bg-white/10"
           >
             {t('map.nav.next')}
           </Button>
         </nav>
 
-        <div className="flex justify-end border-t border-[color:var(--ink)]/15 pt-4">
-          <Button onClick={onFinish}>{t('map.finish')}</Button>
+        <div className="flex justify-end border-t border-white/10 pt-4">
+          <button
+            type="button"
+            onClick={onFinish}
+            className="flex items-center gap-2 rounded-xl bg-[#FF6B50] px-6 py-2.5 text-xs sm:text-sm font-black text-[#050505] shadow-lg shadow-[#FF6B50]/20 transition-all hover:bg-[#ff856e] hover:scale-105 active:scale-95"
+          >
+            {t('map.finish')}
+          </button>
         </div>
       </div>
     </div>

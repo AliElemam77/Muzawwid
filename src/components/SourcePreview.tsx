@@ -4,6 +4,8 @@ import { useI18n } from '../lib/i18n'
 import StepTips from './StepTips'
 
 const PREVIEW_ROWS = 10
+/** A review pane has the whole panel to itself, so it can show far more. */
+const REVIEW_ROWS = 50
 
 /** Any http(s) URL token (stops at whitespace / comma / pipe). */
 const URL_RE = /https?:\/\/[^\s,،|]+/gi
@@ -18,7 +20,14 @@ function displayCell(value: string, placeholder: string): string {
   return value.replace(URL_RE, (u) => (isImageUrl(u) ? u : placeholder))
 }
 
-/** Sheet picker (if multiple) + a preview table of the first ~10 source rows. */
+/**
+ * Sheet picker (if multiple) + a preview table of the first source rows.
+ *
+ * Omitting `onPickSheet` makes it read-only: the sheet names become plain
+ * chips and the tips are dropped. That is the shape used by the review modal,
+ * where switching sheets would silently re-run autoMap and throw away the
+ * mapping the user is in the middle of.
+ */
 export default function SourcePreview({
   workbook,
   sheet,
@@ -26,29 +35,35 @@ export default function SourcePreview({
 }: {
   workbook: SourceWorkbook
   sheet: SourceSheet
-  onPickSheet: (name: string) => void
+  onPickSheet?: (name: string) => void
 }) {
   const { t } = useI18n()
-  const rows = sheet.rows.slice(0, PREVIEW_ROWS)
+  const readOnly = onPickSheet == null
+  const rows = sheet.rows.slice(0, readOnly ? REVIEW_ROWS : PREVIEW_ROWS)
   const linkPlaceholder = t('source.hiddenLink')
 
   return (
     <div>
-      <div className="mb-4">
-        <StepTips tips={[t('tips.source.1'), t('tips.source.2'), t('tips.source.3')]} />
-      </div>
+      {!readOnly && (
+        <div className="mb-4">
+          <StepTips tips={[t('tips.source.1'), t('tips.source.2'), t('tips.source.3')]} />
+        </div>
+      )}
       {workbook.sheets.length > 1 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-slate-600">{t('source.pick')}</span>
+          <span className="text-xs font-bold text-[#D4D4D4]">{t('source.pick')}</span>
           {workbook.sheets.map((s) => (
             <button
               key={s.name}
-              onClick={() => onPickSheet(s.name)}
+              type="button"
+              disabled={readOnly}
+              onClick={() => onPickSheet?.(s.name)}
               className={
-                'rounded-lg px-3 py-1.5 text-sm font-semibold transition ' +
+                'rounded-lg px-3 py-1.5 text-xs font-bold transition ' +
                 (s.name === sheet.name
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200')
+                  ? 'bg-[#FF6B50] text-[#050505]'
+                  : 'bg-[#181818] border border-white/10 text-[#D4D4D4]') +
+                (readOnly ? ' cursor-default' : ' hover:text-white hover:bg-white/5')
               }
             >
               {s.name}
@@ -57,7 +72,7 @@ export default function SourcePreview({
         </div>
       )}
 
-      <p className="mb-2 text-sm text-slate-500">
+      <p className="mb-2.5 text-xs font-bold text-[#A3A3A3]">
         {t('source.stats', {
           cols: sheet.headers.length,
           rows: sheet.rows.length,
@@ -65,14 +80,14 @@ export default function SourcePreview({
         })}
       </p>
 
-      <div className="scroll-thin overflow-x-auto rounded-xl border border-slate-200">
-        <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-slate-50">
+      <div className="scroll-thin overflow-x-auto rounded-xl border border-white/10 bg-[#111111]">
+        <table className="min-w-full border-collapse text-xs">
+          <thead className="bg-[#161616] border-b border-white/10">
             <tr>
               {sheet.headers.map((h) => (
                 <th
                   key={h}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2 text-start font-semibold text-slate-700"
+                  className="whitespace-nowrap px-3.5 py-2.5 text-start font-black text-[#FFFFFF]"
                 >
                   {h}
                 </th>
@@ -81,13 +96,13 @@ export default function SourcePreview({
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="odd:bg-white even:bg-slate-50/50">
+              <tr key={i} className="border-b border-white/5 odd:bg-[#111111] even:bg-[#151515] hover:bg-white/5 transition-colors">
                 {sheet.headers.map((h) => {
                   const shown = displayCell(r[h] ?? '', linkPlaceholder)
                   return (
                     <td
                       key={h}
-                      className="max-w-[16rem] truncate whitespace-nowrap border-b border-slate-100 px-3 py-2 text-slate-600"
+                      className="max-w-[16rem] truncate whitespace-nowrap px-3.5 py-2 text-[#D4D4D4] font-medium"
                       title={shown}
                     >
                       {shown}

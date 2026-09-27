@@ -3,10 +3,9 @@ import { useI18n } from '../lib/i18n'
 type Tone = 'head' | 'product' | 'option'
 
 const TONE: Record<Tone, string> = {
-  head: 'bg-[color:var(--teal)]/25 font-extrabold',
-  product: 'bg-white font-bold',
-  // Same shading the real output preview uses for «خيار» rows.
-  option: 'bg-[color:var(--ink)]/5',
+  head: 'bg-[#1D1D1D] font-black text-white',
+  product: 'bg-[#181818] font-bold text-white',
+  option: 'bg-[#101010] text-[#D4D4D4]',
 }
 
 /** A tiny spreadsheet drawn with a grid, so columns line up across both tables. */
@@ -19,15 +18,14 @@ function MiniTable({
 }) {
   return (
     <div
-      className="overflow-hidden border-2 border-[color:var(--ink)]"
-      style={{ borderRadius: '10px' }}
+      className="overflow-hidden border border-white/15 rounded-xl bg-[#0F0F0F]"
     >
       <div
         className="grid"
         style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))`, fontSize: '11px' }}
       >
         {cols.map((c) => (
-          <span key={c} className={`${TONE.head} px-2 py-1.5 text-center`}>
+          <span key={c} className={`${TONE.head} px-2 py-1.5 text-center border-b border-white/10`}>
             {c}
           </span>
         ))}
@@ -35,7 +33,7 @@ function MiniTable({
           row.cells.map((cell, c) => (
             <span
               key={`${r}-${c}`}
-              className={`${TONE[row.tone]} border-t border-[color:var(--ink)]/15 px-2 py-1.5 text-center`}
+              className={`${TONE[row.tone]} border-b border-white/5 last:border-b-0 px-2 py-1.5 text-center`}
             >
               {cell || '—'}
             </span>
@@ -48,10 +46,9 @@ function MiniTable({
 
 function Legend({ tone, children }: { tone: 'product' | 'option'; children: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-[color:var(--ink)]/70" style={{ fontSize: 'var(--fs-label)' }}>
+    <span className="flex items-center gap-1.5 text-[#D4D4D4] text-xs">
       <span
-        className={`inline-block size-3 shrink-0 border-2 border-[color:var(--ink)] ${TONE[tone]}`}
-        style={{ borderRadius: '3px' }}
+        className={`inline-block size-3 shrink-0 rounded-sm border border-white/20 ${TONE[tone]}`}
       />
       {children}
     </span>
@@ -74,17 +71,16 @@ export default function OptionsVisualGuide() {
 
   return (
     <section
-      className="space-y-4 border-2 border-[color:var(--ink)] bg-[color:var(--cream)] p-4"
-      style={{ borderRadius: 'var(--r-card)' }}
+      className="space-y-4 border border-white/10 bg-[#141414] p-4 rounded-2xl"
     >
       <div>
         <h3
-          className="font-extrabold text-[color:var(--ink)]"
+          className="font-black text-white text-base"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {t('opt.visual.title')}
         </h3>
-        <p className="mt-1 text-[color:var(--ink)]/65" style={{ fontSize: 'var(--fs-label)' }}>
+        <p className="mt-1 text-xs text-[#D4D4D4]">
           {t('opt.visual.subtitle')}
         </p>
       </div>
@@ -92,10 +88,9 @@ export default function OptionsVisualGuide() {
       {/* Step 1 — what you have */}
       <div>
         <p
-          className="mb-2 font-extrabold text-[color:var(--ink)]"
-          style={{ fontSize: 'var(--fs-label)' }}
+          className="mb-2 font-black text-white text-xs"
         >
-          ١) {t('opt.visual.step1')}
+          {t('opt.visual.stepNo', { n: 1 })} {t('opt.visual.step1')}
         </p>
         <MiniTable
           cols={[t('opt.visual.colName'), t('opt.visual.colPrice'), size, color]}
@@ -105,8 +100,7 @@ export default function OptionsVisualGuide() {
 
       {/* The expansion itself */}
       <p
-        className="flex flex-wrap items-center justify-center gap-2 text-center font-extrabold text-[color:var(--violet)]"
-        style={{ fontSize: 'var(--fs-label)' }}
+        className="flex flex-wrap items-center justify-center gap-2 text-center font-black text-[#FF6B50] text-xs"
       >
         <span aria-hidden className="text-xl">
           ↓
@@ -117,10 +111,9 @@ export default function OptionsVisualGuide() {
       {/* Step 2 — what comes out */}
       <div>
         <p
-          className="mb-2 font-extrabold text-[color:var(--ink)]"
-          style={{ fontSize: 'var(--fs-label)' }}
+          className="mb-2 font-black text-white text-xs"
         >
-          ٢) {t('opt.visual.step2')}
+          {t('opt.visual.stepNo', { n: 2 })} {t('opt.visual.step2')}
         </p>
         <MiniTable
           cols={[t('opt.visual.colType'), t('opt.visual.colName'), size, color, t('opt.visual.colPrice')]}
@@ -139,10 +132,9 @@ export default function OptionsVisualGuide() {
       </div>
 
       {/* The other case people hit: one axis split over two columns. */}
-      <div className="border-t-2 border-[color:var(--ink)]/15 pt-4">
+      <div className="border-t border-white/10 pt-4">
         <p
-          className="mb-2 font-extrabold text-[color:var(--ink)]"
-          style={{ fontSize: 'var(--fs-label)' }}
+          className="mb-2 font-black text-white text-xs"
         >
           {t('opt.visual.mergeTitle')}
         </p>
@@ -151,17 +143,16 @@ export default function OptionsVisualGuide() {
             cols={[t('opt.visual.sizeOne'), t('opt.visual.sizeTwo')]}
             rows={[{ tone: 'product', cells: ['S, M', 'L'] }]}
           />
-          <span aria-hidden className="text-xl font-extrabold text-[color:var(--violet)]">
+          <span aria-hidden className="text-xl font-extrabold text-[#FF6B50] ltr:rotate-180 inline-block">
             ←
           </span>
           <span
-            className="border-2 border-[color:var(--ink)] bg-white px-3 py-1.5 font-bold"
-            style={{ borderRadius: 'var(--r-pill)', fontSize: '11px' }}
+            className="border border-white/15 bg-[#1E1E1E] text-white px-3 py-1.5 font-bold rounded-full text-[11px]"
           >
             {t('opt.visual.mergeResult', { size })}
           </span>
         </div>
-        <p className="mt-2 text-[color:var(--ink)]/65" style={{ fontSize: 'var(--fs-label)' }}>
+        <p className="mt-2 text-xs text-[#D4D4D4]">
           {t('opt.visual.mergeBody')}
         </p>
       </div>

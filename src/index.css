@@ -3,31 +3,68 @@
 
 :root {
   font-family: var(--font-body);
+  color-scheme: dark;
+}
+
+/* Midnight Editorial Selection */
+::selection {
+  background: #FF6B50;
+  color: #ffffff;
+}
+::-moz-selection {
+  background: #FF6B50;
+  color: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #050505;
 }
 
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
-  background: var(--cream);
+  background: #050505;
   color: var(--ink);
   font-size: var(--fs-body);
-  /* Drifting confetti and the 100vw full-bleed strip must never open a
-     horizontal scrollbar. `clip`, NOT `hidden`: hidden would make body a scroll
-     container and break the `position: sticky` quick-view panel in the mapper. */
   overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* thin, RTL-friendly scrollbars for preview tables */
-.scroll-thin::-webkit-scrollbar {
+/* Midnight editorial dark scrollbars */
+::-webkit-scrollbar {
   height: 8px;
   width: 8px;
 }
-.scroll-thin::-webkit-scrollbar-thumb {
-  background: var(--ink);
+::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
   border-radius: 9999px;
+  border: 2px solid #0d0d0d;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B50;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: #111111;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 9999px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: #FF6B50;
 }

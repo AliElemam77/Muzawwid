@@ -1,13 +1,14 @@
+import { AlertTriangle } from 'lucide-react'
 import type { OptionColumn } from '../lib/types'
 import type { OptionType } from '../lib/salla'
 import { useI18n } from '../lib/i18n'
 import { Select, TextInput, Button } from './ui'
 import OptionsVisualGuide from './OptionsVisualGuide'
 
-const TYPE_KEYS: { value: OptionType; key: string; icon: string }[] = [
-  { value: 'text', key: 'opt.type.text', icon: '📝' },
-  { value: 'color', key: 'opt.type.color', icon: '🎨' },
-  { value: 'image', key: 'opt.type.image', icon: '🖼️' },
+const TYPE_KEYS: { value: OptionType; key: string }[] = [
+  { value: 'text', key: 'opt.type.text' },
+  { value: 'color', key: 'opt.type.color' },
+  { value: 'image', key: 'opt.type.image' },
 ]
 
 /** Max distinct option axes a target template (Salla/Zid) can hold. */
@@ -50,22 +51,23 @@ export default function OptionsEditor({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs font-medium text-[color:var(--ink)]/70">{t('opt.note')}</p>
+      <p className="text-xs font-medium text-[#D4D4D4]">{t('opt.note')}</p>
       <OptionsVisualGuide />
 
       {overLimit && (
-        <div className="hard-2 rounded-xl bg-[color:var(--warning-tint)] p-3 text-xs font-bold text-[color:var(--ink)] border-[color:var(--mustard)]">
-          ⚠️ {t('opt.tooMany', { count: axisCount, max: MAX_AXES })}
+        <div className="rounded-xl border border-[#ffc531]/40 bg-[#ffc531]/10 p-3 text-xs font-bold text-[#ffd666] flex items-center gap-2">
+          <AlertTriangle className="size-4 shrink-0 text-[#ffc531]" />
+          <span>{t('opt.tooMany', { count: axisCount, max: MAX_AXES })}</span>
         </div>
       )}
 
       {options.map((opt, i) => (
         <div
           key={i}
-          className="hard-2 rounded-xl bg-white p-4 space-y-3"
+          className="rounded-xl bg-[#141414] border border-white/10 p-4 space-y-3"
         >
-          <div className="flex items-center justify-between border-b border-[color:var(--ink)]/10 pb-2">
-            <span className="text-xs font-black text-[color:var(--ink)]">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="text-xs font-black text-white">
               {t('opt.group', { n: i + 1 })}
             </span>
             <Button variant="danger" onClick={() => remove(i)} className="!py-1 !px-2.5 text-xs">
@@ -75,7 +77,7 @@ export default function OptionsEditor({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-[color:var(--ink)]">
+              <label className="block text-xs font-bold text-white">
                 {t('opt.sourceCol')}
               </label>
               <Select
@@ -92,7 +94,7 @@ export default function OptionsEditor({
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-[color:var(--ink)]">
+              <label className="block text-xs font-bold text-white">
                 {t('opt.name')}
               </label>
               <TextInput
@@ -104,7 +106,7 @@ export default function OptionsEditor({
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-[color:var(--ink)]">
+              <label className="block text-xs font-bold text-white">
                 {t('opt.typeLabel')}
               </label>
               <Select
@@ -114,7 +116,7 @@ export default function OptionsEditor({
               >
                 {TYPE_KEYS.map((tk) => (
                   <option key={tk.value} value={tk.value}>
-                    {tk.icon} {t(tk.key)}
+                    {t(tk.key)}
                   </option>
                 ))}
               </Select>
@@ -122,7 +124,7 @@ export default function OptionsEditor({
 
             {opt.type === 'color' && (
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-[color:var(--ink)]">
+                <label className="block text-xs font-bold text-white">
                   {t('opt.swatchLabel')}
                 </label>
                 <Select
@@ -145,7 +147,7 @@ export default function OptionsEditor({
         </div>
       ))}
 
-      <Button variant="ghost" onClick={add} className="!py-1.5 !px-3 text-xs">
+      <Button variant="ghost" onClick={add} className="!py-1.5 !px-3 text-xs !border-white/15 !text-white hover:!bg-white/10">
         {t('btn.addOption')}
       </Button>
     </div>

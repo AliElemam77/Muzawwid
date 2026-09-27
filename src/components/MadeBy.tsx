@@ -10,28 +10,23 @@ import { LINKS } from '../lib/links'
  * lockup (character mark + عبقرينو/APQRINU wordmark), which is why no extra
  * wordmark is rendered next to it.
  *
- * `tone="dark"` is for placement on the ink-coloured strip.
+ * The plate is a REAL white, hard-coded rather than taken from `--white`: that
+ * token is a #111111 dark surface here, and the lockup's wordmark is solid
+ * black, so it disappeared into the pill entirely. A supplied brand asset
+ * cannot be recoloured to suit the theme — the theme gives it the background it
+ * was drawn for.
  */
-export default function MadeBy({
-  tone = 'light',
-  size = 34,
-}: {
-  tone?: 'light' | 'dark'
-  size?: number
-}) {
-  const dark = tone === 'dark'
-
+export default function MadeBy({ size = 34 }: { size?: number }) {
   return (
     <a
       href={LINKS.company}
       target="_blank"
       rel="noreferrer"
-      className="lift inline-flex items-center gap-2.5 border-2 px-3 py-1.5"
+      className="lift inline-flex items-center gap-2.5 px-3.5 py-2"
       style={{
         borderRadius: 'var(--r-pill)',
-        borderColor: dark ? 'var(--cream)' : 'var(--ink)',
-        background: dark ? 'transparent' : 'var(--white)',
-        boxShadow: `calc(3px * var(--sh-dir)) 3px 0 ${dark ? 'var(--cream)' : 'var(--ink)'}`,
+        background: '#FFFFFF',
+        boxShadow: '0 6px 18px -4px rgba(0, 0, 0, 0.6)',
       }}
     >
       <img

@@ -13,7 +13,7 @@ export default function PlatformSwitcher({
 
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-slate-600">{t('platform.choose')}</p>
+      <p className="mb-2 text-sm font-semibold text-[#D4D4D4]">{t('platform.choose')}</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {PLATFORMS.map((p) => {
           const selected = p.id === value
@@ -23,10 +23,10 @@ export default function PlatformSwitcher({
               onClick={() => onChange(p.id)}
               aria-pressed={selected}
               className={
-                'group relative flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition ' +
+                'group relative flex flex-col items-center gap-2 rounded-2xl border bg-[#141414] p-4 text-center transition ' +
                 (selected
-                  ? 'border-transparent shadow-md ring-2'
-                  : 'border-slate-200 shadow-sm hover:border-slate-300 hover:shadow')
+                  ? 'border-transparent shadow-lg ring-2'
+                  : 'border-white/10 hover:border-white/25 hover:bg-[#1A1A1A]')
               }
               style={selected ? { ['--tw-ring-color' as string]: p.color } : undefined}
             >
@@ -34,8 +34,8 @@ export default function PlatformSwitcher({
                 className={
                   'absolute top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ' +
                   (p.ready
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-slate-100 text-slate-500') +
+                    ? 'border border-[#12b3a4]/40 bg-[#12b3a4]/15 text-[#2FE0CF]'
+                    : 'border border-white/12 bg-[#1F1F1F] text-[#A3A3A3]') +
                   ' inset-e-2'
                 }
               >
@@ -46,7 +46,7 @@ export default function PlatformSwitcher({
 
               <span
                 className="text-sm font-bold"
-                style={{ color: selected ? p.color : '#334155' }}
+                style={{ color: selected ? p.color : '#EBEBEB' }}
               >
                 {t(p.nameKey)}
               </span>

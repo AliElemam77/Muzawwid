@@ -1,36 +1,28 @@
 /**
- * Muzawwid (مزوّد — "supplier") brand mark, drawn in the app's OWN system: a
- * flat teal tile wearing the same 3px ink outline and hard offset shadow as
- * every other surface. No gradient — tokens.css forbids them, and the previous
- * mark's indigo gradient was the last one left in the app.
- *
- * The glyph says what the tool does in one picture: a full-width «منتج» bar
- * branching down a spine into two shorter «خيار» bars — literally the parent +
- * variant row structure `buildRows` writes into the Salla sheet. The spine is
- * load-bearing, not decoration: three plain stacked bars read as a hamburger
- * MENU icon, and the branch is what makes it a hierarchy instead. It sits on
- * the trailing side, so the tree grows right-to-left like the Arabic UI.
- *
- * The tile is a DIV, not an SVG rect, so the hard shadow comes from `hard-2`
- * and flips automatically with --sh-dir in RTL.
+ * Muzawwid (مزوّد — "supplier") brand mark.
+ * Editorial spec: a 32px rounded square, black text/glyph on white background.
  */
-export function LogoMark({ size = 42 }: { size?: number }) {
+export function LogoMark({ size = 32 }: { size?: number }) {
   return (
     <span
-      className="hard-2 flex shrink-0 items-center justify-center"
+      className="flex shrink-0 items-center justify-center transition-transform duration-300 hover:scale-105"
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.26),
-        background: 'var(--teal)',
+        borderRadius: '8px',
+        // Set here, not via `bg-white`: tokens.css rewrites that utility to a
+        // #111111 dark surface, which left the #050505 glyph invisible.
+        background: '#FFFFFF',
+        color: '#050505',
+        boxShadow: '0 2px 8px rgba(255, 255, 255, 0.1)',
       }}
       aria-hidden="true"
     >
       <svg
-        width={Math.round(size * 0.6)}
-        height={Math.round(size * 0.6)}
+        width={Math.round(size * 0.62)}
+        height={Math.round(size * 0.62)}
         viewBox="0 0 24 24"
-        fill="var(--ink)"
+        fill="#050505"
       >
         {/* منتج — the parent row, full width */}
         <rect x="2" y="2.5" width="20" height="4.4" rx="2.2" />
@@ -44,22 +36,24 @@ export function LogoMark({ size = 42 }: { size?: number }) {
   )
 }
 
-/** Full lockup: mark + bilingual wordmark. */
+/** Full lockup: mark + bilingual wordmark in Midnight Editorial style. */
 export default function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <LogoMark size={42} />
-      <div className="leading-none">
-        <div
-          className="font-extrabold text-[color:var(--ink)]"
-          style={{ fontFamily: 'var(--font-display)', fontSize: '25px', letterSpacing: '-0.01em' }}
-        >
-          مزوّد
+    <div className="flex items-center gap-3">
+      <LogoMark size={32} />
+      <div className="leading-tight">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="font-black text-[#EBEBEB] text-lg sm:text-xl tracking-tight"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            مزوّد
+          </span>
+          <span className="size-1.5 rounded-full bg-[#FF6B50]" />
         </div>
         <div
           dir="ltr"
-          className="mt-1 font-bold text-[color:var(--ink)]/55"
-          style={{ fontSize: '9px', letterSpacing: '0.22em' }}
+          className="font-bold text-[#888888] text-[10px] tracking-[0.2em] -mt-0.5"
         >
           MUZAWWID
         </div>

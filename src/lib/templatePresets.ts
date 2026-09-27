@@ -1,8 +1,6 @@
 import { F } from './salla'
 import type { TemplateConfig } from './template'
 
-const STORAGE_KEY = 'sheet-to-salla:templates'
-
 /**
  * Ready-made description skeletons — deliberately generic, so they work on any
  * product sheet. They reference only fields that ALWAYS exist in the Salla
@@ -46,48 +44,6 @@ export const TEMPLATE_STARTERS: TemplateStarter[] = [
       `<li>ضمان الاستبدال والاسترجاع</li></ul>`,
   },
 ]
-
-/** A description template the user saved to reuse across files. */
-export interface SavedTemplate {
-  name: string
-  html: string
-}
-
-/** Persisted template list — never throws, a corrupt store reads as empty. */
-export function loadTemplates(): SavedTemplate[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter((t) => t && typeof t.name === 'string' && typeof t.html === 'string')
-      .map((t) => ({ name: String(t.name), html: String(t.html) }))
-  } catch {
-    return []
-  }
-}
-
-function write(list: SavedTemplate[]): SavedTemplate[] {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    /* quota / private mode — the in-memory list still works this session */
-  }
-  return list
-}
-
-/** Save under `name`, replacing a template of the same name. */
-export function saveTemplate(name: string, html: string): SavedTemplate[] {
-  const clean = name.trim()
-  if (!clean) return loadTemplates()
-  const rest = loadTemplates().filter((t) => t.name !== clean)
-  return write([...rest, { name: clean, html }])
-}
-
-export function deleteTemplate(name: string): SavedTemplate[] {
-  return write(loadTemplates().filter((t) => t.name !== name))
-}
 
 /** Config for a freshly enabled template — starts from the simplest starter. */
 export function starterConfig(): TemplateConfig {

@@ -3,6 +3,7 @@ import {
   buildRows,
   validate,
   cleanPrice,
+  isNumericPrice,
   cleanMaxQty,
   splitValues,
   clampPromoTitle,
@@ -22,6 +23,30 @@ describe('value helpers', () => {
     expect(cleanPrice('$ 49.00')).toBe('49.00')
     expect(cleanPrice('-')).toBe('')
     expect(cleanPrice('')).toBe('')
+  })
+
+  it('cleanPrice normalizes Arabic-Indic digits and the Arabic decimal mark', () => {
+    expect(cleanPrice('١٢٩')).toBe('129')
+    expect(cleanPrice('۹۹')).toBe('99')
+    expect(cleanPrice('٩٩٫٥٠')).toBe('99.50')
+    expect(cleanPrice('١٬٢٩٩ ر.س')).toBe('1299')
+  })
+
+  it('isNumericPrice accepts numbers (incl. Arabic digits) and rejects text', () => {
+    expect(isNumericPrice('99')).toBe(true)
+    expect(isNumericPrice('99.50')).toBe(true)
+    expect(isNumericPrice('1,299 ر.س')).toBe(true)
+    expect(isNumericPrice('٩٩٫٥٠')).toBe(true)
+    // Empty is "missing", not "not a number" — reported by its own check.
+    expect(isNumericPrice('')).toBe(true)
+    expect(isNumericPrice('-')).toBe(true)
+
+    expect(isNumericPrice('اتصل للسعر')).toBe(false)
+    expect(isNumericPrice('100-200')).toBe(false)
+    expect(isNumericPrice('99 جنيه فقط')).toBe(false)
+    expect(isNumericPrice('abc')).toBe(false)
+    expect(isNumericPrice('12.5.7')).toBe(false)
+    expect(isNumericPrice('-5')).toBe(false)
   })
 
   it('splitValues splits on comma / Arabic comma / pipe / newline', () => {
@@ -580,6 +605,33 @@ describe('validate', () => {
     expect(priceIssue?.count).toBe(1)
     // second data row => spreadsheet row 4 (label + header + 2 data rows)
     expect(priceIssue?.examples).toEqual(['«بنطال» (#4)'])
+  })
+
+  it('blocks a product whose price is present but not a number', () => {
+    const rows = [
+      { [F.type]: ROW_PRODUCT, [F.name]: 'قميص', [F.price]: 'اتصل للسعر', [F.weight]: '1' },
+    ]
+    const v = validate(rows)
+    expect(v.ok).toBe(false)
+    const issue = v.errors.find((e) => e.code === 'priceNotNumber')
+    expect(issue?.count).toBe(1)
+    expect(issue?.examples).toEqual(['«قميص» (#3)'])
+  })
+
+  it('does not double-report: empty price is missingPrice only, never priceNotNumber', () => {
+    const v = validate([{ [F.type]: ROW_PRODUCT, [F.name]: 'أ', [F.price]: '', [F.weight]: '1' }])
+    expect(v.errors.some((e) => e.code === 'missingPrice')).toBe(true)
+    expect(v.errors.some((e) => e.code === 'priceNotNumber')).toBe(false)
+  })
+
+  it('accepts a currency-formatted or Arabic-digit price as a number', () => {
+    const rows = [
+      { [F.type]: ROW_PRODUCT, [F.name]: 'أ', [F.price]: '1,299 ر.س', [F.weight]: '1' },
+      { [F.type]: ROW_PRODUCT, [F.name]: 'ب', [F.price]: '٩٩٫٥٠', [F.weight]: '1' },
+    ]
+    const v = validate(rows)
+    expect(v.errors.some((e) => e.code === 'priceNotNumber')).toBe(false)
+    expect(v.errors.some((e) => e.code === 'missingPrice')).toBe(false)
   })
 
   it('flags an orphan خيار row with no preceding منتج', () => {

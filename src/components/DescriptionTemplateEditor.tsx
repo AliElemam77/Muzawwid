@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { SourceSheet } from '../lib/reader'
 import type { MappingConfig } from '../lib/types'
 import {
@@ -8,16 +8,10 @@ import {
   EMPTY_TEMPLATE,
   type TemplateConfig,
 } from '../lib/template'
-import {
-  TEMPLATE_STARTERS,
-  loadTemplates,
-  saveTemplate,
-  deleteTemplate,
-  starterConfig,
-  type SavedTemplate,
-} from '../lib/templatePresets'
+import { TEMPLATE_STARTERS, starterConfig } from '../lib/templatePresets'
+import { FileText } from 'lucide-react'
 import { useI18n } from '../lib/i18n'
-import { TextInput, Button } from './ui'
+import { Button } from './ui'
 import RichTextEditor from './RichTextEditor'
 
 /**
@@ -41,8 +35,6 @@ export default function DescriptionTemplateEditor({
 }) {
   const { t } = useI18n()
   const tpl = config.descriptionTemplate ?? EMPTY_TEMPLATE
-  const [saved, setSaved] = useState<SavedTemplate[]>(() => loadTemplates())
-  const [saveName, setSaveName] = useState('')
   /** Caret position inside the editor, so an inserted variable lands there. */
   const savedRange = useRef<Range | null>(null)
 
@@ -85,16 +77,11 @@ export default function DescriptionTemplateEditor({
     if (host) setHtml(host.innerHTML)
   }
 
-  function applySaved(name: string) {
-    const found = saved.find((s) => s.name === name)
-    if (found) onChange({ enabled: true, html: found.html })
-  }
-
   return (
     <div className="space-y-4">
       {/* --- The switch. Everything below it is conditional on it. ----------- */}
       <label
-        className="flex cursor-pointer items-start gap-3 border-2 border-[color:var(--ink)] bg-white p-3"
+        className="flex cursor-pointer items-start gap-3 border border-white/12 bg-[#161616] p-3 transition hover:border-white/25"
         style={{ borderRadius: 'var(--r-input)' }}
       >
         <input
@@ -137,11 +124,11 @@ export default function DescriptionTemplateEditor({
             aria-hidden
           >
             <p>
-              <strong>{'{{أسم المنتج}}'}</strong>
+              <strong>{t('tpl.sampleTitle')}</strong>
             </p>
             <ul>
-              <li>{'الخامة: {{الخامة}}'}</li>
-              <li>{'الماركة: {{الماركة}}'}</li>
+              <li>{t('tpl.sampleLine1')}</li>
+              <li>{t('tpl.sampleLine2')}</li>
             </ul>
           </div>
           <div className="mt-4">
@@ -154,7 +141,11 @@ export default function DescriptionTemplateEditor({
 
       {tpl.enabled && (
         <>
-          {/* --- Ready-made starting points ------------------------------- */}
+          {/* --- Ready-made starting points -------------------------------
+              These sat on a ghost button that rested on a transparent border,
+              so three of them in a row with no filled button nearby read as
+              plain words. Fixed in tokens.css — ghost now carries a resting
+              outline — and given an icon so the intent is unmistakable. */}
           <div>
             <p
               className="mb-2 font-bold text-[color:var(--ink)]/70"
@@ -163,9 +154,16 @@ export default function DescriptionTemplateEditor({
               {t('tpl.startersLabel')}
             </p>
             <div className="flex flex-wrap gap-2">
-              {TEMPLATE_STARTERS.map((s) => (
-                <Button key={s.labelKey} variant="ghost" onClick={() => setHtml(s.html)}>
-                  {t(s.labelKey)}
+              {TEMPLATE_STARTERS.map((starter) => (
+                <Button
+                  key={starter.labelKey}
+                  variant="ghost"
+                  onClick={() => setHtml(starter.html)}
+                  title={t('tpl.starterApply')}
+                  className="!py-1.5 !px-3.5 text-xs"
+                >
+                  <FileText className="size-3.5 text-[color:var(--coral-accent)]" />
+                  <span>{t(starter.labelKey)}</span>
                 </Button>
               ))}
             </div>
@@ -190,7 +188,7 @@ export default function DescriptionTemplateEditor({
                   className={`hard-2 lift flex items-center gap-1 px-2.5 py-1 text-xs font-bold transition ${
                     v.source === 'field'
                       ? 'bg-[color:var(--teal)]/20 text-[color:var(--ink)]'
-                      : 'bg-white text-[color:var(--ink)] hover:bg-[color:var(--cream)]'
+                      : 'border border-white/12 bg-[#1A1A1A] text-[color:var(--ink)] hover:border-white/30 hover:bg-[#262626]'
                   }`}
                   style={{ borderRadius: 'var(--r-pill)' }}
                 >
@@ -232,57 +230,6 @@ export default function DescriptionTemplateEditor({
             </div>
           </div>
 
-          {/* --- Save / reuse ---------------------------------------------- */}
-          <div className="space-y-2 border-t border-[color:var(--ink)]/15 pt-4">
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-48 flex-1">
-                <TextInput
-                  value={saveName}
-                  placeholder={t('tpl.savePlaceholder')}
-                  onChange={(e) => setSaveName(e.target.value)}
-                />
-              </div>
-              <Button
-                variant="secondary"
-                disabled={!saveName.trim() || !tpl.html.trim()}
-                onClick={() => {
-                  setSaved(saveTemplate(saveName, tpl.html))
-                  setSaveName('')
-                }}
-              >
-                {t('tpl.saveBtn')}
-              </Button>
-            </div>
-
-            {saved.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {saved.map((s) => (
-                  <span
-                    key={s.name}
-                    className="inline-flex items-center gap-2 border border-[color:var(--ink)]/25 px-3 py-1"
-                    style={{ borderRadius: 'var(--r-pill)', fontSize: 'var(--fs-label)' }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => applySaved(s.name)}
-                      className="font-bold"
-                      title={t('tpl.applyTitle')}
-                    >
-                      {s.name}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSaved(deleteTemplate(s.name))}
-                      title={t('tpl.deleteTitle')}
-                      className="text-[color:var(--ink)]/40 transition hover:text-red-600"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
         </>
       )}
     </div>

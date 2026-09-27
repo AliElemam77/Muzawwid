@@ -140,6 +140,264 @@ describe('extractImageUrls', () => {
     expect(hasGallery('<html><body>404</body></html>')).toBe(false)
     expect(extractImageUrls('<html><body><img src="https://x.test/a.jpg"></body></html>')).toEqual([])
   })
+
+  it('extracts images from JSON-LD Product schema (Zid / Shopify / generic stores)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": "قميص كاجوال",
+        "image": [
+          "https://media.zid.store/abc/image1.jpg",
+          "https://media.zid.store/abc/image2.jpg"
+        ]
+      }
+      </script>
+    </head><body><h1>منتج تجريبي</h1></body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual([
+      'https://media.zid.store/abc/image1.jpg',
+      'https://media.zid.store/abc/image2.jpg',
+    ])
+  })
+
+  it('extracts images from JSON-LD with @graph and ImageObject (WooCommerce / Yoast)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "name": "Page"
+          },
+          {
+            "@type": "Product",
+            "name": "Sneakers",
+            "image": [
+              { "@type": "ImageObject", "url": "https://store.test/wp-content/shoe1.jpg" },
+              { "@type": "ImageObject", "contentUrl": "https://store.test/wp-content/shoe2.jpg" }
+            ]
+          }
+        ]
+      }
+      </script>
+    </head><body></body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/wp-content/shoe1.jpg',
+      'https://store.test/wp-content/shoe2.jpg',
+    ])
+  })
+
+  it('extracts images from Next.js / React SSR hydration payload (__NEXT_DATA__)', () => {
+    const html = `<!DOCTYPE html><html><head></head><body>
+      <div id="__next"><div>React App</div></div>
+      <script id="__NEXT_DATA__" type="application/json">
+      {
+        "props": {
+          "pageProps": {
+            "product": {
+              "id": "123",
+              "title": "Smart Watch",
+              "gallery": [
+                { "src": "https://cdn.reactstore.com/watch-front.webp" },
+                { "src": "https://cdn.reactstore.com/watch-back.webp" }
+              ]
+            }
+          }
+        }
+      }
+      </script>
+    </body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual([
+      'https://cdn.reactstore.com/watch-front.webp',
+      'https://cdn.reactstore.com/watch-back.webp',
+    ])
+  })
+
+  it('extracts images from standard DOM gallery with noise filtration', () => {
+    const html = `<!DOCTYPE html><html><body>
+      <div class="product-gallery">
+        <img src="https://store.test/images/logo.png" alt="logo">
+        <img src="https://store.test/images/product-main.jpg" alt="main">
+        <a data-fslightbox="gallery" href="https://store.test/images/product-detail.jpg">Zoom</a>
+        <img src="https://store.test/icons/visa-payment.svg" alt="visa">
+      </div>
+    </body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/images/product-detail.jpg',
+      'https://store.test/images/product-main.jpg',
+    ])
+  })
+
+  it('falls back to og:image when no slider or JSON-LD is present', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <meta property="og:image" content="https://mystore.test/products/hero.jpg">
+    </head><body><h1>My Product</h1></body></html>`
+    expect(hasGallery(html)).toBe(true)
+    expect(extractImageUrls(html)).toEqual(['https://mystore.test/products/hero.jpg'])
+  })
+
+  it('prefers richer Next.js RSC gallery over a single-image JSON-LD (e.g. Marks & Spencer)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Wide Leg Joggers",
+        "image": "https://cdn.test/files/single-img-1"
+      }
+      </script>
+    </head><body>
+      <script>self.__next_f.push([1,"{\\"productImages\\":[{\\"imageUrl\\":\\"https://cdn.test/files/img-1\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-2\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-3\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-4\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-5\\"},{\\"imageUrl\\":\\"https://cdn.test/files/img-6\\"}]}"])</script>
+    </body></html>`
+    expect(extractImageUrls(html)).toEqual([
+      'https://cdn.test/files/img-1',
+      'https://cdn.test/files/img-2',
+      'https://cdn.test/files/img-3',
+      'https://cdn.test/files/img-4',
+      'https://cdn.test/files/img-5',
+      'https://cdn.test/files/img-6',
+    ])
+  })
+
+  it('extracts images from Shopify data-product-json script and absolutises protocol-relative URLs', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Armchair",
+        "image": "https://dstoreegypt.com/cdn/shop/files/main.jpg"
+      }
+      </script>
+      <script type="application/json" data-product-json="" class="productJson">
+      {
+        "id": 256212,
+        "title": "Armchair",
+        "images": [
+          "//dstoreegypt.com/cdn/shop/files/chair-0.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-1.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-2.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-3.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-4.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-5.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-6.jpg",
+          "//dstoreegypt.com/cdn/shop/files/chair-7.jpg"
+        ]
+      }
+      </script>
+    </head><body><h1>Armchair</h1></body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://dstoreegypt.com/cdn/shop/files/chair-0.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-1.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-2.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-3.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-4.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-5.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-6.jpg',
+      'https://dstoreegypt.com/cdn/shop/files/chair-7.jpg',
+    ])
+  })
+
+  it('extracts variation images from WooCommerce data-product_variations (e.g. saudihomeco)', () => {
+    const html = `<!DOCTYPE html><html><body>
+      <div class="woocommerce-product-gallery">
+        <img src="https://store.test/wp-content/uploads/featured.png" class="wp-post-image">
+      </div>
+      <form class="variations_form cart" data-product_variations='[
+        {"variation_id":101,"image":{"full_src":"https://store.test/wp-content/uploads/red.png","url":"https://store.test/wp-content/uploads/red-600x338.png"}},
+        {"variation_id":102,"image":{"full_src":"https://store.test/wp-content/uploads/blue.png","url":"https://store.test/wp-content/uploads/blue-600x338.png"}},
+        {"variation_id":103,"image":{"full_src":"https://store.test/wp-content/uploads/green.png","url":"https://store.test/wp-content/uploads/green-600x338.png"}}
+      ]'>
+      </form>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://store.test/wp-content/uploads/featured.png',
+      'https://store.test/wp-content/uploads/red.png',
+      'https://store.test/wp-content/uploads/blue.png',
+      'https://store.test/wp-content/uploads/green.png',
+    ])
+  })
+
+  it('de-duplicates different responsive sizes and extracts from inline Shopify script tags (e.g. Sodashi)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <!-- Two JSON-LD tags with different widths of the same photo -->
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Nourishing Repair Treatment",
+        "image": ["https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632&width=1500"]
+      }
+      </script>
+      <script type="application/ld+json">
+      {
+        "@type": "Product",
+        "name": "Nourishing Repair Treatment",
+        "image": ["https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632&width=480"]
+      }
+      </script>
+    </head><body>
+      <script id="subscription-helper">
+        var product = {
+          "images": [
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo1.webp?v=1773125632",
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo2.webp?v=1773125632",
+            "\\/\\/sodashi.com.au\\/cdn\\/shop\\/files\\/photo3.jpg?v=1773125632"
+          ]
+        };
+      </script>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://sodashi.com.au/cdn/shop/files/photo1.webp?v=1773125632',
+      'https://sodashi.com.au/cdn/shop/files/photo2.webp?v=1773125632',
+      'https://sodashi.com.au/cdn/shop/files/photo3.jpg?v=1773125632',
+    ])
+  })
+
+  it('extracts images from Shopify custom/Alpine themes with HTML-encoded payloads and DOM thumbnail links (e.g. Picky Bars)', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <!-- JSON-LD ProductGroup which only carries single variant rendering -->
+      <script type="application/ld+json">
+      {
+        "@type": "ProductGroup",
+        "name": "Ah, Fudge Nuts!",
+        "hasVariant": [
+          {
+            "@type": "Product",
+            "name": "Single Bar",
+            "image": "https://pickybars.com/cdn/shop/products/bar-render.png?v=1623091649"
+          }
+        ]
+      }
+      </script>
+    </head><body>
+      <!-- Alpine.js / HTML-encoded product payload in x-data attribute -->
+      <data-island x-data="Product({ product: {&quot;id&quot;:57777881093,&quot;images&quot;:[&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/bar-render.png?v=1623091649&quot;,&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/afn-wrapper-icons.jpg?v=1623091649&quot;,&quot;\\/\\/pickybars.com\\/cdn\\/shop\\/products\\/afn-nutrition.jpg?v=1623091649&quot;]} })">
+      </data-island>
+      <!-- DOM thumbnail list items -->
+      <div class="product-media">
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/bar-render.png?v=1623091649"></a>
+        </li>
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/afn-wrapper-icons.jpg?v=1623091649"></a>
+        </li>
+        <li class="product-thumbnail-list-item">
+          <a class="media-thumbnail" href="//pickybars.com/cdn/shop/products/afn-nutrition.jpg?v=1623091649"></a>
+        </li>
+      </div>
+    </body></html>`
+
+    expect(extractImageUrls(html)).toEqual([
+      'https://pickybars.com/cdn/shop/products/bar-render.png?v=1623091649',
+      'https://pickybars.com/cdn/shop/products/afn-wrapper-icons.jpg?v=1623091649',
+      'https://pickybars.com/cdn/shop/products/afn-nutrition.jpg?v=1623091649',
+    ])
+  })
 })
 
 // --- Reading the sheet ------------------------------------------------------

@@ -27,17 +27,45 @@ const PROMO_WORD_BOUNDARY_MIN = 12
 
 /* ----------------------------- value helpers ----------------------------- */
 
+/**
+ * Arabic-Indic (٠-٩) and Extended Arabic-Indic / Persian (۰-۹) digits map
+ * onto ASCII so a sheet typed in Arabic still yields a real number.
+ */
+function toAsciiDigits(s: string): string {
+  return s.replace(/[٠-٩۰-۹]/g, (d) => {
+    const code = d.charCodeAt(0)
+    const base = code >= 0x06f0 ? 0x06f0 : 0x0660
+    return String(code - base)
+  })
+}
+
 /** Strip currency symbols / thousands separators; '-' or '' → ''. */
 export function cleanPrice(v: string): string {
   if (v == null) return ''
   let s = String(v).trim()
   if (s === '' || s === '-') return ''
-  s = s
+  s = toAsciiDigits(s)
     .replace(/ر\.?\s?س\.?|ريال|sar|sr|﷼|\$|usd|aed|درهم/gi, '')
-    .replace(/[,،]/g, '')
+    // ٬ is the Arabic thousands separator, ٫ the Arabic decimal mark.
+    .replace(/[,،٬]/g, '')
+    .replace(/٫/g, '.')
     .replace(/\s+/g, '')
     .trim()
   return s
+}
+
+/**
+ * Salla imports the price as a number, so anything it cannot parse («اتصل
+ * للسعر», «100-200», a stray letter) is rejected on upload rather than
+ * silently imported. An EMPTY value is not "not a number" — that case is
+ * reported separately as a missing price.
+ */
+export function isNumericPrice(v: string): boolean {
+  const s = cleanPrice(v)
+  if (s === '') return true
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return false
+  const n = Number(s)
+  return Number.isFinite(n) && n >= 0
 }
 
 /**
@@ -663,6 +691,7 @@ const OPTION_GROUPS = [optionGroupCols(1), optionGroupCols(2), optionGroupCols(3
 export function validate(rows: SallaRow[]): Validation {
   const missingName = newBucket()
   const missingPrice = newBucket()
+  const priceNotNumber = newBucket()
   const missingWeight = newBucket()
   const missingImage = newBucket()
   const imageNotUrl = newBucket()
@@ -683,7 +712,11 @@ export function validate(rows: SallaRow[]): Validation {
     if (kind === ROW_PRODUCT) {
       lastWasProductOrHasParent = true
       if (!row[F.name]?.trim()) hit(missingName, `#${sheetRowNumber(index)}`)
+      // Only ONE of the two fires: empty is "missing", present-but-unparsable
+      // is "not a number". Variants inherit the parent price verbatim, so
+      // checking the product row alone keeps the count honest.
       if (!cleanPrice(row[F.price] ?? '')) hit(missingPrice, locate(row, index))
+      else if (!isNumericPrice(row[F.price] ?? '')) hit(priceNotNumber, locate(row, index))
       if (!row[F.image]?.trim()) hit(missingImage, locate(row, index))
       else {
         // Salla only accepts real image links here, and a scraped sheet happily
@@ -729,6 +762,11 @@ export function validate(rows: SallaRow[]): Validation {
   const errors = [
     issue('missingName', 'صفوف بدون اسم منتج (أسم المنتج مطلوب)', missingName),
     issue('missingPrice', 'منتجات بدون سعر (سعر المنتج مطلوب)', missingPrice),
+    issue(
+      'priceNotNumber',
+      'منتجات سعرها ليس رقمًا (سعر المنتج لازم يكون رقم)',
+      priceNotNumber,
+    ),
     issue('missingWeight', 'صفوف بدون وزن (حقل الوزن مطلوب)', missingWeight),
     dupSkus ? { code: 'dupSku', message: 'أرقام SKU مكررة', count: dupSkus } : null,
     issue('orphan', 'صفوف خيار بدون منتج أب', orphanOptions),

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AlertCircle } from 'lucide-react'
 import {
   buildCategoryTree,
   addCategoryPath,
@@ -58,14 +59,14 @@ export default function CategoriesManager({
           style={{ paddingInlineStart: `${node.depth * 1.25}rem` }}
         >
           {node.depth > 0 && (
-            <span aria-hidden className="text-[color:var(--ink)]/30">
+            <span aria-hidden className="text-white/30">
               ↳
             </span>
           )}
           <span
             className={
-              'rounded-full border border-[color:var(--ink)]/20 px-3 py-1 ' +
-              (node.depth === 0 ? 'font-bold' : 'text-[color:var(--ink)]/80')
+              'rounded-full border border-white/15 bg-[#1A1A1A] px-3 py-1 ' +
+              (node.depth === 0 ? 'font-bold text-white' : 'text-[#D4D4D4]')
             }
             style={{ fontSize: 'var(--fs-label)' }}
           >
@@ -74,7 +75,7 @@ export default function CategoriesManager({
           <button
             onClick={() => openSub(node.path)}
             title={t('categories.addSubTitle', { name: node.label })}
-            className="rounded-md border border-[color:var(--ink)]/20 px-2 py-1 text-xs font-bold transition hover:bg-[color:var(--ink)]/5"
+            className="rounded-md border border-white/15 px-2 py-1 text-xs font-bold text-[#D4D4D4] transition hover:bg-white/10 hover:text-white"
           >
             {t('categories.addSub')}
           </button>
@@ -85,7 +86,7 @@ export default function CategoriesManager({
                 ? t('categories.removeWithSubs', { n: node.children.length })
                 : t('categories.removeTitle')
             }
-            className="text-[color:var(--ink)]/40 transition hover:text-red-600"
+            className="text-[#A3A3A3] transition hover:text-[#FF6B50]"
           >
             ✕
           </button>
@@ -129,16 +130,16 @@ export default function CategoriesManager({
   return (
     <div>
       {/* Salla matches import rows to categories that ALREADY exist in the
-          store — it does not create them. A category typed only here fails the
-          import, so the warning has to be impossible to miss. */}
-      <div className="mb-3 rounded-xl border-2 border-red-300 bg-red-50 p-4">
-        <p className="text-sm font-extrabold text-red-700">
-          ⚠️ {t('categories.storeWarnTitle')}
-        </p>
-        <p className="mt-1 text-sm font-bold text-red-600">{t('categories.storeWarnBody')}</p>
+          store — it does not create them. */}
+      <div className="mb-3 rounded-xl border border-[#FF6B50]/30 bg-[#FF6B50]/10 p-4">
+        <div className="flex items-center gap-2 text-sm font-extrabold text-[#FF856E]">
+          <AlertCircle className="size-4 shrink-0 text-[#FF6B50]" />
+          <span>{t('categories.storeWarnTitle')}</span>
+        </div>
+        <p className="mt-1 text-xs sm:text-sm font-medium text-[#FF856E]/90 leading-relaxed">{t('categories.storeWarnBody')}</p>
       </div>
 
-      <p className="mb-3 text-[color:var(--ink)]/70" style={{ fontSize: 'var(--fs-label)' }}>
+      <p className="mb-3 text-[#D4D4D4]" style={{ fontSize: 'var(--fs-label)' }}>
         {t('categories.note')}
       </p>
 
